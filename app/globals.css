@@ -1,7 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
-@import "tw-animate-css";
-@import "shadcn/tailwind.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -21,6 +19,7 @@
     --accent: #F59E0B;
     --accent-foreground: #1A1A1A;
     --destructive: #EF4444;
+    --destructive-foreground: #FFFFFF;
     --border: #E2E8F0;
     --input: #E2E8F0;
     --ring: #1560BD;
@@ -71,6 +70,7 @@
     --color-input: var(--input);
     --color-border: var(--border);
     --color-destructive: var(--destructive);
+    --color-destructive-foreground: var(--destructive-foreground);
     --color-accent-foreground: var(--accent-foreground);
     --color-accent: var(--accent);
     --color-muted-foreground: var(--muted-foreground);
@@ -113,7 +113,7 @@
     @apply bg-background text-foreground font-sans;
   }
   html {
-    @apply font-sans;
+    @apply font-sans bg-background;
     scroll-behavior: smooth;
   }
 }
@@ -181,7 +181,7 @@
   text-transform: uppercase;
 }
 
-/* ── Marquee / Ticker animations ─────────────────────────────── */
+/* Marquee / Ticker animations */
 @keyframes marquee {
   from { transform: translateX(0); }
   to   { transform: translateX(-50%); }

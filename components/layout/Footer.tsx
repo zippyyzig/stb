@@ -1,3 +1,6 @@
+"use client";
+
+import Link from "next/link";
 import { Separator } from "@/components/ui/separator";
 import {
   Mail,
@@ -11,12 +14,12 @@ import {
 import { Button } from "@/components/ui/button";
 
 const infoLinks = [
-  "About Us",
-  "Shipping Information",
-  "Privacy Policy",
-  "Terms & Conditions",
-  "Dealer Registration",
-  "Customer Registration",
+  { name: "About Us", href: "/about" },
+  { name: "Shipping Information", href: "/shipping" },
+  { name: "Privacy Policy", href: "/privacy" },
+  { name: "Terms & Conditions", href: "/terms" },
+  { name: "Dealer Registration", href: "/auth/register?type=dealer" },
+  { name: "Customer Registration", href: "/auth/register" },
 ];
 
 const contactDetails = [
@@ -62,10 +65,10 @@ export default function Footer() {
             <div className="mt-2 flex items-center gap-2 text-white/70">
               <Mail className="h-4 w-4 shrink-0 text-accent" />
               <a
-                href="mailto:sales@stbtech.com"
+                href="mailto:sales@sabkatechbazar.com"
                 className="body-sm hover:text-white"
               >
-                sales@stbtech.com
+                sales@sabkatechbazar.com
               </a>
             </div>
           </div>
@@ -75,14 +78,14 @@ export default function Footer() {
             <h3 className="heading-sm mb-4 text-white">Information</h3>
             <nav className="flex flex-col gap-2.5">
               {infoLinks.map((link) => (
-                <a
-                  key={link}
-                  href="#"
+                <Link
+                  key={link.name}
+                  href={link.href}
                   className="body-sm flex items-center gap-1.5 text-white/60 transition-colors hover:text-white"
                 >
                   <ExternalLink className="h-3 w-3" />
-                  {link}
-                </a>
+                  {link.name}
+                </Link>
               ))}
             </nav>
           </div>
@@ -96,9 +99,7 @@ export default function Footer() {
                   key={contact.department}
                   className="flex items-center justify-between"
                 >
-                  <span className="body-sm text-white/60">
-                    {contact.department}
-                  </span>
+                  <span className="body-sm text-white/60">{contact.department}</span>
                   <a
                     href={`tel:${contact.number}`}
                     className="body-sm flex items-center gap-1.5 text-white/80 hover:text-white"
@@ -118,7 +119,7 @@ export default function Footer() {
               <div className="mb-3 flex items-center gap-2">
                 <Building2 className="h-4 w-4 text-accent" />
                 <span className="heading-sm text-sm text-white">
-                  STB Technologies
+                  Sabka Tech Bazar
                 </span>
               </div>
               <div className="flex flex-col gap-2">
@@ -139,7 +140,7 @@ export default function Footer() {
       {/* Copyright Bar */}
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4">
         <p className="body-sm text-white/50">
-          Copyright © 2025, STB Technologies. All Rights Reserved.
+          Copyright © 2025, Sabka Tech Bazar. All Rights Reserved.
         </p>
         <Button
           variant="ghost"

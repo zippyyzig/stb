@@ -1,3 +1,7 @@
+"use client";
+
+import Image from "next/image";
+import Link from "next/link";
 import {
   Carousel,
   CarouselContent,
@@ -12,6 +16,7 @@ interface BannerSlide {
   title: string;
   subtitle: string;
   cta: string;
+  link: string;
   gradient: string;
   image: string;
 }
@@ -21,6 +26,7 @@ const bannerSlides: BannerSlide[] = [
     title: "Next-Gen Computing",
     subtitle: "Explore our range of high-performance desktops and laptops for every need.",
     cta: "Shop Now",
+    link: "/category/desktop",
     gradient: "from-[#1560BD] to-[#0E4D96]",
     image: "https://images.unsplash.com/photo-1587202372775-e229f172b9d7?w=600&h=400&fit=crop",
   },
@@ -29,6 +35,7 @@ const bannerSlides: BannerSlide[] = [
     subtitle:
       "CCTV cameras, NVRs, and complete surveillance systems for home and office.",
     cta: "Explore Security",
+    link: "/category/security",
     gradient: "from-[#0F172A] to-[#1E293B]",
     image: "https://images.unsplash.com/photo-1576088137266-a6cba01057ed?w=600&h=400&fit=crop",
   },
@@ -36,6 +43,7 @@ const bannerSlides: BannerSlide[] = [
     title: "Network Like a Pro",
     subtitle: "Enterprise-grade routers, switches, and access points from top brands.",
     cta: "View Networking",
+    link: "/category/networking",
     gradient: "from-[#10B981] to-[#059669]",
     image: "https://images.unsplash.com/photo-1544985562-128e7b377a21?w=600&h=400&fit=crop",
   },
@@ -44,10 +52,7 @@ const bannerSlides: BannerSlide[] = [
 export default function HeroBanner() {
   return (
     <section className="mx-auto max-w-7xl px-4 pt-6">
-      <Carousel
-        opts={{ loop: true }}
-        className="w-full"
-      >
+      <Carousel opts={{ loop: true }} className="w-full">
         <CarouselContent>
           {bannerSlides.map((slide, index) => (
             <CarouselItem key={index}>
@@ -61,19 +66,24 @@ export default function HeroBanner() {
                   <p className="body-lg mb-6 max-w-md text-white/80">
                     {slide.subtitle}
                   </p>
-                  <Button
-                    size="lg"
-                    className="w-fit gap-2 rounded-full bg-white text-primary hover:bg-white/90"
-                  >
-                    {slide.cta}
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
+                  <Link href={slide.link}>
+                    <Button
+                      size="lg"
+                      className="w-fit gap-2 rounded-full bg-white text-primary hover:bg-white/90"
+                    >
+                      {slide.cta}
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  </Link>
                 </div>
                 <div className="hidden items-center justify-center p-8 lg:flex lg:flex-1">
-                  <img
+                  <Image
                     src={slide.image}
                     alt={slide.title}
+                    width={400}
+                    height={300}
                     className="h-full max-h-[300px] w-auto rounded-xl object-cover shadow-lg"
+                    unoptimized
                   />
                 </div>
               </div>
