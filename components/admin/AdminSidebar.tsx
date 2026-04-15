@@ -13,6 +13,9 @@ import {
   Settings,
   FileText,
   BarChart3,
+  Building2,
+  Boxes,
+  HeadphonesIcon,
 } from "lucide-react";
 
 interface AdminSidebarProps {
@@ -39,6 +42,18 @@ const menuItems = [
     roles: ["admin", "super_admin"],
   },
   {
+    title: "Brands",
+    href: "/admin/brands",
+    icon: Building2,
+    roles: ["admin", "super_admin"],
+  },
+  {
+    title: "Inventory",
+    href: "/admin/inventory",
+    icon: Boxes,
+    roles: ["admin", "super_admin"],
+  },
+  {
     title: "Orders",
     href: "/admin/orders",
     icon: ShoppingCart,
@@ -48,6 +63,12 @@ const menuItems = [
     title: "Customers",
     href: "/admin/customers",
     icon: Users,
+    roles: ["admin", "super_admin"],
+  },
+  {
+    title: "Tickets",
+    href: "/admin/tickets",
+    icon: HeadphonesIcon,
     roles: ["admin", "super_admin"],
   },
   {
