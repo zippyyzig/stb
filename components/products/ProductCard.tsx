@@ -4,10 +4,9 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Heart, ShoppingCart, Eye } from "lucide-react";
+import { Heart, ShoppingCart, Eye, Check } from "lucide-react";
 
 interface Product {
   _id: string;
@@ -31,6 +30,7 @@ export default function ProductCard({ product }: ProductCardProps) {
   const { data: session } = useSession();
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [addedToCart, setAddedToCart] = useState(false);
 
   // Determine price based on user type
   const isB2B = session?.user?.role === "admin" || session?.user?.role === "super_admin";
@@ -45,7 +45,11 @@ export default function ProductCard({ product }: ProductCardProps) {
     }
     setIsAddingToCart(true);
     // TODO: Implement add to cart
-    setTimeout(() => setIsAddingToCart(false), 500);
+    setTimeout(() => {
+      setIsAddingToCart(false);
+      setAddedToCart(true);
+      setTimeout(() => setAddedToCart(false), 2000);
+    }, 500);
   };
 
   const handleWishlist = () => {
@@ -54,71 +58,73 @@ export default function ProductCard({ product }: ProductCardProps) {
   };
 
   return (
-    <Card className="group h-full overflow-hidden border-border/50 transition-all hover:shadow-lg">
+    <div className="group flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card transition-all hover:border-foreground/20 hover:shadow-lg">
       {/* Product Image */}
-      <div className="relative overflow-hidden bg-muted">
+      <div className="relative aspect-square overflow-hidden bg-muted">
         {/* Badges */}
-        <div className="absolute left-2 top-2 z-10 flex flex-col gap-1">
+        <div className="absolute left-3 top-3 z-10 flex flex-col gap-1.5">
           {product.isNewArrival && (
-            <Badge className="bg-stb-success text-white">New</Badge>
+            <Badge className="bg-foreground text-background">New</Badge>
           )}
           {product.isFeatured && (
-            <Badge className="bg-accent text-accent-foreground">Featured</Badge>
+            <Badge variant="outline" className="border-foreground/20 bg-card">
+              Featured
+            </Badge>
           )}
           {discount > 0 && (
-            <Badge variant="destructive">-{discount}%</Badge>
+            <Badge className="bg-accent text-accent-foreground">-{discount}%</Badge>
           )}
         </div>
 
         {/* Quick Actions */}
-        <div className="absolute right-2 top-2 z-10 flex flex-col gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+        <div className="absolute right-3 top-3 z-10 flex flex-col gap-1.5 opacity-0 transition-all group-hover:opacity-100">
           <button
             onClick={handleWishlist}
-            className={`rounded-full p-2 transition-colors ${
+            className={`flex h-9 w-9 items-center justify-center rounded-full shadow-sm transition-all ${
               isWishlisted
-                ? "bg-destructive text-white"
-                : "bg-white/90 text-muted-foreground hover:bg-white hover:text-destructive"
+                ? "bg-accent text-accent-foreground"
+                : "bg-card/90 text-muted-foreground hover:bg-card hover:text-accent"
             }`}
           >
             <Heart className={`h-4 w-4 ${isWishlisted ? "fill-current" : ""}`} />
           </button>
           <Link
             href={`/product/${product.slug}`}
-            className="rounded-full bg-white/90 p-2 text-muted-foreground transition-colors hover:bg-white hover:text-primary"
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-card/90 text-muted-foreground shadow-sm transition-all hover:bg-card hover:text-foreground"
           >
             <Eye className="h-4 w-4" />
           </Link>
         </div>
 
         {/* Image */}
-        <Link href={`/product/${product.slug}`} className="block p-4">
+        <Link href={`/product/${product.slug}`} className="block h-full p-6">
           <Image
             src={product.images?.[0] || "https://via.placeholder.com/300"}
             alt={product.name}
-            width={200}
-            height={200}
-            className="mx-auto h-40 w-40 object-contain transition-transform group-hover:scale-105"
+            fill
+            className="object-contain transition-transform duration-300 group-hover:scale-105"
             unoptimized
           />
         </Link>
       </div>
 
-      <CardContent className="flex flex-col gap-2 p-3">
+      {/* Content */}
+      <div className="flex flex-1 flex-col p-4">
         {/* Brand */}
         {product.brand && (
-          <span className="body-sm text-muted-foreground">{product.brand}</span>
+          <span className="label-uppercase text-muted-foreground">{product.brand}</span>
         )}
 
         {/* Product Name */}
-        <Link href={`/product/${product.slug}`}>
-          <h3 className="heading-sm line-clamp-2 text-sm leading-snug transition-colors hover:text-primary">
+        <Link href={`/product/${product.slug}`} className="mt-1.5">
+          <h3 className="body-md line-clamp-2 font-medium text-foreground transition-colors hover:text-accent">
             {product.name}
           </h3>
         </Link>
 
         {/* Price */}
-        <div className="flex flex-wrap items-baseline gap-2">
-          <span className="heading-md text-primary">
+        <div className="mt-auto flex flex-wrap items-baseline gap-2 pt-3">
+          <span className="heading-md text-foreground">
             ₹{displayPrice.toLocaleString("en-IN")}
           </span>
           {product.mrp > displayPrice && (
@@ -128,34 +134,48 @@ export default function ProductCard({ product }: ProductCardProps) {
           )}
         </div>
 
-        {/* B2B/B2C Indicator */}
+        {/* B2B Badge */}
         {isB2B && (
-          <span className="body-sm text-stb-success">B2B Price</span>
+          <span className="body-sm mt-1 text-stb-success">B2B Price</span>
         )}
 
         {/* Stock & Cart */}
-        <div className="mt-auto flex items-center justify-between pt-2">
-          <Badge
-            variant={inStock ? "default" : "destructive"}
-            className={`text-xs ${
-              inStock
-                ? "border-stb-success/30 bg-stb-success/10 text-stb-success"
-                : ""
-            }`}
-          >
-            {inStock ? `${product.stock} in stock` : "Out of Stock"}
-          </Badge>
+        <div className="mt-4 flex items-center justify-between gap-2">
+          <div className="flex flex-col">
+            <span
+              className={`body-sm font-medium ${
+                inStock ? "text-stb-success" : "text-destructive"
+              }`}
+            >
+              {inStock ? "In Stock" : "Out of Stock"}
+            </span>
+            {inStock && product.stock <= 10 && (
+              <span className="body-sm text-stb-warning">Only {product.stock} left</span>
+            )}
+          </div>
           <Button
-            size="icon"
-            variant="outline"
-            className="h-8 w-8 rounded-full border-primary/30 text-primary hover:bg-primary hover:text-white"
+            size="sm"
+            variant={addedToCart ? "outline" : "default"}
+            className={`h-9 gap-2 rounded-full px-4 transition-all ${
+              addedToCart ? "border-stb-success text-stb-success" : ""
+            }`}
             disabled={!inStock || isAddingToCart}
             onClick={handleAddToCart}
           >
-            <ShoppingCart className={`h-3.5 w-3.5 ${isAddingToCart ? "animate-pulse" : ""}`} />
+            {addedToCart ? (
+              <>
+                <Check className="h-4 w-4" />
+                Added
+              </>
+            ) : (
+              <>
+                <ShoppingCart className={`h-4 w-4 ${isAddingToCart ? "animate-pulse" : ""}`} />
+                Add
+              </>
+            )}
           </Button>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

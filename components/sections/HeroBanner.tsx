@@ -17,81 +17,90 @@ interface BannerSlide {
   subtitle: string;
   cta: string;
   link: string;
-  gradient: string;
   image: string;
+  label: string;
 }
 
 const bannerSlides: BannerSlide[] = [
   {
-    title: "Next-Gen Computing",
-    subtitle: "Explore our range of high-performance desktops and laptops for every need.",
-    cta: "Shop Now",
+    title: "Next-gen computing meets exquisite design",
+    subtitle: "Explore our curated collection of high-performance desktops and laptops built for professionals.",
+    cta: "Shop Desktops",
     link: "/category/desktop",
-    gradient: "from-[#1560BD] to-[#0E4D96]",
-    image: "https://images.unsplash.com/photo-1587202372775-e229f172b9d7?w=600&h=400&fit=crop",
+    image: "https://images.unsplash.com/photo-1587202372775-e229f172b9d7?w=800&h=600&fit=crop",
+    label: "New Arrivals",
   },
   {
-    title: "Smart Security Solutions",
-    subtitle:
-      "CCTV cameras, NVRs, and complete surveillance systems for home and office.",
+    title: "Smart security solutions for modern spaces",
+    subtitle: "CCTV cameras, NVRs, and complete surveillance systems designed for reliability.",
     cta: "Explore Security",
     link: "/category/security",
-    gradient: "from-[#0F172A] to-[#1E293B]",
-    image: "https://images.unsplash.com/photo-1576088137266-a6cba01057ed?w=600&h=400&fit=crop",
+    image: "https://images.unsplash.com/photo-1576088137266-a6cba01057ed?w=800&h=600&fit=crop",
+    label: "Featured",
   },
   {
-    title: "Network Like a Pro",
-    subtitle: "Enterprise-grade routers, switches, and access points from top brands.",
+    title: "Enterprise networking made simple",
+    subtitle: "Professional-grade routers, switches, and access points from industry-leading brands.",
     cta: "View Networking",
     link: "/category/networking",
-    gradient: "from-[#10B981] to-[#059669]",
-    image: "https://images.unsplash.com/photo-1544985562-128e7b377a21?w=600&h=400&fit=crop",
+    image: "https://images.unsplash.com/photo-1544985562-128e7b377a21?w=800&h=600&fit=crop",
+    label: "Best Sellers",
   },
 ];
 
 export default function HeroBanner() {
   return (
-    <section className="mx-auto max-w-7xl px-4 pt-6">
+    <section className="mx-auto max-w-7xl px-4 py-8">
       <Carousel opts={{ loop: true }} className="w-full">
         <CarouselContent>
           {bannerSlides.map((slide, index) => (
             <CarouselItem key={index}>
-              <div
-                className={`relative flex min-h-[320px] overflow-hidden rounded-2xl bg-gradient-to-r ${slide.gradient} md:min-h-[400px]`}
-              >
-                <div className="flex flex-1 flex-col justify-center p-8 md:p-12 lg:max-w-[55%]">
-                  <h2 className="mb-3 font-heading text-3xl font-bold text-white md:text-4xl lg:text-5xl">
+              <div className="grid gap-8 lg:grid-cols-2 lg:gap-12">
+                {/* Content */}
+                <div className="flex flex-col justify-center py-8 lg:py-16">
+                  <span className="label-uppercase mb-4 inline-flex w-fit items-center rounded-full border border-border bg-muted px-3 py-1 text-muted-foreground">
+                    {slide.label}
+                  </span>
+                  <h2 className="heading-display mb-6 max-w-xl text-balance">
                     {slide.title}
                   </h2>
-                  <p className="body-lg mb-6 max-w-md text-white/80">
+                  <p className="body-lg mb-8 max-w-md text-pretty text-muted-foreground">
                     {slide.subtitle}
                   </p>
-                  <Link href={slide.link}>
-                    <Button
-                      size="lg"
-                      className="w-fit gap-2 rounded-full bg-white text-primary hover:bg-white/90"
-                    >
-                      {slide.cta}
-                      <ArrowRight className="h-4 w-4" />
-                    </Button>
-                  </Link>
+                  <div className="flex flex-wrap items-center gap-4">
+                    <Link href={slide.link}>
+                      <Button size="lg" className="gap-2 rounded-full px-8">
+                        {slide.cta}
+                        <ArrowRight className="h-4 w-4" />
+                      </Button>
+                    </Link>
+                    <Link href="/category/all">
+                      <Button variant="outline" size="lg" className="gap-2 rounded-full px-8">
+                        Browse All
+                      </Button>
+                    </Link>
+                  </div>
                 </div>
-                <div className="hidden items-center justify-center p-8 lg:flex lg:flex-1">
+
+                {/* Image */}
+                <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-muted lg:aspect-auto">
                   <Image
                     src={slide.image}
                     alt={slide.title}
-                    width={400}
-                    height={300}
-                    className="h-full max-h-[300px] w-auto rounded-xl object-cover shadow-lg"
+                    fill
+                    className="object-cover transition-transform duration-700 hover:scale-105"
                     unoptimized
+                    priority={index === 0}
                   />
                 </div>
               </div>
             </CarouselItem>
           ))}
         </CarouselContent>
-        <CarouselPrevious className="-left-4 hidden h-12 w-12 border-0 bg-white/90 shadow-md hover:bg-white md:flex" />
-        <CarouselNext className="-right-4 hidden h-12 w-12 border-0 bg-white/90 shadow-md hover:bg-white md:flex" />
+        <div className="mt-6 flex items-center gap-2">
+          <CarouselPrevious className="static h-10 w-10 translate-x-0 translate-y-0 rounded-full border-border" />
+          <CarouselNext className="static h-10 w-10 translate-x-0 translate-y-0 rounded-full border-border" />
+        </div>
       </Carousel>
     </section>
   );

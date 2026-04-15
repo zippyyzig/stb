@@ -10,10 +10,9 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Heart, ShoppingCart } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Heart, ShoppingCart, ArrowRight } from "lucide-react";
 
 interface Product {
   id: string;
@@ -40,116 +39,138 @@ export default function ProductSection({ section }: ProductSectionProps) {
   const [activeSubcat, setActiveSubcat] = useState(section.subcategories[0]);
 
   return (
-    <section className="mx-auto max-w-7xl px-4 py-6">
-      {/* Section Header with Subcategories */}
-      <div className="mb-6 overflow-hidden rounded-xl bg-gradient-to-r from-primary to-stb-primary-dark">
-        {/* Title */}
-        <div className="flex items-center justify-between px-6 pb-3 pt-4">
-          <h2 className="heading-md text-white">{section.title}</h2>
+    <section className="py-12">
+      <div className="mx-auto max-w-7xl px-4">
+        {/* Section Header */}
+        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 className="heading-lg">{section.title}</h2>
+            <p className="body-md mt-1 text-muted-foreground">
+              Explore our {section.title.toLowerCase()} collection
+            </p>
+          </div>
           <Link
             href={`/category/${section.slug}`}
-            className="body-sm text-white/80 transition-colors hover:text-white"
+            className="body-sm group flex items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
           >
-            View All →
+            View all
+            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
           </Link>
         </div>
 
-        {/* Subcategory Tabs */}
-        <div className="flex flex-wrap gap-1 px-4 pb-3">
+        {/* Subcategory Pills */}
+        <div className="mb-6 flex flex-wrap gap-2">
           {section.subcategories.map((subcat) => (
             <button
               key={subcat}
               onClick={() => setActiveSubcat(subcat)}
-              className={`body-sm rounded-md px-3 py-1.5 transition-colors ${
+              className={`rounded-full px-4 py-2 text-sm transition-all ${
                 activeSubcat === subcat
-                  ? "bg-white font-medium text-primary"
-                  : "text-white/70 hover:bg-white/10 hover:text-white"
+                  ? "bg-foreground font-medium text-background"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
               }`}
             >
               {subcat}
             </button>
           ))}
         </div>
-      </div>
 
-      {/* Product Carousel */}
-      <Carousel opts={{ align: "start", loop: false }} className="w-full">
-        <CarouselContent className="-ml-3">
-          {section.products.map((product) => (
-            <CarouselItem
-              key={product.id}
-              className="basis-1/2 pl-3 sm:basis-1/3 md:basis-1/4 lg:basis-1/5"
-            >
-              <Card className="group h-full overflow-hidden border-border/50 transition-all hover:shadow-md">
-                {/* Product Image */}
-                <div className="relative overflow-hidden bg-muted p-4">
-                  <Image
-                    src={product.image}
-                    alt={product.name}
-                    width={128}
-                    height={128}
-                    className="mx-auto h-32 w-32 object-cover transition-transform group-hover:scale-105"
-                    unoptimized
-                  />
-                  <button className="absolute right-2 top-2 rounded-full bg-white/80 p-1.5 opacity-0 transition-all hover:bg-white group-hover:opacity-100">
-                    <Heart className="h-4 w-4 text-muted-foreground hover:text-destructive" />
-                  </button>
-                </div>
+        {/* Product Carousel */}
+        <Carousel opts={{ align: "start", loop: false }} className="w-full">
+          <CarouselContent className="-ml-4">
+            {section.products.map((product) => {
+              const discount = product.originalPrice
+                ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
+                : 0;
 
-                <CardContent className="flex flex-col gap-2 p-3">
-                  {/* Product Name */}
-                  <Link href={`/product/${product.id}`}>
-                    <h3 className="heading-sm line-clamp-2 text-sm leading-snug hover:text-primary">
-                      {product.name}
-                    </h3>
-                  </Link>
+              return (
+                <CarouselItem
+                  key={product.id}
+                  className="basis-1/2 pl-4 sm:basis-1/3 md:basis-1/4 lg:basis-1/5"
+                >
+                  <div className="group flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card transition-all hover:border-foreground/20 hover:shadow-lg">
+                    {/* Product Image */}
+                    <div className="relative aspect-square overflow-hidden bg-muted">
+                      {/* Discount Badge */}
+                      {discount > 0 && (
+                        <Badge className="absolute left-3 top-3 z-10 bg-accent text-accent-foreground">
+                          -{discount}%
+                        </Badge>
+                      )}
 
-                  {/* Brand */}
-                  <span className="body-sm text-muted-foreground">
-                    {product.brand}
-                  </span>
+                      {/* Wishlist Button */}
+                      <button className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-card/90 opacity-0 shadow-sm transition-all hover:bg-card group-hover:opacity-100">
+                        <Heart className="h-4 w-4 text-muted-foreground hover:text-accent" />
+                      </button>
 
-                  {/* Price */}
-                  <div className="flex items-baseline gap-2">
-                    <span className="heading-md text-primary">
-                      ₹{product.price.toLocaleString("en-IN")}
-                    </span>
-                    {product.originalPrice && (
-                      <span className="body-sm text-muted-foreground line-through">
-                        ₹{product.originalPrice.toLocaleString("en-IN")}
+                      <Link href={`/product/${product.id}`} className="block h-full">
+                        <Image
+                          src={product.image}
+                          alt={product.name}
+                          fill
+                          className="object-cover p-4 transition-transform duration-300 group-hover:scale-105"
+                          unoptimized
+                        />
+                      </Link>
+                    </div>
+
+                    {/* Product Info */}
+                    <div className="flex flex-1 flex-col p-4">
+                      {/* Brand */}
+                      <span className="label-uppercase text-muted-foreground">
+                        {product.brand}
                       </span>
-                    )}
-                  </div>
 
-                  {/* Stock & Cart */}
-                  <div className="mt-1 flex items-center justify-between">
-                    <Badge
-                      variant={product.inStock ? "default" : "destructive"}
-                      className={`text-xs ${
-                        product.inStock
-                          ? "border-stb-success/30 bg-stb-success/10 text-stb-success"
-                          : ""
-                      }`}
-                    >
-                      {product.inStock ? "In Stock" : "Out of Stock"}
-                    </Badge>
-                    <Button
-                      size="icon"
-                      variant="outline"
-                      className="h-8 w-8 rounded-full border-primary/30 text-primary hover:bg-primary hover:text-white"
-                      disabled={!product.inStock}
-                    >
-                      <ShoppingCart className="h-3.5 w-3.5" />
-                    </Button>
+                      {/* Name */}
+                      <Link href={`/product/${product.id}`} className="mt-1.5">
+                        <h3 className="body-md line-clamp-2 font-medium text-foreground transition-colors hover:text-accent">
+                          {product.name}
+                        </h3>
+                      </Link>
+
+                      {/* Price */}
+                      <div className="mt-auto flex items-baseline gap-2 pt-3">
+                        <span className="heading-md text-foreground">
+                          ₹{product.price.toLocaleString("en-IN")}
+                        </span>
+                        {product.originalPrice && (
+                          <span className="body-sm text-muted-foreground line-through">
+                            ₹{product.originalPrice.toLocaleString("en-IN")}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Stock & Cart */}
+                      <div className="mt-3 flex items-center justify-between gap-2">
+                        <span
+                          className={`body-sm ${
+                            product.inStock ? "text-stb-success" : "text-destructive"
+                          }`}
+                        >
+                          {product.inStock ? "In Stock" : "Out of Stock"}
+                        </span>
+                        <Button
+                          size="sm"
+                          variant={product.inStock ? "default" : "outline"}
+                          className="h-8 gap-1.5 rounded-full px-3"
+                          disabled={!product.inStock}
+                        >
+                          <ShoppingCart className="h-3.5 w-3.5" />
+                          <span className="hidden sm:inline">Add</span>
+                        </Button>
+                      </div>
+                    </div>
                   </div>
-                </CardContent>
-              </Card>
-            </CarouselItem>
-          ))}
-        </CarouselContent>
-        <CarouselPrevious className="-left-4 hidden h-10 w-10 border-border bg-card shadow-sm hover:bg-muted md:flex" />
-        <CarouselNext className="-right-4 hidden h-10 w-10 border-border bg-card shadow-sm hover:bg-muted md:flex" />
-      </Carousel>
+                </CarouselItem>
+              );
+            })}
+          </CarouselContent>
+          <div className="mt-6 flex items-center justify-end gap-2">
+            <CarouselPrevious className="static h-10 w-10 translate-x-0 translate-y-0 rounded-full border-border" />
+            <CarouselNext className="static h-10 w-10 translate-x-0 translate-y-0 rounded-full border-border" />
+          </div>
+        </Carousel>
+      </div>
     </section>
   );
 }
