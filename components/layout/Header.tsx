@@ -165,10 +165,12 @@ export default function Header() {
         {/* Mobile Menu */}
         <Sheet>
           <SheetTrigger
-            render={<Button variant="ghost" size="icon" className="lg:hidden" />}
-          >
-            <Menu className="h-6 w-6" />
-          </SheetTrigger>
+            render={
+              <Button variant="ghost" size="icon" className="lg:hidden">
+                <Menu className="h-6 w-6" />
+              </Button>
+            }
+          />
           <SheetContent side="left" className="w-[300px] p-0">
             <SheetHeader className="border-b p-4">
               <SheetTitle className="heading-md text-primary">
