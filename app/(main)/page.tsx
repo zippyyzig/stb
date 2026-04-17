@@ -318,6 +318,8 @@ export default async function HomePage() {
         {/* Hero Slider with Side Banners */}
         <HeroBanner />
 
+        {/* Features Strip */}
+        <FeaturesSection />
 
         {/* Top Categories */}
         <TopCategories />

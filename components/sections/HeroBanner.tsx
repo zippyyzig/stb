@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -9,145 +10,281 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
-import { Button } from "@/components/ui/button";
-import { ArrowRight, Zap } from "lucide-react";
+import {
+  Monitor,
+  Laptop,
+  HardDrive,
+  MonitorSpeaker,
+  Keyboard,
+  Printer,
+  Shield,
+  Wifi,
+  Code,
+  Smartphone,
+  Cable,
+  Plug,
+  Camera,
+  Phone,
+} from "lucide-react";
 
-interface BannerSlide {
-  title: string;
-  subtitle: string;
-  cta: string;
-  link: string;
-  image: string;
-  badge?: string;
-}
+// Category links similar to megajaipur
+const categoryLinks = [
+  { name: "Desktop", href: "/category/desktop", icon: Monitor },
+  { name: "Laptop", href: "/category/laptop", icon: Laptop },
+  { name: "Storage", href: "/category/storage", icon: HardDrive },
+  { name: "Display", href: "/category/display", icon: MonitorSpeaker },
+  { name: "Peripherals", href: "/category/peripherals", icon: Keyboard },
+  { name: "Printers & Scanners", href: "/category/printers", icon: Printer },
+  { name: "Security", href: "/category/security", icon: Shield },
+  { name: "Networking", href: "/category/networking", icon: Wifi },
+  { name: "Software", href: "/category/software", icon: Code },
+  { name: "Mobility", href: "/category/mobility", icon: Smartphone },
+  { name: "Cables", href: "/category/cables", icon: Cable },
+  { name: "Connector & Converter", href: "/category/connectors", icon: Plug },
+  { name: "CCTV Accessories", href: "/category/cctv-accessories", icon: Camera },
+  { name: "Telecom", href: "/category/telecom", icon: Phone },
+];
 
-const bannerSlides: BannerSlide[] = [
+// Left side promotional slider images
+const leftSliderImages = [
   {
-    title: "Next-Gen Computing Solutions",
-    subtitle: "Explore our range of high-performance desktops and laptops for every business need.",
-    cta: "Shop Now",
+    src: "https://images.unsplash.com/photo-1587202372775-e229f172b9d7?w=512&h=500&fit=crop",
+    alt: "Hard Drive Storage",
+    link: "/category/storage",
+  },
+  {
+    src: "https://images.unsplash.com/photo-1591799265444-d66432b91588?w=512&h=500&fit=crop",
+    alt: "Power Supply Units",
     link: "/category/desktop",
-    image: "https://images.unsplash.com/photo-1587202372775-e229f172b9d7?w=800&h=500&fit=crop",
-    badge: "New Arrivals",
   },
   {
-    title: "Smart Security Systems",
-    subtitle: "CCTV cameras, NVRs, and complete surveillance systems for home and office protection.",
-    cta: "Explore Security",
-    link: "/category/security",
-    image: "https://images.unsplash.com/photo-1576088137266-a6cba01057ed?w=800&h=500&fit=crop",
-    badge: "Best Seller",
+    src: "https://images.unsplash.com/photo-1625842268584-8f3296236761?w=512&h=500&fit=crop",
+    alt: "USB Hubs",
+    link: "/category/connectors",
   },
   {
-    title: "Enterprise Networking",
-    subtitle: "Enterprise-grade routers, switches, and access points from top global brands.",
-    cta: "View Networking",
+    src: "https://images.unsplash.com/photo-1593642632559-0c6d3fc62b89?w=512&h=500&fit=crop",
+    alt: "LED Television",
+    link: "/category/display",
+  },
+];
+
+// Main right slider images
+const mainSliderImages = [
+  {
+    src: "https://images.unsplash.com/photo-1576088137266-a6cba01057ed?w=768&h=500&fit=crop",
+    alt: "Dashcam EVM",
+    link: "/category/mobility",
+  },
+  {
+    src: "https://images.unsplash.com/photo-1544985562-128e7b377a21?w=768&h=500&fit=crop",
+    alt: "HP Printer",
+    link: "/category/printers",
+  },
+  {
+    src: "https://images.unsplash.com/photo-1591370874773-6702e8f12fd8?w=768&h=500&fit=crop",
+    alt: "Desktop Cabinet",
+    link: "/category/desktop",
+  },
+  {
+    src: "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=768&h=500&fit=crop",
+    alt: "LED Monitor BenQ",
+    link: "/category/display",
+  },
+  {
+    src: "https://images.unsplash.com/photo-1550009158-9ebf69173e03?w=768&h=500&fit=crop",
+    alt: "Gamepad Controller",
+    link: "/category/peripherals",
+  },
+  {
+    src: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=768&h=500&fit=crop",
+    alt: "Antivirus Software",
+    link: "/category/software",
+  },
+  {
+    src: "https://images.unsplash.com/photo-1563770660941-20978e870e26?w=768&h=500&fit=crop",
+    alt: "TP-Link Router",
     link: "/category/networking",
-    image: "https://images.unsplash.com/photo-1544985562-128e7b377a21?w=800&h=500&fit=crop",
-    badge: "Top Deals",
+  },
+  {
+    src: "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=768&h=500&fit=crop",
+    alt: "Branded Laptop",
+    link: "/category/laptop",
   },
 ];
 
 export default function HeroBanner() {
+  const [activeLeftSlide, setActiveLeftSlide] = useState(0);
+  const [activeMainSlide, setActiveMainSlide] = useState(0);
+
+  // Auto-rotate main slider
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveMainSlide((prev) => (prev + 1) % mainSliderImages.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Auto-rotate left slider
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveLeftSlide((prev) => (prev + 1) % leftSliderImages.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
-    <section className="mx-auto max-w-7xl px-4 pt-6">
-      <div className="grid gap-4 lg:grid-cols-4">
-        {/* Main Carousel - Takes 3 columns */}
-        <div className="lg:col-span-3">
+    <section className="mx-auto max-w-7xl px-4 pt-4">
+      {/* Top Category Links Bar */}
+      <div className="mb-4 hidden overflow-x-auto rounded-lg border border-border bg-card p-2 lg:block">
+        <div className="flex items-center gap-1">
+          {categoryLinks.map((cat) => (
+            <Link
+              key={cat.name}
+              href={cat.href}
+              className="flex shrink-0 items-center gap-1.5 rounded-md px-3 py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-primary hover:text-white"
+            >
+              <cat.icon className="h-3.5 w-3.5" />
+              <span className="whitespace-nowrap">{cat.name}</span>
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      {/* Three Column Hero Layout */}
+      <div className="grid gap-3 lg:grid-cols-12">
+        {/* Left Promotional Slider */}
+        <div className="hidden overflow-hidden rounded-xl lg:col-span-3 lg:block">
           <Carousel opts={{ loop: true }} className="w-full">
             <CarouselContent>
-              {bannerSlides.map((slide, index) => (
+              {leftSliderImages.map((slide, index) => (
                 <CarouselItem key={index}>
-                  <div className="relative flex min-h-[300px] overflow-hidden rounded-xl bg-stb-dark md:min-h-[380px]">
-                    {/* Background Image */}
-                    <div className="absolute inset-0">
+                  <Link href={slide.link} className="block">
+                    <div className="relative aspect-square overflow-hidden rounded-xl bg-muted">
                       <Image
-                        src={slide.image}
-                        alt={slide.title}
+                        src={slide.src}
+                        alt={slide.alt}
                         fill
-                        className="object-cover opacity-30"
-                        unoptimized
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-r from-stb-dark via-stb-dark/90 to-transparent" />
-                    </div>
-                    
-                    {/* Content */}
-                    <div className="relative z-10 flex flex-1 flex-col justify-center p-8 md:p-12 lg:max-w-[65%]">
-                      {slide.badge && (
-                        <span className="mb-4 inline-flex w-fit items-center gap-1.5 rounded bg-primary px-3 py-1 text-xs font-semibold uppercase tracking-wider text-white">
-                          <Zap className="h-3 w-3" />
-                          {slide.badge}
-                        </span>
-                      )}
-                      <h2 className="mb-3 font-heading text-3xl font-bold uppercase tracking-wide text-white md:text-4xl lg:text-5xl">
-                        {slide.title}
-                      </h2>
-                      <p className="body-lg mb-6 max-w-lg text-white/70">
-                        {slide.subtitle}
-                      </p>
-                      <Link href={slide.link}>
-                        <Button
-                          size="lg"
-                          className="w-fit gap-2 rounded bg-primary px-8 text-white hover:bg-stb-red-dark"
-                        >
-                          {slide.cta}
-                          <ArrowRight className="h-4 w-4" />
-                        </Button>
-                      </Link>
-                    </div>
-
-                    {/* Product Image */}
-                    <div className="absolute bottom-0 right-0 hidden h-full w-1/3 items-end lg:flex">
-                      <Image
-                        src={slide.image}
-                        alt={slide.title}
-                        width={350}
-                        height={280}
-                        className="h-auto w-full object-contain drop-shadow-2xl"
+                        className="object-cover transition-transform duration-500 hover:scale-105"
                         unoptimized
                       />
                     </div>
-                  </div>
+                  </Link>
                 </CarouselItem>
               ))}
             </CarouselContent>
-            <CarouselPrevious className="-left-4 hidden h-12 w-12 border-0 bg-white shadow-lg hover:bg-white hover:text-primary md:flex" />
-            <CarouselNext className="-right-4 hidden h-12 w-12 border-0 bg-white shadow-lg hover:bg-white hover:text-primary md:flex" />
+            {/* Pagination Dots */}
+            <div className="absolute bottom-3 left-1/2 z-10 flex -translate-x-1/2 gap-1.5">
+              {leftSliderImages.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setActiveLeftSlide(idx)}
+                  className={`h-2 w-2 rounded-full transition-all ${
+                    idx === activeLeftSlide
+                      ? "w-4 bg-primary"
+                      : "bg-white/60 hover:bg-white"
+                  }`}
+                />
+              ))}
+            </div>
           </Carousel>
         </div>
 
-        {/* Side Promo Banners - 1 column */}
-        <div className="hidden flex-col gap-4 lg:flex">
+        {/* Main Slider */}
+        <div className="lg:col-span-6">
+          <Carousel opts={{ loop: true }} className="w-full">
+            <CarouselContent>
+              {mainSliderImages.map((slide, index) => (
+                <CarouselItem key={index}>
+                  <Link href={slide.link} className="block">
+                    <div className="relative aspect-[768/500] overflow-hidden rounded-xl bg-muted">
+                      <Image
+                        src={slide.src}
+                        alt={slide.alt}
+                        fill
+                        className="object-cover transition-transform duration-500 hover:scale-105"
+                        unoptimized
+                      />
+                      {/* Dark overlay for text readability */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                      {/* Slide Label */}
+                      <div className="absolute bottom-4 left-4 z-10">
+                        <span className="rounded bg-primary px-3 py-1.5 text-sm font-medium text-white">
+                          {slide.alt}
+                        </span>
+                      </div>
+                    </div>
+                  </Link>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <CarouselPrevious className="-left-3 h-10 w-10 border-0 bg-white/90 shadow-lg hover:bg-white md:-left-5" />
+            <CarouselNext className="-right-3 h-10 w-10 border-0 bg-white/90 shadow-lg hover:bg-white md:-right-5" />
+            {/* Pagination Dots */}
+            <div className="absolute bottom-3 left-1/2 z-10 flex -translate-x-1/2 gap-1.5">
+              {mainSliderImages.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setActiveMainSlide(idx)}
+                  className={`h-2 w-2 rounded-full transition-all ${
+                    idx === activeMainSlide
+                      ? "w-5 bg-primary"
+                      : "bg-white/60 hover:bg-white"
+                  }`}
+                />
+              ))}
+            </div>
+          </Carousel>
+        </div>
+
+        {/* Right Side Banner Stack */}
+        <div className="hidden flex-col gap-3 lg:col-span-3 lg:flex">
+          {/* Top Banner */}
           <Link
             href="/category/software"
-            className="group relative flex-1 overflow-hidden rounded-xl bg-primary p-5"
+            className="group relative flex-1 overflow-hidden rounded-xl bg-primary"
           >
-            <div className="relative z-10">
-              <span className="body-sm font-medium text-white/80">Hot Deals</span>
-              <h3 className="heading-md mt-1 text-white">Software Licenses</h3>
-              <p className="body-sm mt-2 text-white/70">Up to 40% Off</p>
-              <span className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-white group-hover:gap-2 transition-all">
-                Shop Now <ArrowRight className="h-4 w-4" />
+            <div className="absolute inset-0 bg-gradient-to-br from-primary to-stb-red-dark" />
+            <div className="relative z-10 flex h-full flex-col justify-center p-5">
+              <span className="text-xs font-semibold uppercase tracking-wider text-white/80">
+                Hot Deals
+              </span>
+              <h3 className="mt-1 text-lg font-bold text-white">
+                Software Licenses
+              </h3>
+              <p className="mt-1 text-sm text-white/70">Up to 40% Off</p>
+              <span className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-white transition-all group-hover:gap-2">
+                Shop Now
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
               </span>
             </div>
-            <div className="absolute -bottom-4 -right-4 h-24 w-24 rounded-full bg-white/10" />
-            <div className="absolute -top-4 -right-8 h-20 w-20 rounded-full bg-white/10" />
+            <div className="absolute -bottom-6 -right-6 h-28 w-28 rounded-full bg-white/10" />
           </Link>
-          
+
+          {/* Bottom Banner */}
           <Link
             href="/category/peripherals"
-            className="group relative flex-1 overflow-hidden rounded-xl bg-stb-dark p-5"
+            className="group relative flex-1 overflow-hidden rounded-xl bg-stb-dark"
           >
-            <div className="relative z-10">
-              <span className="body-sm font-medium text-primary">New Arrivals</span>
-              <h3 className="heading-md mt-1 text-white">Gaming Peripherals</h3>
-              <p className="body-sm mt-2 text-white/70">Premium Quality</p>
-              <span className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-white group-hover:gap-2 transition-all">
-                Explore <ArrowRight className="h-4 w-4" />
+            <div className="absolute inset-0 bg-gradient-to-br from-stb-dark to-black" />
+            <div className="relative z-10 flex h-full flex-col justify-center p-5">
+              <span className="text-xs font-semibold uppercase tracking-wider text-primary">
+                New Arrivals
+              </span>
+              <h3 className="mt-1 text-lg font-bold text-white">
+                Gaming Peripherals
+              </h3>
+              <p className="mt-1 text-sm text-white/70">Premium Quality</p>
+              <span className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-white transition-all group-hover:gap-2">
+                Explore
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
               </span>
             </div>
-            <div className="absolute -bottom-4 -right-4 h-24 w-24 rounded-full bg-primary/20" />
-            <div className="absolute -top-4 -right-8 h-20 w-20 rounded-full bg-primary/10" />
+            <div className="absolute -bottom-6 -right-6 h-28 w-28 rounded-full bg-primary/20" />
           </Link>
         </div>
       </div>
