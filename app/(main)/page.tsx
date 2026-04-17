@@ -5,7 +5,6 @@ import TopCategories from "@/components/sections/TopCategories";
 import ProductSection from "@/components/sections/ProductSection";
 import BrandsSection from "@/components/sections/BrandsSection";
 import PromoBanner from "@/components/sections/PromoBanner";
-import FeaturesSection from "@/components/sections/FeaturesSection";
 import dbConnect from "@/lib/mongodb";
 import Settings from "@/models/Settings";
 import Product from "@/models/Product";
@@ -479,9 +478,6 @@ export default async function HomePage() {
       <main className="flex-1">
         {/* Hero Slider with Side Banners */}
         <HeroBanner />
-
-        {/* Features Strip */}
-        <FeaturesSection />
 
         {/* Top Categories */}
         <TopCategories />
