@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { signOut } from "next-auth/react";
-import { Bell, Search, User, LogOut, Settings, ChevronDown } from "lucide-react";
+import { Search, User, LogOut, Settings, ChevronDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import NotificationsDropdown from "./NotificationsDropdown";
 
 interface AdminHeaderProps {
   user: {
@@ -33,10 +33,7 @@ export default function AdminHeader({ user }: AdminHeaderProps) {
       {/* Actions */}
       <div className="flex items-center gap-4">
         {/* Notifications */}
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5 text-muted-foreground" />
-          <span className="absolute right-1 top-1 flex h-2 w-2 rounded-full bg-destructive" />
-        </Button>
+        <NotificationsDropdown />
 
         {/* User Menu */}
         <div className="relative">
