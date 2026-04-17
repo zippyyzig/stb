@@ -317,26 +317,24 @@ export default async function HomePage() {
       <main className="flex-1">
         {/* Hero Slider with Side Banners */}
         <HeroBanner />
-        
-        {/* Features Strip */}
-        <FeaturesSection />
-        
+
+
         {/* Top Categories */}
         <TopCategories />
-        
+
         {/* First 2 Product Sections */}
         {productSections.slice(0, 2).map((section) => (
           <ProductSection key={section.slug} section={section} />
         ))}
-        
+
         {/* Promo Banners */}
         <PromoBanner />
-        
+
         {/* Remaining Product Sections */}
         {productSections.slice(2).map((section) => (
           <ProductSection key={section.slug} section={section} />
         ))}
-        
+
         {/* Brands Carousel */}
         <BrandsSection />
       </main>
