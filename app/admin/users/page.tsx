@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth";
 import Link from "next/link";
 import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
-import { Plus, Search, Edit, Trash2, Shield, User as UserIcon } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Shield, User as UserIcon, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -211,8 +211,16 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-2">
                         <Link
+                          href={`/admin/users/${user._id}`}
+                          className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                          title="View Profile"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Link>
+                        <Link
                           href={`/admin/users/${user._id}/edit`}
                           className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                          title="Edit User"
                         >
                           <Edit className="h-4 w-4" />
                         </Link>

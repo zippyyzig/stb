@@ -5,6 +5,9 @@ import dbConnect from "@/lib/mongodb";
 import Order from "@/models/Order";
 import Product from "@/models/Product";
 import Cart from "@/models/Cart";
+import User from "@/models/User";
+import { sendEmail, COMPANY_EMAIL } from "@/lib/email";
+import { orderConfirmationTemplate, newOrderNotificationTemplate } from "@/lib/email-templates";
 
 // GET user's orders
 export async function GET() {
@@ -133,6 +136,51 @@ export async function POST(request: NextRequest) {
 
     // Clear user's cart
     await Cart.deleteOne({ user: session.user.id });
+
+    // Send order confirmation email to customer
+    const customer = await User.findById(session.user.id);
+    if (customer) {
+      const orderDate = new Date().toLocaleDateString("en-IN", { dateStyle: "full" });
+      const shippingAddressStr = `${shippingAddress.fullName}\n${shippingAddress.address}\n${shippingAddress.city}, ${shippingAddress.state} ${shippingAddress.postalCode}\n${shippingAddress.country}\nPhone: ${shippingAddress.phone}`;
+      
+      const confirmationEmail = orderConfirmationTemplate(
+        customer.name,
+        order.orderNumber,
+        orderDate,
+        orderItems.map((item: { name: string; quantity: number; price: number }) => ({
+          name: item.name,
+          quantity: item.quantity,
+          price: item.price,
+        })),
+        subtotal,
+        shippingCost,
+        0, // tax
+        total,
+        shippingAddressStr
+      );
+      
+      await sendEmail({
+        to: customer.email,
+        subject: `Order Confirmed - ${order.orderNumber}`,
+        html: confirmationEmail,
+      });
+
+      // Send new order notification to admin
+      const adminNotification = newOrderNotificationTemplate(
+        order.orderNumber,
+        customer.name,
+        customer.email,
+        total,
+        orderItems.length,
+        orderDate
+      );
+      
+      await sendEmail({
+        to: COMPANY_EMAIL,
+        subject: `New Order Received - ${order.orderNumber}`,
+        html: adminNotification,
+      });
+    }
 
     // If Razorpay, create order and return orderId
     if (paymentMethod === "razorpay") {

@@ -12,6 +12,9 @@ export interface IUser extends Document {
   isActive: boolean;
   avatar?: string;
   googleId?: string;
+  lastLoginAt?: Date;
+  passwordResetToken?: string;
+  passwordResetExpires?: Date;
   addresses: {
     _id: mongoose.Types.ObjectId;
     name: string;
@@ -75,6 +78,15 @@ const UserSchema = new Schema<IUser>(
     googleId: {
       type: String,
       sparse: true,
+    },
+    lastLoginAt: {
+      type: Date,
+    },
+    passwordResetToken: {
+      type: String,
+    },
+    passwordResetExpires: {
+      type: Date,
     },
     addresses: [AddressSchema],
   },

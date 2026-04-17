@@ -13,6 +13,11 @@ import {
   Settings,
   FileText,
   BarChart3,
+  Tag,
+  Warehouse,
+  TicketCheck,
+  Bell,
+  Activity,
 } from "lucide-react";
 
 interface AdminSidebarProps {
@@ -39,6 +44,18 @@ const menuItems = [
     roles: ["admin", "super_admin"],
   },
   {
+    title: "Brands",
+    href: "/admin/brands",
+    icon: Tag,
+    roles: ["admin", "super_admin"],
+  },
+  {
+    title: "Inventory",
+    href: "/admin/inventory",
+    icon: Warehouse,
+    roles: ["admin", "super_admin"],
+  },
+  {
     title: "Orders",
     href: "/admin/orders",
     icon: ShoppingCart,
@@ -48,6 +65,12 @@ const menuItems = [
     title: "Customers",
     href: "/admin/customers",
     icon: Users,
+    roles: ["admin", "super_admin"],
+  },
+  {
+    title: "Tickets",
+    href: "/admin/tickets",
+    icon: TicketCheck,
     roles: ["admin", "super_admin"],
   },
   {
@@ -73,6 +96,12 @@ const menuItems = [
     href: "/admin/reports",
     icon: BarChart3,
     roles: ["admin", "super_admin"],
+  },
+  {
+    title: "Activity Log",
+    href: "/admin/activity",
+    icon: Activity,
+    roles: ["super_admin"],
   },
   {
     title: "Settings",
