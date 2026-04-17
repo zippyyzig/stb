@@ -15,97 +15,62 @@ interface Category {
   name: string;
   image: string;
   slug: string;
-  productCount?: number;
+  productCount: number;
 }
 
-const categories: Category[] = [
+interface TopCategoriesProps {
+  categories: Category[];
+}
+
+// Default categories to show if none are provided
+const defaultCategories: Category[] = [
   {
     id: "desktop",
     name: "Desktop",
     image: "https://images.unsplash.com/photo-1587202372775-e229f172b9d7?w=200&h=200&fit=crop",
     slug: "desktop",
-    productCount: 245,
+    productCount: 0,
   },
   {
     id: "laptop",
     name: "Laptop",
     image: "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=200&h=200&fit=crop",
     slug: "laptop",
-    productCount: 189,
+    productCount: 0,
   },
   {
     id: "storage",
     name: "Storage",
     image: "https://images.unsplash.com/photo-1653179767378-98bb414f9bfd?w=200&h=200&fit=crop",
     slug: "storage",
-    productCount: 312,
+    productCount: 0,
   },
   {
     id: "display",
     name: "Display",
     image: "https://images.unsplash.com/photo-1572476359541-2a41ec8405e5?w=200&h=200&fit=crop",
     slug: "display",
-    productCount: 156,
+    productCount: 0,
   },
   {
     id: "peripherals",
     name: "Peripherals",
     image: "https://images.unsplash.com/photo-1662758392656-0e5d4b0f53fb?w=200&h=200&fit=crop",
     slug: "peripherals",
-    productCount: 423,
-  },
-  {
-    id: "printers",
-    name: "Printers",
-    image: "https://images.pexels.com/photos/3394653/pexels-photo-3394653.jpeg?w=200&h=200&fit=crop",
-    slug: "printers",
-    productCount: 98,
-  },
-  {
-    id: "security",
-    name: "Security",
-    image: "https://images.unsplash.com/photo-1576088137266-a6cba01057ed?w=200&h=200&fit=crop",
-    slug: "security",
-    productCount: 267,
+    productCount: 0,
   },
   {
     id: "networking",
     name: "Networking",
     image: "https://images.unsplash.com/photo-1544985562-128e7b377a21?w=200&h=200&fit=crop",
     slug: "networking",
-    productCount: 178,
-  },
-  {
-    id: "software",
-    name: "Software",
-    image: "https://images.unsplash.com/photo-1585247226801-bc613c441316?w=200&h=200&fit=crop",
-    slug: "software",
-    productCount: 89,
-  },
-  {
-    id: "cables",
-    name: "Cables",
-    image: "https://images.unsplash.com/photo-1544985562-128e7b377a21?w=200&h=200&fit=crop",
-    slug: "cables",
-    productCount: 534,
-  },
-  {
-    id: "audio",
-    name: "Audio",
-    image: "https://images.pexels.com/photos/3394653/pexels-photo-3394653.jpeg?w=200&h=200&fit=crop",
-    slug: "audio",
-    productCount: 145,
-  },
-  {
-    id: "telecom",
-    name: "Telecom",
-    image: "https://images.unsplash.com/photo-1726033589589-c4628bbba368?w=200&h=200&fit=crop",
-    slug: "telecom",
-    productCount: 67,
+    productCount: 0,
   },
 ];
 
-export default function TopCategories() {
+export default function TopCategories({ categories }: TopCategoriesProps) {
+  const displayCategories = categories.length > 0 ? categories : defaultCategories;
+
   return (
     <section className="mx-auto max-w-7xl px-4 py-10">
       {/* Section Header */}
@@ -128,7 +93,7 @@ export default function TopCategories() {
         className="w-full"
       >
         <CarouselContent className="-ml-3">
-          {categories.map((category) => (
+          {displayCategories.map((category) => (
             <CarouselItem
               key={category.id}
               className="basis-1/3 pl-3 sm:basis-1/4 md:basis-1/5 lg:basis-1/6"
@@ -153,7 +118,7 @@ export default function TopCategories() {
                   <span className="heading-sm block text-sm text-foreground group-hover:text-primary transition-colors">
                     {category.name}
                   </span>
-                  {category.productCount && (
+                  {category.productCount > 0 && (
                     <span className="body-sm text-muted-foreground">
                       {category.productCount} Products
                     </span>

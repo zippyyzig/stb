@@ -3,22 +3,33 @@
 import Image from "next/image";
 import Link from "next/link";
 
-const brands = [
-  { name: "HP", logo: "https://picsum.photos/seed/hp/120/60", slug: "hp" },
-  { name: "Dell", logo: "https://picsum.photos/seed/dell/120/60", slug: "dell" },
-  { name: "Lenovo", logo: "https://picsum.photos/seed/lenovo/120/60", slug: "lenovo" },
-  { name: "Asus", logo: "https://picsum.photos/seed/asus/120/60", slug: "asus" },
-  { name: "Acer", logo: "https://picsum.photos/seed/acer/120/60", slug: "acer" },
-  { name: "Samsung", logo: "https://picsum.photos/seed/samsung/120/60", slug: "samsung" },
-  { name: "LG", logo: "https://picsum.photos/seed/lg/120/60", slug: "lg" },
-  { name: "TP-Link", logo: "https://picsum.photos/seed/tplink/120/60", slug: "tp-link" },
-  { name: "D-Link", logo: "https://picsum.photos/seed/dlink/120/60", slug: "d-link" },
-  { name: "Hikvision", logo: "https://picsum.photos/seed/hikvision/120/60", slug: "hikvision" },
-  { name: "Logitech", logo: "https://picsum.photos/seed/logitech/120/60", slug: "logitech" },
-  { name: "Western Digital", logo: "https://picsum.photos/seed/wd/120/60", slug: "western-digital" },
+interface Brand {
+  id: string;
+  name: string;
+  logo: string;
+  slug: string;
+}
+
+interface BrandsSectionProps {
+  brands: Brand[];
+}
+
+// Default brands if none are provided
+const defaultBrands: Brand[] = [
+  { id: "hp", name: "HP", logo: "https://picsum.photos/seed/hp/120/60", slug: "hp" },
+  { id: "dell", name: "Dell", logo: "https://picsum.photos/seed/dell/120/60", slug: "dell" },
+  { id: "lenovo", name: "Lenovo", logo: "https://picsum.photos/seed/lenovo/120/60", slug: "lenovo" },
+  { id: "asus", name: "Asus", logo: "https://picsum.photos/seed/asus/120/60", slug: "asus" },
+  { id: "acer", name: "Acer", logo: "https://picsum.photos/seed/acer/120/60", slug: "acer" },
+  { id: "samsung", name: "Samsung", logo: "https://picsum.photos/seed/samsung/120/60", slug: "samsung" },
 ];
 
-export default function BrandsSection() {
+export default function BrandsSection({ brands }: BrandsSectionProps) {
+  const displayBrands = brands.length > 0 ? brands : defaultBrands;
+
+  // Double the brands for infinite scroll effect
+  const scrollBrands = [...displayBrands, ...displayBrands];
+
   return (
     <section className="mx-auto max-w-7xl px-4 py-10">
       {/* Section Header */}
@@ -43,7 +54,7 @@ export default function BrandsSection() {
         
         {/* Scrolling track */}
         <div className="brand-track flex items-center gap-12 px-4">
-          {[...brands, ...brands].map((brand, index) => (
+          {scrollBrands.map((brand, index) => (
             <Link
               key={`${brand.slug}-${index}`}
               href={`/brand/${brand.slug}`}
