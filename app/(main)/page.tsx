@@ -3,9 +3,106 @@ import Footer from "@/components/layout/Footer";
 import HeroBanner from "@/components/sections/HeroBanner";
 import TopCategories from "@/components/sections/TopCategories";
 import ProductSection from "@/components/sections/ProductSection";
+import FeaturesSection from "@/components/sections/FeaturesSection";
+import BrandsSection from "@/components/sections/BrandsSection";
+import PromoBanner from "@/components/sections/PromoBanner";
+import dbConnect from "@/lib/mongodb";
+import Settings from "@/models/Settings";
+import Product from "@/models/Product";
+import Category from "@/models/Category";
 
-// Sample product sections data - will be replaced with MongoDB data
-const productSections = [
+interface HomepageSection {
+  categoryId: string;
+  title: string;
+  slug: string;
+  enabled: boolean;
+  sortOrder: number;
+  productIds?: string[];
+  subcategories: string[];
+}
+
+interface ProductData {
+  id: string;
+  name: string;
+  image: string;
+  price: number;
+  originalPrice?: number;
+  inStock: boolean;
+  brand: string;
+}
+
+interface SectionData {
+  title: string;
+  slug: string;
+  subcategories: string[];
+  products: ProductData[];
+}
+
+async function getHomepageSections(): Promise<SectionData[]> {
+  try {
+    await dbConnect();
+
+    // Try to get homepage settings from database
+    const homepageSettings = await Settings.findOne({ key: "homepage_sections" });
+
+    if (homepageSettings?.value) {
+      const sections = homepageSettings.value as HomepageSection[];
+      const enabledSections = sections
+        .filter((s) => s.enabled)
+        .sort((a, b) => a.sortOrder - b.sortOrder);
+
+      const sectionData: SectionData[] = [];
+
+      for (const section of enabledSections) {
+        let products;
+
+        if (section.productIds && section.productIds.length > 0) {
+          // Fetch specific products
+          products = await Product.find({
+            _id: { $in: section.productIds },
+            isActive: true,
+          })
+            .limit(10)
+            .lean();
+        } else {
+          // Fetch products by category
+          products = await Product.find({
+            category: section.categoryId,
+            isActive: true,
+          })
+            .sort({ isFeatured: -1, soldCount: -1 })
+            .limit(10)
+            .lean();
+        }
+
+        sectionData.push({
+          title: section.title,
+          slug: section.slug,
+          subcategories: section.subcategories || [],
+          products: products.map((p) => ({
+            id: p._id.toString(),
+            name: p.name,
+            image: p.images?.[0] || "https://picsum.photos/280/280",
+            price: p.priceB2C,
+            originalPrice: p.mrp > p.priceB2C ? p.mrp : undefined,
+            inStock: p.stock > 0,
+            brand: p.brand || "Generic",
+          })),
+        });
+      }
+
+      return sectionData;
+    }
+  } catch (error) {
+    console.error("Error fetching homepage sections:", error);
+  }
+
+  // Return default sections if no settings found
+  return defaultProductSections;
+}
+
+// Default product sections data
+const defaultProductSections: SectionData[] = [
   {
     title: "Networking",
     slug: "networking",
@@ -211,16 +308,37 @@ const productSections = [
   },
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+  const productSections = await getHomepageSections();
+
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col bg-background">
       <Header />
       <main className="flex-1">
+        {/* Hero Slider with Side Banners */}
         <HeroBanner />
+        
+        {/* Features Strip */}
+        <FeaturesSection />
+        
+        {/* Top Categories */}
         <TopCategories />
-        {productSections.map((section) => (
+        
+        {/* First 2 Product Sections */}
+        {productSections.slice(0, 2).map((section) => (
           <ProductSection key={section.slug} section={section} />
         ))}
+        
+        {/* Promo Banners */}
+        <PromoBanner />
+        
+        {/* Remaining Product Sections */}
+        {productSections.slice(2).map((section) => (
+          <ProductSection key={section.slug} section={section} />
+        ))}
+        
+        {/* Brands Carousel */}
+        <BrandsSection />
       </main>
       <Footer />
     </div>

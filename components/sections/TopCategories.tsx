@@ -1,85 +1,107 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 
 interface Category {
   id: string;
   name: string;
   image: string;
   slug: string;
+  productCount?: number;
 }
 
 const categories: Category[] = [
   {
     id: "desktop",
     name: "Desktop",
-    image: "https://images.unsplash.com/photo-1587202372775-e229f172b9d7?w=400&h=300&fit=crop",
+    image: "https://images.unsplash.com/photo-1587202372775-e229f172b9d7?w=200&h=200&fit=crop",
     slug: "desktop",
+    productCount: 245,
   },
   {
     id: "laptop",
     name: "Laptop",
-    image: "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=400&h=300&fit=crop",
+    image: "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=200&h=200&fit=crop",
     slug: "laptop",
+    productCount: 189,
   },
   {
     id: "storage",
     name: "Storage",
-    image: "https://images.unsplash.com/photo-1653179767378-98bb414f9bfd?w=400&h=300&fit=crop",
+    image: "https://images.unsplash.com/photo-1653179767378-98bb414f9bfd?w=200&h=200&fit=crop",
     slug: "storage",
+    productCount: 312,
   },
   {
     id: "display",
     name: "Display",
-    image: "https://images.unsplash.com/photo-1572476359541-2a41ec8405e5?w=400&h=300&fit=crop",
+    image: "https://images.unsplash.com/photo-1572476359541-2a41ec8405e5?w=200&h=200&fit=crop",
     slug: "display",
+    productCount: 156,
   },
   {
     id: "peripherals",
     name: "Peripherals",
-    image: "https://images.unsplash.com/photo-1662758392656-0e5d4b0f53fb?w=400&h=300&fit=crop",
+    image: "https://images.unsplash.com/photo-1662758392656-0e5d4b0f53fb?w=200&h=200&fit=crop",
     slug: "peripherals",
+    productCount: 423,
   },
   {
     id: "printers",
     name: "Printers",
-    image: "https://images.pexels.com/photos/3394653/pexels-photo-3394653.jpeg?w=400&h=300&fit=crop",
+    image: "https://images.pexels.com/photos/3394653/pexels-photo-3394653.jpeg?w=200&h=200&fit=crop",
     slug: "printers",
+    productCount: 98,
   },
   {
     id: "security",
     name: "Security",
-    image: "https://images.unsplash.com/photo-1576088137266-a6cba01057ed?w=400&h=300&fit=crop",
+    image: "https://images.unsplash.com/photo-1576088137266-a6cba01057ed?w=200&h=200&fit=crop",
     slug: "security",
+    productCount: 267,
   },
   {
     id: "networking",
     name: "Networking",
-    image: "https://images.unsplash.com/photo-1544985562-128e7b377a21?w=400&h=300&fit=crop",
+    image: "https://images.unsplash.com/photo-1544985562-128e7b377a21?w=200&h=200&fit=crop",
     slug: "networking",
+    productCount: 178,
   },
   {
     id: "software",
     name: "Software",
-    image: "https://images.unsplash.com/photo-1585247226801-bc613c441316?w=400&h=300&fit=crop",
+    image: "https://images.unsplash.com/photo-1585247226801-bc613c441316?w=200&h=200&fit=crop",
     slug: "software",
+    productCount: 89,
   },
   {
     id: "cables",
     name: "Cables",
-    image: "https://images.unsplash.com/photo-1544985562-128e7b377a21?w=400&h=300&fit=crop",
+    image: "https://images.unsplash.com/photo-1544985562-128e7b377a21?w=200&h=200&fit=crop",
     slug: "cables",
+    productCount: 534,
   },
   {
     id: "audio",
     name: "Audio",
-    image: "https://images.pexels.com/photos/3394653/pexels-photo-3394653.jpeg?w=400&h=300&fit=crop",
+    image: "https://images.pexels.com/photos/3394653/pexels-photo-3394653.jpeg?w=200&h=200&fit=crop",
     slug: "audio",
+    productCount: 145,
   },
   {
     id: "telecom",
     name: "Telecom",
-    image: "https://images.unsplash.com/photo-1726033589589-c4628bbba368?w=400&h=300&fit=crop",
+    image: "https://images.unsplash.com/photo-1726033589589-c4628bbba368?w=200&h=200&fit=crop",
     slug: "telecom",
+    productCount: 67,
   },
 ];
 
@@ -87,35 +109,63 @@ export default function TopCategories() {
   return (
     <section className="mx-auto max-w-7xl px-4 py-10">
       {/* Section Header */}
-      <div className="mb-8 flex items-center gap-4">
-        <h2 className="heading-lg">Top Categories</h2>
-        <div className="h-1 w-16 rounded-full bg-primary" />
+      <div className="mb-6 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div className="h-8 w-1 rounded-full bg-primary" />
+          <h2 className="heading-lg">Shop By Category</h2>
+        </div>
+        <Link
+          href="/categories"
+          className="body-sm font-medium text-primary hover:text-stb-red-dark transition-colors"
+        >
+          View All Categories
+        </Link>
       </div>
 
-      {/* Category Grid */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-        {categories.map((category) => (
-          <Link
-            key={category.id}
-            href={`/category/${category.slug}`}
-            className="group flex flex-col items-center gap-3 rounded-xl bg-card p-4 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md"
-          >
-            <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-xl bg-stb-sky p-2 transition-transform group-hover:scale-105">
-              <Image
-                src={category.image}
-                alt={category.name}
-                width={96}
-                height={96}
-                className="h-full w-full rounded-lg object-cover"
-                unoptimized
-              />
-            </div>
-            <span className="heading-sm text-center text-sm text-foreground">
-              {category.name}
-            </span>
-          </Link>
-        ))}
-      </div>
+      {/* Category Carousel */}
+      <Carousel
+        opts={{ align: "start", loop: false }}
+        className="w-full"
+      >
+        <CarouselContent className="-ml-3">
+          {categories.map((category) => (
+            <CarouselItem
+              key={category.id}
+              className="basis-1/3 pl-3 sm:basis-1/4 md:basis-1/5 lg:basis-1/6"
+            >
+              <Link
+                href={`/category/${category.slug}`}
+                className="group flex flex-col items-center gap-3 rounded-xl bg-card p-4 border border-border transition-all hover:border-primary hover:shadow-lg"
+              >
+                <div className="relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-muted p-2 transition-transform group-hover:scale-105">
+                  <Image
+                    src={category.image}
+                    alt={category.name}
+                    width={80}
+                    height={80}
+                    className="h-full w-full rounded-full object-cover"
+                    unoptimized
+                  />
+                  {/* Hover overlay */}
+                  <div className="absolute inset-0 rounded-full bg-primary/0 transition-colors group-hover:bg-primary/10" />
+                </div>
+                <div className="text-center">
+                  <span className="heading-sm block text-sm text-foreground group-hover:text-primary transition-colors">
+                    {category.name}
+                  </span>
+                  {category.productCount && (
+                    <span className="body-sm text-muted-foreground">
+                      {category.productCount} Products
+                    </span>
+                  )}
+                </div>
+              </Link>
+            </CarouselItem>
+          ))}
+        </CarouselContent>
+        <CarouselPrevious className="-left-4 hidden h-10 w-10 border border-border bg-card shadow-sm hover:bg-primary hover:text-white hover:border-primary md:flex" />
+        <CarouselNext className="-right-4 hidden h-10 w-10 border border-border bg-card shadow-sm hover:bg-primary hover:text-white hover:border-primary md:flex" />
+      </Carousel>
     </section>
   );
 }

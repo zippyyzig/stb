@@ -1,56 +1,59 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 
 @custom-variant dark (&:is(.dark *));
 
 :root {
-    --background: #F8FAFC;
-    --foreground: #0F172A;
+    /* Red, Black, White Theme for IT Solutions */
+    --background: #FFFFFF;
+    --foreground: #1A1A1A;
     --card: #FFFFFF;
-    --card-foreground: #0F172A;
+    --card-foreground: #1A1A1A;
     --popover: #FFFFFF;
-    --popover-foreground: #0F172A;
-    --primary: #1560BD;
+    --popover-foreground: #1A1A1A;
+    --primary: #DC2626;
     --primary-foreground: #FFFFFF;
-    --secondary: #F1F5F9;
-    --secondary-foreground: #0F172A;
-    --muted: #F1F5F9;
-    --muted-foreground: #64748B;
-    --accent: #F59E0B;
-    --accent-foreground: #1A1A1A;
-    --destructive: #EF4444;
+    --secondary: #F5F5F5;
+    --secondary-foreground: #1A1A1A;
+    --muted: #F5F5F5;
+    --muted-foreground: #737373;
+    --accent: #1A1A1A;
+    --accent-foreground: #FFFFFF;
+    --destructive: #B91C1C;
     --destructive-foreground: #FFFFFF;
-    --border: #E2E8F0;
-    --input: #E2E8F0;
-    --ring: #1560BD;
-    --chart-1: #1560BD;
-    --chart-2: #F59E0B;
+    --border: #E5E5E5;
+    --input: #E5E5E5;
+    --ring: #DC2626;
+    --chart-1: #DC2626;
+    --chart-2: #1A1A1A;
     --chart-3: #10B981;
-    --chart-4: #8B5CF6;
-    --chart-5: #F43F5E;
-    --radius: 0.625rem;
-    --sidebar: #FFFFFF;
-    --sidebar-foreground: #0F172A;
-    --sidebar-primary: #1560BD;
+    --chart-4: #737373;
+    --chart-5: #EF4444;
+    --radius: 0.5rem;
+    --sidebar: #1A1A1A;
+    --sidebar-foreground: #FFFFFF;
+    --sidebar-primary: #DC2626;
     --sidebar-primary-foreground: #FFFFFF;
-    --sidebar-accent: #F1F5F9;
-    --sidebar-accent-foreground: #0F172A;
-    --sidebar-border: #E2E8F0;
-    --sidebar-ring: #1560BD;
+    --sidebar-accent: #262626;
+    --sidebar-accent-foreground: #FFFFFF;
+    --sidebar-border: #262626;
+    --sidebar-ring: #DC2626;
 
-    /* STB custom tokens */
+    /* STB custom tokens - Red/Black theme */
     --stb-success: #10B981;
     --stb-warning: #F59E0B;
-    --stb-navy: #0F172A;
-    --stb-sky: #E0F2FE;
-    --stb-primary-dark: #0E4D96;
-    --stb-primary-light: #DBEAFE;
-    --stb-gradient-start: #1560BD;
-    --stb-gradient-end: #0E4D96;
+    --stb-dark: #1A1A1A;
+    --stb-darker: #0D0D0D;
+    --stb-light: #F5F5F5;
+    --stb-red: #DC2626;
+    --stb-red-dark: #B91C1C;
+    --stb-red-light: #FEE2E2;
+    --stb-gradient-start: #DC2626;
+    --stb-gradient-end: #B91C1C;
 }
 
 @theme inline {
-    --font-heading: 'Space Grotesk', sans-serif;
+    --font-heading: 'Rajdhani', sans-serif;
     --font-sans: 'Inter', sans-serif;
 
     --color-sidebar-ring: var(--sidebar-ring);
@@ -88,10 +91,12 @@
 
     --color-stb-success: var(--stb-success);
     --color-stb-warning: var(--stb-warning);
-    --color-stb-navy: var(--stb-navy);
-    --color-stb-sky: var(--stb-sky);
-    --color-stb-primary-dark: var(--stb-primary-dark);
-    --color-stb-primary-light: var(--stb-primary-light);
+    --color-stb-dark: var(--stb-dark);
+    --color-stb-darker: var(--stb-darker);
+    --color-stb-light: var(--stb-light);
+    --color-stb-red: var(--stb-red);
+    --color-stb-red-dark: var(--stb-red-dark);
+    --color-stb-red-light: var(--stb-red-light);
 
     --radius-sm: calc(var(--radius) * 0.6);
     --radius-md: calc(var(--radius) * 0.8);
@@ -123,7 +128,8 @@
   font-size: 2.5rem;
   font-weight: 700;
   line-height: 1.1;
-  letter-spacing: -0.02em;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
   color: var(--foreground);
 }
 
@@ -132,7 +138,7 @@
   font-size: 1.75rem;
   font-weight: 700;
   line-height: 1.2;
-  letter-spacing: -0.01em;
+  letter-spacing: 0.01em;
   color: var(--foreground);
 }
 
@@ -174,10 +180,10 @@
 }
 
 @utility label-uppercase {
-  font-family: var(--font-sans);
-  font-size: 0.75rem;
+  font-family: var(--font-heading);
+  font-size: 0.8125rem;
   font-weight: 600;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 
@@ -211,4 +217,23 @@
 
 .brand-track:hover {
   animation-play-state: paused;
+}
+
+/* Custom scrollbar for carousels */
+.custom-scrollbar::-webkit-scrollbar {
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: var(--muted);
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--primary);
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--stb-red-dark);
 }

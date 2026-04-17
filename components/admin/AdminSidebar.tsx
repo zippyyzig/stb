@@ -18,6 +18,7 @@ import {
   TicketCheck,
   Bell,
   Activity,
+  Home,
 } from "lucide-react";
 
 interface AdminSidebarProps {
@@ -78,6 +79,12 @@ const menuItems = [
     href: "/admin/users",
     icon: Users,
     roles: ["super_admin"],
+  },
+  {
+    title: "Homepage",
+    href: "/admin/homepage",
+    icon: Home,
+    roles: ["admin", "super_admin"],
   },
   {
     title: "Banners",
