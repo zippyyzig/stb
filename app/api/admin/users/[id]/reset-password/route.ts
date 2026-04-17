@@ -5,6 +5,8 @@ import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
+import { sendEmail } from "@/lib/email";
+import { passwordResetTemplate } from "@/lib/email-templates";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -43,8 +45,16 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         updatedAt: new Date(),
       });
 
+      // Send email with temporary password
+      const emailHtml = passwordResetTemplate(user.name, "temporary", tempPassword);
+      await sendEmail({
+        to: user.email,
+        subject: "Your Temporary Password - SabKaTechBazar",
+        html: emailHtml,
+      });
+
       return NextResponse.json({
-        message: "Temporary password generated",
+        message: "Temporary password generated and sent via email",
         tempPassword,
       });
     } else if (action === "set_password" && newPassword) {
@@ -65,8 +75,16 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         updatedAt: new Date(),
       });
 
+      // Send email notification about password change
+      const emailHtml = passwordResetTemplate(user.name, "manual");
+      await sendEmail({
+        to: user.email,
+        subject: "Your Password Has Been Reset - SabKaTechBazar",
+        html: emailHtml,
+      });
+
       return NextResponse.json({
-        message: "Password updated successfully",
+        message: "Password updated successfully and notification sent",
       });
     } else if (action === "generate_link") {
       // Generate a password reset token/link
@@ -82,11 +100,18 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         updatedAt: new Date(),
       });
 
-      // In production, you would send this via email
       const resetLink = `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/reset-password?token=${resetToken}`;
 
+      // Send email with reset link
+      const emailHtml = passwordResetTemplate(user.name, "link", resetLink);
+      await sendEmail({
+        to: user.email,
+        subject: "Reset Your Password - SabKaTechBazar",
+        html: emailHtml,
+      });
+
       return NextResponse.json({
-        message: "Password reset link generated",
+        message: "Password reset link generated and sent via email",
         resetLink,
         expiresIn: "24 hours",
       });

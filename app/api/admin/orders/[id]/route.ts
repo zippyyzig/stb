@@ -4,8 +4,11 @@ import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
 import Order from "@/models/Order";
 import Product from "@/models/Product";
+import User from "@/models/User";
 import InventoryLog from "@/models/InventoryLog";
 import Notification from "@/models/Notification";
+import { sendEmail } from "@/lib/email";
+import { orderStatusUpdateTemplate, refundProcessedTemplate } from "@/lib/email-templates";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -150,6 +153,40 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         message: `Your order #${order.orderNumber} is now ${data.status}`,
         link: `/orders/${order._id}`,
       });
+
+      // Send email notification for status change
+      const customer = await User.findById(order.user);
+      if (customer) {
+        const emailHtml = orderStatusUpdateTemplate(
+          customer.name,
+          order.orderNumber,
+          data.status,
+          order.trackingNumber || undefined,
+          order.estimatedDelivery ? new Date(order.estimatedDelivery).toLocaleDateString("en-IN", { dateStyle: "full" }) : undefined,
+          data.notes || undefined
+        );
+        await sendEmail({
+          to: customer.email,
+          subject: `Order ${order.orderNumber} - ${data.status.replace("_", " ").toUpperCase()}`,
+          html: emailHtml,
+        });
+
+        // If order is refunded, send refund email
+        if (data.status === "refunded" || data.paymentStatus === "refunded") {
+          const refundEmail = refundProcessedTemplate(
+            customer.name,
+            order.orderNumber,
+            order.total,
+            data.cancellationReason || "Customer request",
+            "Original payment method"
+          );
+          await sendEmail({
+            to: customer.email,
+            subject: `Refund Processed - Order ${order.orderNumber}`,
+            html: refundEmail,
+          });
+        }
+      }
     }
 
     return NextResponse.json({

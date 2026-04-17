@@ -4,6 +4,8 @@ import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
 import Ticket from "@/models/Ticket";
 import User from "@/models/User";
+import { sendEmail, COMPANY_EMAIL } from "@/lib/email";
+import { ticketCreatedTemplate, newTicketNotificationTemplate } from "@/lib/email-templates";
 
 // GET all tickets
 export async function GET(request: NextRequest) {
@@ -135,6 +137,38 @@ export async function POST(request: NextRequest) {
       .populate("customer", "name email")
       .populate("assignedTo", "name email")
       .lean();
+
+    // Send confirmation email to customer
+    const customer = await User.findById(data.customer);
+    if (customer) {
+      const customerEmail = ticketCreatedTemplate(
+        customer.name,
+        ticketNumber,
+        data.subject,
+        data.priority || "medium",
+        data.description
+      );
+      await sendEmail({
+        to: customer.email,
+        subject: `Support Ticket Created - ${ticketNumber}`,
+        html: customerEmail,
+      });
+    }
+
+    // Send notification to admin
+    const adminNotification = newTicketNotificationTemplate(
+      ticketNumber,
+      customer?.name || "Customer",
+      customer?.email || "",
+      data.subject,
+      data.priority || "medium",
+      data.category
+    );
+    await sendEmail({
+      to: COMPANY_EMAIL,
+      subject: `New Support Ticket - ${ticketNumber} (${data.priority || "medium"})`,
+      html: adminNotification,
+    });
 
     return NextResponse.json({
       message: "Ticket created successfully",

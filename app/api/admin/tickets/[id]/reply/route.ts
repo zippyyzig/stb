@@ -3,6 +3,9 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
 import Ticket from "@/models/Ticket";
+import User from "@/models/User";
+import { sendEmail } from "@/lib/email";
+import { ticketReplyTemplate } from "@/lib/email-templates";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -58,6 +61,27 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       .populate("assignedTo", "name email")
       .populate("replies.user", "name email role")
       .lean();
+
+    // Send email notification to customer (only for non-internal replies)
+    if (!isInternal) {
+      const customer = await User.findById(ticket.customer);
+      if (customer) {
+        const isResolved = ticket.status === "resolved" || ticket.status === "closed";
+        const replyEmail = ticketReplyTemplate(
+          customer.name,
+          ticket.ticketNumber,
+          ticket.subject,
+          message.trim(),
+          session.user.name || "Support Team",
+          isResolved
+        );
+        await sendEmail({
+          to: customer.email,
+          subject: `Re: ${ticket.subject} - Ticket ${ticket.ticketNumber}`,
+          html: replyEmail,
+        });
+      }
+    }
 
     return NextResponse.json({
       message: "Reply added successfully",

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
+import { sendEmail, COMPANY_EMAIL } from "@/lib/email";
+import { welcomeEmailTemplate, newUserNotificationTemplate } from "@/lib/email-templates";
 
 export async function POST(request: NextRequest) {
   try {
@@ -44,6 +46,26 @@ export async function POST(request: NextRequest) {
       password: hashedPassword,
       role: "customer",
       isActive: true,
+    });
+
+    // Send welcome email to customer
+    const welcomeEmail = welcomeEmailTemplate(name);
+    await sendEmail({
+      to: email.toLowerCase(),
+      subject: `Welcome to SabKaTechBazar, ${name}!`,
+      html: welcomeEmail,
+    });
+
+    // Send notification email to admin
+    const registrationDate = new Date().toLocaleString("en-IN", {
+      dateStyle: "full",
+      timeStyle: "short",
+    });
+    const adminNotification = newUserNotificationTemplate(name, email.toLowerCase(), registrationDate);
+    await sendEmail({
+      to: COMPANY_EMAIL,
+      subject: `New User Registration: ${name}`,
+      html: adminNotification,
     });
 
     return NextResponse.json(

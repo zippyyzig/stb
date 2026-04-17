@@ -4,6 +4,8 @@ import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
 import Product from "@/models/Product";
 import InventoryLog from "@/models/InventoryLog";
+import { sendEmail, COMPANY_EMAIL } from "@/lib/email";
+import { lowStockAlertTemplate } from "@/lib/email-templates";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -119,6 +121,24 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       performedBy: session.user.id,
       performedByName: session.user.name,
     });
+
+    // Send low stock alert if stock is below threshold (10 units)
+    const LOW_STOCK_THRESHOLD = 10;
+    if (newStock <= LOW_STOCK_THRESHOLD && previousStock > LOW_STOCK_THRESHOLD) {
+      const lowStockEmail = lowStockAlertTemplate([
+        {
+          name: product.name,
+          sku: product.sku,
+          currentStock: newStock,
+          reorderLevel: LOW_STOCK_THRESHOLD,
+        },
+      ]);
+      await sendEmail({
+        to: COMPANY_EMAIL,
+        subject: `Low Stock Alert: ${product.name}`,
+        html: lowStockEmail,
+      });
+    }
 
     return NextResponse.json({
       message: "Stock updated successfully",
