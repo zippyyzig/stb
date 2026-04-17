@@ -7,7 +7,15 @@ import { useSession } from "next-auth/react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Heart, ShoppingCart, Eye } from "lucide-react";
+import {
+  Heart,
+  ShoppingCart,
+  Eye,
+  ChevronUp,
+  ChevronDown,
+  Star,
+  Scale,
+} from "lucide-react";
 
 interface Product {
   _id: string;
@@ -19,6 +27,10 @@ interface Product {
   mrp: number;
   stock: number;
   brand?: string;
+  brandLogo?: string;
+  productId?: string;
+  itemCode?: string;
+  rating?: number;
   isFeatured?: boolean;
   isNewArrival?: boolean;
 }
@@ -31,11 +43,15 @@ export default function ProductCard({ product }: ProductCardProps) {
   const { data: session } = useSession();
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [quantity, setQuantity] = useState(1);
 
   // Determine price based on user type
-  const isB2B = session?.user?.role === "admin" || session?.user?.role === "super_admin";
+  const isB2B =
+    session?.user?.role === "admin" || session?.user?.role === "super_admin";
   const displayPrice = isB2B ? product.priceB2B : product.priceB2C;
-  const discount = Math.round(((product.mrp - displayPrice) / product.mrp) * 100);
+  const discount = Math.round(
+    ((product.mrp - displayPrice) / product.mrp) * 100
+  );
   const inStock = product.stock > 0;
 
   const handleAddToCart = async () => {
@@ -44,7 +60,7 @@ export default function ProductCard({ product }: ProductCardProps) {
       return;
     }
     setIsAddingToCart(true);
-    // TODO: Implement add to cart
+    // TODO: Implement add to cart with quantity
     setTimeout(() => setIsAddingToCart(false), 500);
   };
 
@@ -53,40 +69,47 @@ export default function ProductCard({ product }: ProductCardProps) {
     // TODO: Implement wishlist
   };
 
+  const incrementQty = () => {
+    if (quantity < product.stock) setQuantity(quantity + 1);
+  };
+
+  const decrementQty = () => {
+    if (quantity > 1) setQuantity(quantity - 1);
+  };
+
+  const rating = product.rating || 0;
+
   return (
-    <Card className="group h-full overflow-hidden border-border/50 transition-all hover:shadow-lg">
+    <Card className="group h-full overflow-hidden border-border/50 bg-card transition-all hover:border-primary hover:shadow-xl">
       {/* Product Image */}
-      <div className="relative overflow-hidden bg-muted">
+      <div className="relative overflow-hidden bg-muted/30">
         {/* Badges */}
         <div className="absolute left-2 top-2 z-10 flex flex-col gap-1">
           {product.isNewArrival && (
-            <Badge className="bg-stb-success text-white">New</Badge>
+            <Badge className="rounded bg-stb-success px-2 py-0.5 text-[10px] font-bold text-white">
+              New
+            </Badge>
           )}
           {product.isFeatured && (
-            <Badge className="bg-accent text-accent-foreground">Featured</Badge>
+            <Badge className="rounded bg-amber-500 px-2 py-0.5 text-[10px] font-bold text-white">
+              Featured
+            </Badge>
           )}
           {discount > 0 && (
-            <Badge variant="destructive">-{discount}%</Badge>
+            <Badge className="rounded bg-primary px-2 py-0.5 text-[10px] font-bold text-white">
+              -{discount}%
+            </Badge>
           )}
         </div>
 
-        {/* Quick Actions */}
-        <div className="absolute right-2 top-2 z-10 flex flex-col gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-          <button
-            onClick={handleWishlist}
-            className={`rounded-full p-2 transition-colors ${
-              isWishlisted
-                ? "bg-destructive text-white"
-                : "bg-white/90 text-muted-foreground hover:bg-white hover:text-destructive"
-            }`}
-          >
-            <Heart className={`h-4 w-4 ${isWishlisted ? "fill-current" : ""}`} />
-          </button>
+        {/* Quickview Button - Always Visible on Hover */}
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/0 opacity-0 transition-all group-hover:bg-black/10 group-hover:opacity-100">
           <Link
             href={`/product/${product.slug}`}
-            className="rounded-full bg-white/90 p-2 text-muted-foreground transition-colors hover:bg-white hover:text-primary"
+            className="flex items-center gap-1.5 rounded-md bg-white px-3 py-2 text-xs font-medium text-foreground shadow-lg transition-colors hover:bg-primary hover:text-white"
           >
-            <Eye className="h-4 w-4" />
+            <Eye className="h-3.5 w-3.5" />
+            Quickview
           </Link>
         </div>
 
@@ -103,57 +126,161 @@ export default function ProductCard({ product }: ProductCardProps) {
         </Link>
       </div>
 
-      <CardContent className="flex flex-col gap-2 p-3">
+      <CardContent className="flex flex-col gap-2 p-4">
         {/* Brand */}
         {product.brand && (
-          <span className="body-sm text-muted-foreground">{product.brand}</span>
+          <div className="flex items-center gap-1">
+            <span className="text-[10px] text-muted-foreground">Brand:</span>
+            <Link
+              href={`/brand/${product.brand.toLowerCase().replace(/\s+/g, "-")}`}
+              className="text-xs font-medium text-primary hover:underline"
+            >
+              {product.brand}
+            </Link>
+          </div>
         )}
 
         {/* Product Name */}
         <Link href={`/product/${product.slug}`}>
-          <h3 className="heading-sm line-clamp-2 text-sm leading-snug transition-colors hover:text-primary">
+          <h3 className="line-clamp-2 text-sm font-medium leading-snug text-foreground transition-colors hover:text-primary">
             {product.name}
           </h3>
         </Link>
 
-        {/* Price */}
-        <div className="flex flex-wrap items-baseline gap-2">
-          <span className="heading-md text-primary">
-            ₹{displayPrice.toLocaleString("en-IN")}
-          </span>
-          {product.mrp > displayPrice && (
-            <span className="body-sm text-muted-foreground line-through">
-              ₹{product.mrp.toLocaleString("en-IN")}
-            </span>
+        {/* Product ID & Item Code */}
+        <div className="flex flex-wrap items-center gap-2 text-[10px] text-muted-foreground">
+          {product.productId && (
+            <div className="rounded bg-muted px-1.5 py-0.5">
+              <span className="font-medium">Product ID:</span> {product.productId}
+            </div>
+          )}
+          {product.itemCode && (
+            <div className="rounded bg-muted px-1.5 py-0.5">
+              <span className="font-medium">Item CD:</span> {product.itemCode}
+            </div>
           )}
         </div>
 
-        {/* B2B/B2C Indicator */}
+        {/* Price Row with Brand Logo */}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex flex-col">
+            <div className="flex items-baseline gap-2">
+              <span className="text-lg font-bold text-foreground">
+                ₹{displayPrice.toLocaleString("en-IN")}
+              </span>
+              {product.mrp > displayPrice && (
+                <span className="text-xs text-muted-foreground line-through">
+                  ₹{product.mrp.toLocaleString("en-IN")}
+                </span>
+              )}
+            </div>
+            {/* Stock Status */}
+            <span
+              className={`text-xs font-medium ${
+                inStock ? "text-stb-success" : "text-destructive"
+              }`}
+            >
+              {inStock ? "In Stock" : "Out of Stock"}
+            </span>
+          </div>
+          {/* Brand Logo */}
+          {product.brandLogo && (
+            <Image
+              src={product.brandLogo}
+              alt={product.brand || "Brand"}
+              width={40}
+              height={40}
+              className="h-8 w-8 rounded object-contain"
+              unoptimized
+            />
+          )}
+        </div>
+
+        {/* B2B Indicator */}
         {isB2B && (
-          <span className="body-sm text-stb-success">B2B Price</span>
+          <span className="text-xs font-medium text-stb-success">
+            B2B Price Applied
+          </span>
         )}
 
-        {/* Stock & Cart */}
-        <div className="mt-auto flex items-center justify-between pt-2">
-          <Badge
-            variant={inStock ? "default" : "destructive"}
-            className={`text-xs ${
-              inStock
-                ? "border-stb-success/30 bg-stb-success/10 text-stb-success"
-                : ""
-            }`}
-          >
-            {inStock ? `${product.stock} in stock` : "Out of Stock"}
-          </Badge>
+        {/* Star Rating */}
+        <div className="flex items-center gap-0.5">
+          {[1, 2, 3, 4, 5].map((star) => (
+            <Star
+              key={star}
+              className={`h-3.5 w-3.5 ${
+                star <= rating
+                  ? "fill-amber-400 text-amber-400"
+                  : "fill-none text-muted-foreground/40"
+              }`}
+            />
+          ))}
+        </div>
+
+        {/* Quantity Stepper + Add to Cart */}
+        <div className="mt-2 flex items-center gap-2">
+          {/* Quantity Stepper */}
+          <div className="flex h-9 items-center rounded border border-border bg-muted/30">
+            <input
+              type="text"
+              value={quantity}
+              onChange={(e) => {
+                const val = parseInt(e.target.value) || 1;
+                setQuantity(Math.min(Math.max(1, val), product.stock));
+              }}
+              className="h-full w-10 bg-transparent text-center text-sm font-medium focus:outline-none"
+            />
+            <div className="flex flex-col border-l border-border">
+              <button
+                onClick={incrementQty}
+                disabled={quantity >= product.stock}
+                className="flex h-4 w-6 items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
+              >
+                <ChevronUp className="h-3 w-3" />
+              </button>
+              <button
+                onClick={decrementQty}
+                disabled={quantity <= 1}
+                className="flex h-4 w-6 items-center justify-center border-t border-border text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
+              >
+                <ChevronDown className="h-3 w-3" />
+              </button>
+            </div>
+          </div>
+
+          {/* Add to Cart Button */}
           <Button
-            size="icon"
-            variant="outline"
-            className="h-8 w-8 rounded-full border-primary/30 text-primary hover:bg-primary hover:text-white"
+            size="sm"
+            className="h-9 flex-1 gap-1.5 rounded bg-primary text-xs font-medium hover:bg-stb-red-dark"
             disabled={!inStock || isAddingToCart}
             onClick={handleAddToCart}
           >
-            <ShoppingCart className={`h-3.5 w-3.5 ${isAddingToCart ? "animate-pulse" : ""}`} />
+            <ShoppingCart
+              className={`h-3.5 w-3.5 ${isAddingToCart ? "animate-pulse" : ""}`}
+            />
+            Add to Cart
           </Button>
+        </div>
+
+        {/* Wishlist & Compare Buttons */}
+        <div className="mt-1 flex items-center gap-2">
+          <button
+            onClick={handleWishlist}
+            className={`flex flex-1 items-center justify-center gap-1.5 rounded border py-1.5 text-[10px] font-medium transition-colors ${
+              isWishlisted
+                ? "border-primary bg-primary/10 text-primary"
+                : "border-border text-muted-foreground hover:border-primary hover:text-primary"
+            }`}
+          >
+            <Heart
+              className={`h-3 w-3 ${isWishlisted ? "fill-current" : ""}`}
+            />
+            Wishlist
+          </button>
+          <button className="flex flex-1 items-center justify-center gap-1.5 rounded border border-border py-1.5 text-[10px] font-medium text-muted-foreground transition-colors hover:border-primary hover:text-primary">
+            <Scale className="h-3 w-3" />
+            Compare
+          </button>
         </div>
       </CardContent>
     </Card>
