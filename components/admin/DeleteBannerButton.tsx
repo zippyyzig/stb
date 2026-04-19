@@ -14,6 +14,7 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface DeleteBannerButtonProps {
   bannerId: string;
@@ -54,7 +55,14 @@ export default function DeleteBannerButton({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger className="rounded-full bg-white p-2 text-destructive transition-colors hover:bg-destructive hover:text-white">
+      <DialogTrigger
+        render={
+          <button
+            className="rounded-full bg-white p-2 text-destructive transition-colors hover:bg-destructive hover:text-white"
+            aria-label={`Delete ${bannerTitle}`}
+          />
+        }
+      >
         <Trash2 className="h-4 w-4" />
       </DialogTrigger>
       <DialogContent>
@@ -66,10 +74,17 @@ export default function DeleteBannerButton({
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <DialogClose asChild>
-            <Button variant="outline" disabled={isDeleting}>
-              Cancel
-            </Button>
+          <DialogClose
+            render={
+              <button
+                className={cn(
+                  "inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-border bg-background px-2.5 text-sm font-medium transition-all hover:bg-muted disabled:pointer-events-none disabled:opacity-50"
+                )}
+                disabled={isDeleting}
+              />
+            }
+          >
+            Cancel
           </DialogClose>
           <Button
             variant="destructive"

@@ -7,13 +7,12 @@ import {
   MapPin,
   IndianRupee,
   Clock,
-  Search,
   Edit,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import DeleteShippingRateButton from "@/components/admin/DeleteShippingRateButton";
+import ShippingFilters from "@/components/admin/ShippingFilters";
 
 interface ShippingPageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -148,37 +147,10 @@ export default async function ShippingPage({ searchParams }: ShippingPageProps) 
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-4 rounded-xl border border-border bg-card p-4 shadow-sm">
-        <form className="relative flex-1" action="/admin/shipping" method="GET">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            type="text"
-            name="search"
-            placeholder="Search by name, state, city, or pincode..."
-            defaultValue={params.search as string}
-            className="h-10 pl-10"
-          />
-          {params.status && <input type="hidden" name="status" value={params.status as string} />}
-        </form>
-
-        <select
-          defaultValue={params.status as string}
-          onChange={(e) => {
-            const url = new URL(window.location.href);
-            if (e.target.value) {
-              url.searchParams.set("status", e.target.value);
-            } else {
-              url.searchParams.delete("status");
-            }
-            window.location.href = url.toString();
-          }}
-          className="h-10 rounded-md border border-border bg-background px-3 text-sm"
-        >
-          <option value="">All Status</option>
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
-        </select>
-      </div>
+      <ShippingFilters
+        search={params.search as string | undefined}
+        status={params.status as string | undefined}
+      />
 
       {/* Shipping Rates by State */}
       {states.length > 0 ? (

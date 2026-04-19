@@ -52,13 +52,15 @@ export default function DeleteTicketButton({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <button
-          className="rounded-md p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
-          title="Delete Ticket"
-        >
-          <Trash2 className="h-4 w-4" />
-        </button>
+      <DialogTrigger
+        render={
+          <button
+            className="rounded-md p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+            title="Delete Ticket"
+          />
+        }
+      >
+        <Trash2 className="h-4 w-4" />
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
