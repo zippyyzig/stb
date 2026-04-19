@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +16,7 @@ import {
   Minus,
   Plus,
   Check,
+  Loader2,
 } from "lucide-react";
 
 interface ProductInfoProps {
@@ -48,6 +49,23 @@ export default function ProductInfo({ product }: ProductInfoProps) {
   const [quantity, setQuantity] = useState(product.minOrderQty || 1);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [isWishlisted, setIsWishlisted] = useState(false);
+  const [isWishlistLoading, setIsWishlistLoading] = useState(false);
+  const [cartAdded, setCartAdded] = useState(false);
+
+  // Check wishlist status on mount (only when logged in)
+  useEffect(() => {
+    if (!session) return;
+    fetch("/api/wishlist")
+      .then((r) => r.json())
+      .then((data) => {
+        const wishlisted = data.items?.some(
+          (item: { product: { _id: string } }) =>
+            item.product._id === product._id
+        );
+        setIsWishlisted(!!wishlisted);
+      })
+      .catch(() => {});
+  }, [session, product._id]);
 
   // Determine price based on user type
   const isB2B =
@@ -68,21 +86,65 @@ export default function ProductInfo({ product }: ProductInfoProps) {
 
   const handleAddToCart = async () => {
     if (!session) {
-      router.push("/auth/login");
+      router.push(`/auth/login?callbackUrl=/product/${product.slug}`);
       return;
     }
     setIsAddingToCart(true);
-    // TODO: Implement add to cart API
-    setTimeout(() => setIsAddingToCart(false), 1000);
+    try {
+      const res = await fetch("/api/cart", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productId: product._id, quantity }),
+      });
+      if (res.ok) {
+        setCartAdded(true);
+        setTimeout(() => setCartAdded(false), 2000);
+      }
+    } catch (error) {
+      console.error("Error adding to cart:", error);
+    } finally {
+      setIsAddingToCart(false);
+    }
   };
 
-  const handleBuyNow = () => {
+  const handleBuyNow = async () => {
     if (!session) {
-      router.push("/auth/login");
+      router.push(`/auth/login?callbackUrl=/product/${product.slug}`);
       return;
     }
-    // TODO: Implement buy now
+    await handleAddToCart();
     router.push("/checkout");
+  };
+
+  const handleWishlistToggle = async () => {
+    if (!session) {
+      // Redirect to login; after login the user returns to this product page
+      router.push(
+        `/auth/login?callbackUrl=/product/${product.slug}&wishlistProduct=${product._id}`
+      );
+      return;
+    }
+
+    setIsWishlistLoading(true);
+    try {
+      if (isWishlisted) {
+        const res = await fetch(`/api/wishlist?productId=${product._id}`, {
+          method: "DELETE",
+        });
+        if (res.ok) setIsWishlisted(false);
+      } else {
+        const res = await fetch("/api/wishlist", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ productId: product._id }),
+        });
+        if (res.ok) setIsWishlisted(true);
+      }
+    } catch (error) {
+      console.error("Error toggling wishlist:", error);
+    } finally {
+      setIsWishlistLoading(false);
+    }
   };
 
   const handleShare = async () => {
@@ -93,7 +155,6 @@ export default function ProductInfo({ product }: ProductInfoProps) {
       });
     } else {
       navigator.clipboard.writeText(window.location.href);
-      alert("Link copied to clipboard!");
     }
   };
 
@@ -220,8 +281,14 @@ export default function ProductInfo({ product }: ProductInfoProps) {
           disabled={!inStock || isAddingToCart}
           onClick={handleAddToCart}
         >
-          <ShoppingCart className="h-5 w-5" />
-          {isAddingToCart ? "Adding..." : "Add to Cart"}
+          {isAddingToCart ? (
+            <Loader2 className="h-5 w-5 animate-spin" />
+          ) : cartAdded ? (
+            <Check className="h-5 w-5" />
+          ) : (
+            <ShoppingCart className="h-5 w-5" />
+          )}
+          {isAddingToCart ? "Adding..." : cartAdded ? "Added!" : "Add to Cart"}
         </Button>
         <Button
           size="lg"
@@ -237,17 +304,26 @@ export default function ProductInfo({ product }: ProductInfoProps) {
       {/* Secondary Actions */}
       <div className="flex gap-4">
         <button
-          onClick={() => setIsWishlisted(!isWishlisted)}
-          className={`flex items-center gap-2 text-sm transition-colors ${
+          onClick={handleWishlistToggle}
+          disabled={isWishlistLoading}
+          className={`flex items-center gap-2 text-sm transition-colors disabled:opacity-50 ${
             isWishlisted
-              ? "text-destructive"
-              : "text-muted-foreground hover:text-foreground"
+              ? "text-primary"
+              : "text-muted-foreground hover:text-primary"
           }`}
         >
-          <Heart
-            className={`h-5 w-5 ${isWishlisted ? "fill-current" : ""}`}
-          />
-          {isWishlisted ? "Wishlisted" : "Add to Wishlist"}
+          {isWishlistLoading ? (
+            <Loader2 className="h-5 w-5 animate-spin" />
+          ) : (
+            <Heart
+              className={`h-5 w-5 transition-all ${isWishlisted ? "fill-current text-primary" : ""}`}
+            />
+          )}
+          {isWishlistLoading
+            ? "..."
+            : isWishlisted
+            ? "Wishlisted"
+            : "Add to Wishlist"}
         </button>
         <button
           onClick={handleShare}

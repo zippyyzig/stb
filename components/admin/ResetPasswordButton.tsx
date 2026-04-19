@@ -133,11 +133,13 @@ export default function ResetPasswordButton({
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleClose()}>
-      <DialogTrigger asChild>
-        <Button variant="outline" className="gap-2" onClick={() => setOpen(true)}>
-          <Key className="h-4 w-4" />
-          Reset Password
-        </Button>
+      <DialogTrigger
+        render={
+          <Button variant="outline" className="gap-2" />
+        }
+      >
+        <Key className="h-4 w-4" />
+        Reset Password
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>

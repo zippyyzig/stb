@@ -7,13 +7,31 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
+// Sort order options
+const SORT_ORDER_OPTIONS = [
+  { value: 0, label: "Default (0)" },
+  { value: 1, label: "1st Position" },
+  { value: 2, label: "2nd Position" },
+  { value: 3, label: "3rd Position" },
+  { value: 4, label: "4th Position" },
+  { value: 5, label: "5th Position" },
+  { value: 6, label: "6th Position" },
+  { value: 7, label: "7th Position" },
+  { value: 8, label: "8th Position" },
+  { value: 9, label: "9th Position" },
+  { value: 10, label: "10th Position" },
+  { value: 15, label: "15th Position" },
+  { value: 20, label: "20th Position" },
+  { value: 50, label: "50th Position" },
+  { value: 100, label: "100th Position (Last)" },
+];
+
 interface Brand {
   _id: string;
   name: string;
   slug: string;
   description?: string;
   logo?: string;
-  website?: string;
   isActive: boolean;
   sortOrder: number;
 }
@@ -31,7 +49,6 @@ export default function BrandForm({ brand, isEdit = false }: BrandFormProps) {
     name: brand?.name || "",
     description: brand?.description || "",
     logo: brand?.logo || "",
-    website: brand?.website || "",
     isActive: brand?.isActive ?? true,
     sortOrder: brand?.sortOrder ?? 0,
   });
@@ -135,21 +152,8 @@ export default function BrandForm({ brand, isEdit = false }: BrandFormProps) {
           </div>
 
           <div>
-            <label className="mb-1.5 block text-sm font-medium">Website</label>
-            <Input
-              type="url"
-              value={formData.website}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, website: e.target.value }))
-              }
-              placeholder="https://example.com"
-            />
-          </div>
-
-          <div>
             <label className="mb-1.5 block text-sm font-medium">Sort Order</label>
-            <Input
-              type="number"
+            <select
               value={formData.sortOrder}
               onChange={(e) =>
                 setFormData((prev) => ({
@@ -157,8 +161,17 @@ export default function BrandForm({ brand, isEdit = false }: BrandFormProps) {
                   sortOrder: parseInt(e.target.value) || 0,
                 }))
               }
-              min={0}
-            />
+              className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              {SORT_ORDER_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Lower numbers appear first
+            </p>
           </div>
 
           <div className="flex items-center gap-2">

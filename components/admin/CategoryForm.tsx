@@ -2,10 +2,70 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Upload, X } from "lucide-react";
+import { Loader2, Upload, X, Check, ChevronDown } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import * as LucideIcons from "lucide-react";
+
+// Popular icons for categories
+const CATEGORY_ICONS = [
+  { name: "Laptop", label: "Laptop" },
+  { name: "Monitor", label: "Monitor" },
+  { name: "Smartphone", label: "Smartphone" },
+  { name: "Tablet", label: "Tablet" },
+  { name: "Headphones", label: "Headphones" },
+  { name: "Camera", label: "Camera" },
+  { name: "Printer", label: "Printer" },
+  { name: "Keyboard", label: "Keyboard" },
+  { name: "Mouse", label: "Mouse" },
+  { name: "Speaker", label: "Speaker" },
+  { name: "Wifi", label: "WiFi/Router" },
+  { name: "HardDrive", label: "Storage" },
+  { name: "Cpu", label: "CPU/Processor" },
+  { name: "MemoryStick", label: "Memory" },
+  { name: "Cable", label: "Cables" },
+  { name: "Battery", label: "Battery" },
+  { name: "Plug", label: "Power" },
+  { name: "Server", label: "Server" },
+  { name: "Network", label: "Network" },
+  { name: "Shield", label: "Security" },
+  { name: "Gamepad2", label: "Gaming" },
+  { name: "Tv", label: "TV" },
+  { name: "Watch", label: "Watch" },
+  { name: "Home", label: "Home" },
+  { name: "ShoppingBag", label: "Shopping" },
+  { name: "Gift", label: "Gift" },
+  { name: "Tag", label: "Tag" },
+  { name: "Star", label: "Star" },
+  { name: "Heart", label: "Heart" },
+  { name: "Package", label: "Package" },
+  { name: "Boxes", label: "Boxes" },
+  { name: "Zap", label: "Electronics" },
+  { name: "Settings", label: "Settings" },
+  { name: "Wrench", label: "Tools" },
+  { name: "Layers", label: "Layers" },
+  { name: "Grid3X3", label: "Grid" },
+];
+
+// Sort order options
+const SORT_ORDER_OPTIONS = [
+  { value: 0, label: "Default (0)" },
+  { value: 1, label: "1st Position" },
+  { value: 2, label: "2nd Position" },
+  { value: 3, label: "3rd Position" },
+  { value: 4, label: "4th Position" },
+  { value: 5, label: "5th Position" },
+  { value: 6, label: "6th Position" },
+  { value: 7, label: "7th Position" },
+  { value: 8, label: "8th Position" },
+  { value: 9, label: "9th Position" },
+  { value: 10, label: "10th Position" },
+  { value: 15, label: "15th Position" },
+  { value: 20, label: "20th Position" },
+  { value: 50, label: "50th Position" },
+  { value: 100, label: "100th Position (Last)" },
+];
 
 interface Category {
   _id: string;
@@ -33,6 +93,8 @@ export default function CategoryForm({
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [showIconPicker, setShowIconPicker] = useState(false);
+  const [iconSearch, setIconSearch] = useState("");
   const [formData, setFormData] = useState({
     name: category?.name || "",
     description: category?.description || "",
@@ -112,6 +174,21 @@ export default function CategoryForm({
   // Filter out current category and its children from parent options
   const availableParents = allCategories.filter((cat) => cat._id !== category?._id);
 
+  // Filter icons based on search
+  const filteredIcons = CATEGORY_ICONS.filter(
+    (icon) =>
+      icon.name.toLowerCase().includes(iconSearch.toLowerCase()) ||
+      icon.label.toLowerCase().includes(iconSearch.toLowerCase())
+  );
+
+  // Get icon component
+  const getIconComponent = (iconName: string) => {
+    const IconComponent = (LucideIcons as Record<string, React.ComponentType<{ className?: string }>>)[iconName];
+    return IconComponent || null;
+  };
+
+  const SelectedIcon = formData.icon ? getIconComponent(formData.icon) : null;
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Basic Info */}
@@ -166,24 +243,80 @@ export default function CategoryForm({
           </div>
 
           <div>
-            <label className="mb-1.5 block text-sm font-medium">Icon Name</label>
-            <Input
-              type="text"
-              value={formData.icon}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, icon: e.target.value }))
-              }
-              placeholder="e.g., Laptop, Home, Shirt"
-            />
-            <p className="mt-1 text-xs text-muted-foreground">
-              Lucide icon name (optional)
-            </p>
+            <label className="mb-1.5 block text-sm font-medium">Category Icon</label>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setShowIconPicker(!showIconPicker)}
+                className="flex h-10 w-full items-center justify-between rounded-md border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                <span className="flex items-center gap-2">
+                  {SelectedIcon ? (
+                    <>
+                      <SelectedIcon className="h-4 w-4" />
+                      <span>{formData.icon}</span>
+                    </>
+                  ) : (
+                    <span className="text-muted-foreground">Select an icon</span>
+                  )}
+                </span>
+                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+              </button>
+
+              {showIconPicker && (
+                <div className="absolute left-0 top-full z-50 mt-1 w-full rounded-lg border border-border bg-popover p-3 shadow-lg">
+                  <Input
+                    type="text"
+                    value={iconSearch}
+                    onChange={(e) => setIconSearch(e.target.value)}
+                    placeholder="Search icons..."
+                    className="mb-2"
+                  />
+                  <div className="grid max-h-48 grid-cols-6 gap-1 overflow-y-auto">
+                    {filteredIcons.map((icon) => {
+                      const IconComp = getIconComponent(icon.name);
+                      if (!IconComp) return null;
+                      return (
+                        <button
+                          key={icon.name}
+                          type="button"
+                          onClick={() => {
+                            setFormData((prev) => ({ ...prev, icon: icon.name }));
+                            setShowIconPicker(false);
+                            setIconSearch("");
+                          }}
+                          className={`flex flex-col items-center justify-center rounded-md p-2 text-xs transition-colors hover:bg-muted ${
+                            formData.icon === icon.name
+                              ? "bg-primary/10 text-primary"
+                              : ""
+                          }`}
+                          title={icon.label}
+                        >
+                          <IconComp className="h-5 w-5" />
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {formData.icon && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFormData((prev) => ({ ...prev, icon: "" }));
+                        setShowIconPicker(false);
+                      }}
+                      className="mt-2 w-full rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground hover:bg-muted"
+                    >
+                      Clear selection
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           <div>
             <label className="mb-1.5 block text-sm font-medium">Sort Order</label>
-            <Input
-              type="number"
+            <select
               value={formData.sortOrder}
               onChange={(e) =>
                 setFormData((prev) => ({
@@ -191,8 +324,17 @@ export default function CategoryForm({
                   sortOrder: parseInt(e.target.value) || 0,
                 }))
               }
-              min={0}
-            />
+              className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              {SORT_ORDER_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Lower numbers appear first
+            </p>
           </div>
 
           <div className="flex items-center gap-2">

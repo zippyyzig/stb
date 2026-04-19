@@ -4,7 +4,6 @@ import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
 import Order from "@/models/Order";
 import {
-  Search,
   ShoppingCart,
   Clock,
   Truck,
@@ -14,8 +13,8 @@ import {
   Eye,
   Package,
 } from "lucide-react";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import OrderFilters from "@/components/admin/OrderFilters";
 
 interface OrdersPageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -189,63 +188,11 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-4 rounded-xl border border-border bg-card p-4 shadow-sm">
-        <form className="relative flex-1" action="/admin/orders" method="GET">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            type="text"
-            name="search"
-            placeholder="Search by order number, name, or phone..."
-            defaultValue={params.search as string}
-            className="h-10 pl-10"
-          />
-          {params.status && <input type="hidden" name="status" value={params.status as string} />}
-        </form>
-
-        <select
-          name="status"
-          defaultValue={params.status as string}
-          onChange={(e) => {
-            const url = new URL(window.location.href);
-            if (e.target.value) {
-              url.searchParams.set("status", e.target.value);
-            } else {
-              url.searchParams.delete("status");
-            }
-            window.location.href = url.toString();
-          }}
-          className="h-10 rounded-md border border-border bg-background px-3 text-sm"
-        >
-          <option value="">All Status</option>
-          {Object.entries(statusConfig).map(([key, config]) => (
-            <option key={key} value={key}>
-              {config.label}
-            </option>
-          ))}
-        </select>
-
-        <select
-          name="paymentStatus"
-          defaultValue={params.paymentStatus as string}
-          onChange={(e) => {
-            const url = new URL(window.location.href);
-            if (e.target.value) {
-              url.searchParams.set("paymentStatus", e.target.value);
-            } else {
-              url.searchParams.delete("paymentStatus");
-            }
-            window.location.href = url.toString();
-          }}
-          className="h-10 rounded-md border border-border bg-background px-3 text-sm"
-        >
-          <option value="">All Payments</option>
-          {Object.entries(paymentStatusConfig).map(([key, config]) => (
-            <option key={key} value={key}>
-              {config.label}
-            </option>
-          ))}
-        </select>
-      </div>
+      <OrderFilters
+        search={params.search as string | undefined}
+        status={params.status as string | undefined}
+        paymentStatus={params.paymentStatus as string | undefined}
+      />
 
       {/* Orders Table */}
       <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
