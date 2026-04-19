@@ -3,7 +3,6 @@ import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
 import Order from "@/models/Order";
 import {
-  Search,
   Users,
   ShoppingBag,
   IndianRupee,
@@ -13,8 +12,8 @@ import {
   Calendar,
   TrendingUp,
 } from "lucide-react";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import CustomerFilters from "@/components/admin/CustomerFilters";
 
 interface CustomersPageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -212,37 +211,10 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-4 rounded-xl border border-border bg-card p-4 shadow-sm">
-        <form className="relative flex-1" action="/admin/customers" method="GET">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            type="text"
-            name="search"
-            placeholder="Search by name, email, or phone..."
-            defaultValue={params.search as string}
-            className="h-10 pl-10"
-          />
-          {params.status && <input type="hidden" name="status" value={params.status as string} />}
-        </form>
-
-        <select
-          defaultValue={params.status as string}
-          onChange={(e) => {
-            const url = new URL(window.location.href);
-            if (e.target.value) {
-              url.searchParams.set("status", e.target.value);
-            } else {
-              url.searchParams.delete("status");
-            }
-            window.location.href = url.toString();
-          }}
-          className="h-10 rounded-md border border-border bg-background px-3 text-sm"
-        >
-          <option value="">All Status</option>
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
-        </select>
-      </div>
+      <CustomerFilters
+        search={params.search as string | undefined}
+        status={params.status as string | undefined}
+      />
 
       {/* Customers Table */}
       <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
