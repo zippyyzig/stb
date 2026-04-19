@@ -17,6 +17,7 @@ import {
   Search,
   X,
   Package,
+  Check,
 } from "lucide-react";
 
 interface Product {
@@ -32,6 +33,7 @@ interface Category {
   _id: string;
   name: string;
   slug: string;
+  parent?: string | null;
 }
 
 interface HomepageSection {
@@ -57,6 +59,8 @@ export default function HomepageSettingsPage() {
   const [searchResults, setSearchResults] = useState<Product[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [activeSearchSection, setActiveSearchSection] = useState<string | null>(null);
+  const [subcategoryDropdownOpen, setSubcategoryDropdownOpen] = useState<string | null>(null);
+  const [customSubcategory, setCustomSubcategory] = useState<Record<string, string>>({});
 
   // Fetch initial data
   useEffect(() => {
@@ -91,6 +95,16 @@ export default function HomepageSettingsPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Get subcategories for a parent category
+  const getSubcategoriesForCategory = (categoryId: string): Category[] => {
+    return categories.filter((cat) => cat.parent === categoryId);
+  };
+
+  // Get root categories (no parent)
+  const getRootCategories = (): Category[] => {
+    return categories.filter((cat) => !cat.parent);
   };
 
   // Search products
@@ -219,7 +233,7 @@ export default function HomepageSettingsPage() {
     );
   };
 
-  // Handle category change
+  // Handle category change - clear subcategories when main category changes
   const handleCategoryChange = (sectionId: string, categoryId: string) => {
     const category = categories.find((c) => c._id === categoryId);
     if (category) {
@@ -228,8 +242,60 @@ export default function HomepageSettingsPage() {
         categoryName: category.name,
         title: category.name,
         slug: category.slug,
+        subcategories: [], // Clear subcategories when category changes
       });
     }
+  };
+
+  // Toggle subcategory selection
+  const toggleSubcategory = (sectionId: string, subcategoryId: string) => {
+    const section = sections.find((s) => s.id === sectionId);
+    if (!section) return;
+
+    const isSelected = section.subcategories.includes(subcategoryId);
+    const newSubcategories = isSelected
+      ? section.subcategories.filter((id) => id !== subcategoryId)
+      : [...section.subcategories, subcategoryId];
+
+    updateSection(sectionId, { subcategories: newSubcategories });
+  };
+
+  // Add custom subcategory
+  const addCustomSubcategory = (sectionId: string) => {
+    const customValue = customSubcategory[sectionId]?.trim();
+    if (!customValue) return;
+
+    const section = sections.find((s) => s.id === sectionId);
+    if (!section) return;
+
+    // Add custom subcategory (prefix with "custom:" to distinguish from category IDs)
+    const customId = `custom:${customValue}`;
+    if (!section.subcategories.includes(customId)) {
+      updateSection(sectionId, {
+        subcategories: [...section.subcategories, customId],
+      });
+    }
+
+    setCustomSubcategory((prev) => ({ ...prev, [sectionId]: "" }));
+  };
+
+  // Remove subcategory
+  const removeSubcategory = (sectionId: string, subcategoryId: string) => {
+    const section = sections.find((s) => s.id === sectionId);
+    if (!section) return;
+
+    updateSection(sectionId, {
+      subcategories: section.subcategories.filter((id) => id !== subcategoryId),
+    });
+  };
+
+  // Get display name for subcategory
+  const getSubcategoryDisplayName = (subcategoryId: string): string => {
+    if (subcategoryId.startsWith("custom:")) {
+      return subcategoryId.replace("custom:", "");
+    }
+    const category = categories.find((c) => c._id === subcategoryId);
+    return category?.name || subcategoryId;
   };
 
   // Save settings
@@ -411,7 +477,7 @@ export default function HomepageSettingsPage() {
                   <div className="mb-4 grid gap-4 md:grid-cols-2">
                     <div>
                       <label className="body-sm mb-1.5 block font-medium">
-                        Category
+                        Main Category
                       </label>
                       <select
                         value={section.categoryId}
@@ -421,29 +487,135 @@ export default function HomepageSettingsPage() {
                         className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                       >
                         <option value="">Select category</option>
-                        {categories.map((cat) => (
+                        {getRootCategories().map((cat) => (
                           <option key={cat._id} value={cat._id}>
                             {cat.name}
                           </option>
                         ))}
                       </select>
                     </div>
+
+                    {/* Subcategories Multi-Select */}
                     <div>
                       <label className="body-sm mb-1.5 block font-medium">
-                        Subcategories (comma-separated)
+                        Subcategories
                       </label>
-                      <Input
-                        value={section.subcategories.join(", ")}
-                        onChange={(e) =>
-                          updateSection(section.id, {
-                            subcategories: e.target.value
-                              .split(",")
-                              .map((s) => s.trim())
-                              .filter(Boolean),
-                          })
-                        }
-                        placeholder="e.g., Routers, Switches, Access Points"
-                      />
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setSubcategoryDropdownOpen(
+                              subcategoryDropdownOpen === section.id
+                                ? null
+                                : section.id
+                            )
+                          }
+                          disabled={!section.categoryId}
+                          className="flex w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          <span className="text-muted-foreground">
+                            {section.subcategories.length > 0
+                              ? `${section.subcategories.length} selected`
+                              : "Select subcategories"}
+                          </span>
+                          <ChevronDown className="h-4 w-4" />
+                        </button>
+
+                        {subcategoryDropdownOpen === section.id && (
+                          <div className="absolute left-0 top-full z-50 mt-1 w-full rounded-lg border border-border bg-popover p-2 shadow-lg">
+                            {/* Available subcategories from database */}
+                            {getSubcategoriesForCategory(section.categoryId).length > 0 && (
+                              <div className="mb-2">
+                                <p className="px-2 py-1 text-xs font-medium text-muted-foreground">
+                                  Available Subcategories
+                                </p>
+                                {getSubcategoriesForCategory(section.categoryId).map((subcat) => (
+                                  <button
+                                    key={subcat._id}
+                                    type="button"
+                                    onClick={() => toggleSubcategory(section.id, subcat._id)}
+                                    className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-muted"
+                                  >
+                                    <div
+                                      className={`flex h-4 w-4 items-center justify-center rounded border ${
+                                        section.subcategories.includes(subcat._id)
+                                          ? "border-primary bg-primary text-white"
+                                          : "border-border"
+                                      }`}
+                                    >
+                                      {section.subcategories.includes(subcat._id) && (
+                                        <Check className="h-3 w-3" />
+                                      )}
+                                    </div>
+                                    {subcat.name}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+
+                            {/* Custom subcategory input */}
+                            <div className="border-t border-border pt-2">
+                              <p className="px-2 py-1 text-xs font-medium text-muted-foreground">
+                                Add Custom Subcategory
+                              </p>
+                              <div className="flex gap-2 px-2">
+                                <Input
+                                  value={customSubcategory[section.id] || ""}
+                                  onChange={(e) =>
+                                    setCustomSubcategory((prev) => ({
+                                      ...prev,
+                                      [section.id]: e.target.value,
+                                    }))
+                                  }
+                                  placeholder="Enter custom name"
+                                  className="h-8 text-sm"
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") {
+                                      e.preventDefault();
+                                      addCustomSubcategory(section.id);
+                                    }
+                                  }}
+                                />
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  onClick={() => addCustomSubcategory(section.id)}
+                                  className="h-8"
+                                >
+                                  <Plus className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+
+                            {getSubcategoriesForCategory(section.categoryId).length === 0 && (
+                              <p className="px-2 py-2 text-xs text-muted-foreground">
+                                No subcategories found for this category. Add custom ones above.
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Selected subcategories tags */}
+                      {section.subcategories.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          {section.subcategories.map((subId) => (
+                            <span
+                              key={subId}
+                              className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary"
+                            >
+                              {getSubcategoryDisplayName(subId)}
+                              <button
+                                type="button"
+                                onClick={() => removeSubcategory(section.id, subId)}
+                                className="rounded-full p-0.5 hover:bg-primary/20"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
 

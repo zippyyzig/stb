@@ -1,13 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import ImageKit from "imagekit";
-
-const imagekit = new ImageKit({
-  publicKey: process.env.IMAGEKIT_PUBLIC_KEY!,
-  privateKey: process.env.IMAGEKIT_PRIVATE_KEY!,
-  urlEndpoint: process.env.IMAGEKIT_URL_ENDPOINT!,
-});
 
 export async function POST(request: NextRequest) {
   try {
@@ -33,40 +26,31 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate file size (max 5MB)
-    const maxSize = 5 * 1024 * 1024;
+    // Validate file size (max 2MB for base64 storage)
+    const maxSize = 2 * 1024 * 1024;
     if (file.size > maxSize) {
       return NextResponse.json(
-        { error: "File size exceeds 5MB limit" },
+        { error: "File size exceeds 2MB limit" },
         { status: 400 }
       );
     }
 
-    // Convert file to buffer
+    // Convert file to base64 data URL
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
-
-    // Generate unique filename
-    const timestamp = Date.now();
-    const extension = file.name.split(".").pop() || "jpg";
-    const fileName = `${timestamp}-${Math.random().toString(36).substring(7)}.${extension}`;
-
-    // Upload to ImageKit
-    const result = await imagekit.upload({
-      file: buffer,
-      fileName,
-      folder: "/stb-uploads",
-    });
+    const base64 = buffer.toString("base64");
+    const dataUrl = `data:${file.type};base64,${base64}`;
 
     return NextResponse.json({
-      url: result.url,
-      fileId: result.fileId,
-      name: result.name,
+      url: dataUrl,
+      name: file.name,
+      size: file.size,
+      type: file.type,
     });
   } catch (error) {
-    console.error("Error uploading file:", error);
+    console.error("Error processing file:", error);
     return NextResponse.json(
-      { error: "Failed to upload file" },
+      { error: "Failed to process file" },
       { status: 500 }
     );
   }
