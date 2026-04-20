@@ -186,22 +186,27 @@ async function getHomepageSections(): Promise<SectionData[]> {
           title: section.title,
           slug: section.slug,
           subcategories: subcategoryTabs,
-          products: products.map((p) => ({
-            id: p._id.toString(),
-            name: p.name,
-            slug: p.slug,
-            image: p.images?.[0] || "https://picsum.photos/280/280",
-            secondImage: p.images?.[1],
-            price: p.priceB2C || p.mrp,
-            originalPrice: p.mrp > (p.priceB2C || 0) ? p.mrp : undefined,
-            inStock: p.stock > 0,
-            brand: typeof p.brand === "object" ? p.brand.name : p.brand || "Generic",
-            brandLogo: typeof p.brand === "object" ? p.brand.logo : undefined,
-            productId: p.productId || `P${p._id.toString().slice(-4).toUpperCase()}`,
-            itemCode: p.itemCode || p.sku || p._id.toString().slice(-6).toUpperCase(),
-            rating: p.rating || 0,
-            description: p.shortDescription || p.description?.slice(0, 100),
-          })),
+          products: products.map((p) => {
+            const brandObj = p.brand as { name?: string; logo?: string } | string | undefined;
+            const brandName = typeof brandObj === "object" && brandObj?.name ? brandObj.name : (typeof brandObj === "string" ? brandObj : "Generic");
+            const brandLogo = typeof brandObj === "object" && brandObj?.logo ? brandObj.logo : undefined;
+            return {
+              id: p._id.toString(),
+              name: p.name,
+              slug: p.slug,
+              image: p.images?.[0] || "https://picsum.photos/280/280",
+              secondImage: p.images?.[1],
+              price: p.priceB2C || p.mrp,
+              originalPrice: p.mrp > (p.priceB2C || 0) ? p.mrp : undefined,
+              inStock: p.stock > 0,
+              brand: brandName,
+              brandLogo: brandLogo,
+              productId: p.productId || `P${p._id.toString().slice(-4).toUpperCase()}`,
+              itemCode: p.itemCode || p.sku || p._id.toString().slice(-6).toUpperCase(),
+              rating: p.rating || 0,
+              description: p.shortDescription || p.description?.slice(0, 100),
+            };
+          }),
         });
       }
 
@@ -264,22 +269,27 @@ async function getHomepageSections(): Promise<SectionData[]> {
         title: cat.name,
         slug: cat.slug,
         subcategories: subcategoryTabs,
-        products: products.map((p) => ({
-          id: p._id.toString(),
-          name: p.name,
-          slug: p.slug,
-          image: p.images?.[0] || "https://picsum.photos/280/280",
-          secondImage: p.images?.[1],
-          price: p.priceB2C || p.mrp,
-          originalPrice: p.mrp > (p.priceB2C || 0) ? p.mrp : undefined,
-          inStock: p.stock > 0,
-          brand: typeof p.brand === "object" ? p.brand.name : p.brand || "Generic",
-          brandLogo: typeof p.brand === "object" ? p.brand.logo : undefined,
-          productId: p.productId || `P${p._id.toString().slice(-4).toUpperCase()}`,
-          itemCode: p.itemCode || p.sku || p._id.toString().slice(-6).toUpperCase(),
-          rating: p.rating || 0,
-          description: p.shortDescription || p.description?.slice(0, 100),
-        })),
+        products: products.map((p) => {
+          const brandObj = p.brand as { name?: string; logo?: string } | string | undefined;
+          const brandName = typeof brandObj === "object" && brandObj?.name ? brandObj.name : (typeof brandObj === "string" ? brandObj : "Generic");
+          const brandLogo = typeof brandObj === "object" && brandObj?.logo ? brandObj.logo : undefined;
+          return {
+            id: p._id.toString(),
+            name: p.name,
+            slug: p.slug,
+            image: p.images?.[0] || "https://picsum.photos/280/280",
+            secondImage: p.images?.[1],
+            price: p.priceB2C || p.mrp,
+            originalPrice: p.mrp > (p.priceB2C || 0) ? p.mrp : undefined,
+            inStock: p.stock > 0,
+            brand: brandName,
+            brandLogo: brandLogo,
+            productId: p.productId || `P${p._id.toString().slice(-4).toUpperCase()}`,
+            itemCode: p.itemCode || p.sku || p._id.toString().slice(-6).toUpperCase(),
+            rating: p.rating || 0,
+            description: p.shortDescription || p.description?.slice(0, 100),
+          };
+        }),
       });
     }
 
