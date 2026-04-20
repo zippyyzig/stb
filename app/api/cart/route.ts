@@ -30,7 +30,7 @@ export async function GET() {
     const user = await User.findById(session.user.id);
     const isB2B = user?.isGstVerified === true;
     
-    const items = cart.items.map((item: {
+    type PopulatedCartItem = {
       product: {
         _id: string;
         name: string;
@@ -43,7 +43,10 @@ export async function GET() {
         brand?: string;
       };
       quantity: number;
-    }) => {
+      addedAt: Date;
+    };
+
+    const items = (cart.items as unknown as PopulatedCartItem[]).map((item) => {
       const price = isB2B ? item.product.priceB2B : item.product.priceB2C;
       return {
         product: item.product,
