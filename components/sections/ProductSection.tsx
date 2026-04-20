@@ -3,6 +3,8 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import {
   Carousel,
   CarouselContent,
@@ -10,9 +12,9 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useCart, useWishlist } from "@/components/providers/CartWishlistProvider";
 import {
   Heart,
   ShoppingCart,
@@ -21,6 +23,7 @@ import {
   ChevronDown,
   Star,
   Scale,
+  Loader2,
 } from "lucide-react";
 
 interface Product {
@@ -57,10 +60,16 @@ interface ProductSectionProps {
 }
 
 function ProductCardInSection({ product }: { product: Product }) {
-  const [isWishlisted, setIsWishlisted] = useState(false);
+  const { data: session } = useSession();
+  const router = useRouter();
+  const { addToCart } = useCart();
+  const { isInWishlist, toggle: toggleWishlist, isLoading: isWishlistLoading } = useWishlist();
+
   const [quantity, setQuantity] = useState(1);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+
+  const isWishlisted = isInWishlist(product.id);
 
   const discount =
     product.originalPrice && product.originalPrice > product.price
@@ -72,12 +81,28 @@ function ProductCardInSection({ product }: { product: Product }) {
 
   const rating = product.rating || 0;
 
-  const incrementQty = () => setQuantity((q) => q + 1);
+  const incrementQty = () => setQuantity((q) => (product.inStock ? q + 1 : q));
   const decrementQty = () => setQuantity((q) => Math.max(1, q - 1));
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
+    if (!session) {
+      router.push(`/auth/login?callbackUrl=/product/${product.slug || product.id}`);
+      return;
+    }
     setIsAddingToCart(true);
-    setTimeout(() => setIsAddingToCart(false), 500);
+    try {
+      await addToCart(product.id, quantity);
+    } finally {
+      setIsAddingToCart(false);
+    }
+  };
+
+  const handleWishlist = async () => {
+    if (!session) {
+      router.push(`/auth/login?callbackUrl=/product/${product.slug || product.id}`);
+      return;
+    }
+    await toggleWishlist(product.id);
   };
 
   return (
@@ -272,15 +297,20 @@ function ProductCardInSection({ product }: { product: Product }) {
             {/* Wish Group */}
             <div className="wish-group flex items-center gap-1.5">
               <button
-                onClick={() => setIsWishlisted(!isWishlisted)}
-                className={`btn-wishlist flex flex-1 items-center justify-center gap-1 rounded border py-1.5 text-[10px] font-medium transition-all ${
+                onClick={handleWishlist}
+                disabled={isWishlistLoading}
+                className={`btn-wishlist flex flex-1 items-center justify-center gap-1 rounded border py-1.5 text-[10px] font-medium transition-all disabled:opacity-50 ${
                   isWishlisted
                     ? "border-primary bg-primary/10 text-primary"
                     : "border-border bg-white text-muted-foreground hover:border-primary hover:text-primary"
                 }`}
               >
-                <Heart className={`h-2.5 w-2.5 ${isWishlisted ? "fill-current" : ""}`} />
-                <span className="btn-text">Wishlist</span>
+                {isWishlistLoading ? (
+                  <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                ) : (
+                  <Heart className={`h-2.5 w-2.5 ${isWishlisted ? "fill-current" : ""}`} />
+                )}
+                <span className="btn-text">{isWishlisted ? "Saved" : "Wishlist"}</span>
               </button>
               <button className="btn-compare flex flex-1 items-center justify-center gap-1 rounded border border-border bg-white py-1.5 text-[10px] font-medium text-muted-foreground transition-all hover:border-primary hover:text-primary">
                 <Scale className="h-2.5 w-2.5" />
