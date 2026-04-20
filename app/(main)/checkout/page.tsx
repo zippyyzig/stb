@@ -54,6 +54,7 @@ export default function CheckoutPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
+  const [savedAddresses, setSavedAddresses] = useState<Address[]>([]);
   const [paymentMethod, setPaymentMethod] = useState<"cod" | "razorpay">("cod");
   const [shippingCost, setShippingCost] = useState(99);
   const [showAddressForm, setShowAddressForm] = useState(false);
@@ -75,6 +76,7 @@ export default function CheckoutPage() {
 
     if (status === "authenticated") {
       fetchCart();
+      fetchSavedAddresses();
     }
   }, [status, router]);
 
@@ -102,6 +104,24 @@ export default function CheckoutPage() {
     }
   };
 
+  const fetchSavedAddresses = async () => {
+    try {
+      const res = await fetch("/api/user/addresses");
+      const data = await res.json();
+      if (data.addresses && data.addresses.length > 0) {
+        setSavedAddresses(data.addresses);
+        // Pre-select the primary address
+        const primary = data.addresses.find((a: Address) => a.isDefault) || data.addresses[0];
+        setSelectedAddress(primary);
+      } else {
+        // No saved addresses, show the form
+        setShowAddressForm(true);
+      }
+    } catch {
+      setShowAddressForm(true);
+    }
+  };
+
   const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setNewAddress((prev) => ({
       ...prev,
@@ -122,11 +142,8 @@ export default function CheckoutPage() {
       return;
     }
 
-    setSelectedAddress({
-      _id: "new",
-      ...newAddress,
-      isDefault: true,
-    });
+    const addr: Address = { _id: "new", ...newAddress, isDefault: false };
+    setSelectedAddress(addr);
     setShowAddressForm(false);
   };
 
@@ -235,34 +252,65 @@ export default function CheckoutPage() {
                   <h2 className="heading-md">Delivery Address</h2>
                 </div>
 
-                {selectedAddress && !showAddressForm ? (
-                  <div className="rounded-lg border border-primary bg-primary/5 p-4">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <p className="font-medium">{selectedAddress.name}</p>
-                        <p className="body-sm text-muted-foreground">
-                          {selectedAddress.phone}
-                        </p>
-                        <p className="body-sm mt-2 text-muted-foreground">
-                          {selectedAddress.address}, {selectedAddress.city},{" "}
-                          {selectedAddress.state} - {selectedAddress.pincode}
-                        </p>
-                      </div>
+                {/* Saved addresses */}
+                {savedAddresses.length > 0 && !showAddressForm && (
+                  <div className="space-y-2 mb-4">
+                    {savedAddresses.map((addr) => (
+                      <label
+                        key={addr._id}
+                        className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-colors ${
+                          selectedAddress?._id === addr._id
+                            ? "border-primary bg-primary/5"
+                            : "border-border hover:bg-muted/50"
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="address"
+                          checked={selectedAddress?._id === addr._id}
+                          onChange={() => setSelectedAddress(addr)}
+                          className="mt-0.5 h-4 w-4 text-primary"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-sm">{addr.name}</p>
+                            {addr.isDefault && (
+                              <span className="text-[10px] font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded">
+                                Primary
+                              </span>
+                            )}
+                          </div>
+                          <p className="body-sm text-muted-foreground">{addr.phone}</p>
+                          <p className="body-sm text-muted-foreground mt-0.5">
+                            {addr.address}, {addr.city}, {addr.state} - {addr.pincode}
+                          </p>
+                        </div>
+                      </label>
+                    ))}
+                    <button
+                      onClick={() => { setShowAddressForm(true); setSelectedAddress(null); }}
+                      className="flex items-center gap-2 text-sm text-primary hover:underline mt-1"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Use a different address
+                    </button>
+                  </div>
+                )}
+
+                {/* New address form */}
+                {showAddressForm && (
+                  <div className="space-y-4">
+                    {savedAddresses.length > 0 && (
                       <button
-                        onClick={() => setShowAddressForm(true)}
+                        onClick={() => { setShowAddressForm(false); setSelectedAddress(savedAddresses.find((a) => a.isDefault) || savedAddresses[0]); }}
                         className="text-sm text-primary hover:underline"
                       >
-                        Change
+                        Use saved address
                       </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
+                    )}
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div>
-                        <label className="body-sm mb-1.5 block font-medium">
-                          Full Name
-                        </label>
+                        <label className="body-sm mb-1.5 block font-medium">Full Name</label>
                         <Input
                           name="name"
                           value={newAddress.name}
@@ -271,9 +319,7 @@ export default function CheckoutPage() {
                         />
                       </div>
                       <div>
-                        <label className="body-sm mb-1.5 block font-medium">
-                          Phone Number
-                        </label>
+                        <label className="body-sm mb-1.5 block font-medium">Phone Number</label>
                         <Input
                           name="phone"
                           value={newAddress.phone}
@@ -284,9 +330,7 @@ export default function CheckoutPage() {
                     </div>
 
                     <div>
-                      <label className="body-sm mb-1.5 block font-medium">
-                        Address
-                      </label>
+                      <label className="body-sm mb-1.5 block font-medium">Address</label>
                       <Input
                         name="address"
                         value={newAddress.address}
@@ -297,9 +341,7 @@ export default function CheckoutPage() {
 
                     <div className="grid gap-4 sm:grid-cols-3">
                       <div>
-                        <label className="body-sm mb-1.5 block font-medium">
-                          City
-                        </label>
+                        <label className="body-sm mb-1.5 block font-medium">City</label>
                         <Input
                           name="city"
                           value={newAddress.city}
@@ -308,9 +350,7 @@ export default function CheckoutPage() {
                         />
                       </div>
                       <div>
-                        <label className="body-sm mb-1.5 block font-medium">
-                          State
-                        </label>
+                        <label className="body-sm mb-1.5 block font-medium">State</label>
                         <Input
                           name="state"
                           value={newAddress.state}
@@ -319,9 +359,7 @@ export default function CheckoutPage() {
                         />
                       </div>
                       <div>
-                        <label className="body-sm mb-1.5 block font-medium">
-                          Pincode
-                        </label>
+                        <label className="body-sm mb-1.5 block font-medium">Pincode</label>
                         <Input
                           name="pincode"
                           value={newAddress.pincode}
@@ -333,7 +371,7 @@ export default function CheckoutPage() {
 
                     <Button onClick={handleSaveAddress} className="gap-2">
                       <Plus className="h-4 w-4" />
-                      Save Address
+                      Use This Address
                     </Button>
                   </div>
                 )}
