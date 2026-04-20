@@ -174,7 +174,7 @@ const OrderSchema = new Schema<IOrder>(
 );
 
 // Create indexes
-OrderSchema.index({ orderNumber: 1 });
+// Note: orderNumber index is created automatically via unique: true in the schema field definition
 OrderSchema.index({ user: 1 });
 OrderSchema.index({ status: 1 });
 OrderSchema.index({ paymentStatus: 1 });

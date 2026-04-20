@@ -137,7 +137,7 @@ const TicketSchema = new Schema<ITicket>(
 );
 
 // Create indexes
-TicketSchema.index({ ticketNumber: 1 });
+// Note: ticketNumber index is created automatically via unique: true in the schema field definition
 TicketSchema.index({ user: 1 });
 TicketSchema.index({ assignedTo: 1 });
 TicketSchema.index({ status: 1 });

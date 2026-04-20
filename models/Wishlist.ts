@@ -39,7 +39,7 @@ const WishlistSchema = new Schema<IWishlist>(
   }
 );
 
-WishlistSchema.index({ user: 1 });
+// Note: user index is created automatically via unique: true in the schema field definition
 
 const Wishlist: Model<IWishlist> =
   mongoose.models.Wishlist || mongoose.model<IWishlist>("Wishlist", WishlistSchema);
