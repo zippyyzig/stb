@@ -18,6 +18,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import ViewInvoiceButton from "@/components/orders/ViewInvoiceButton";
 
 interface OrderItem {
   product: string;
@@ -27,6 +28,16 @@ interface OrderItem {
   price: number;
   quantity: number;
   total: number;
+}
+
+interface TaxBreakdown {
+  taxType: "INTRA" | "INTER";
+  cgst: number;
+  sgst: number;
+  igst: number;
+  totalTax: number;
+  customerStateCode: string;
+  customerGstin?: string;
 }
 
 interface Order {
@@ -42,6 +53,7 @@ interface Order {
   tax: number;
   discount: number;
   total: number;
+  taxBreakdown?: TaxBreakdown;
   notes?: string;
   trackingNumber?: string;
   trackingUrl?: string;
@@ -144,9 +156,14 @@ export default function OrderDetailPage() {
           <h2 className="font-heading font-bold text-foreground">{order.orderNumber}</h2>
           <p className="text-xs text-muted-foreground">Placed on {new Date(order.createdAt).toLocaleDateString("en-IN", { dateStyle: "full" })}</p>
         </div>
-        <span className={`ml-auto text-xs font-medium px-2.5 py-1 rounded-full capitalize ${statusColors[order.status] || "bg-gray-100 text-gray-700"}`}>
-          {order.status}
-        </span>
+        <div className="ml-auto flex items-center gap-2">
+          {order.paymentStatus === "paid" && (
+            <ViewInvoiceButton orderId={order._id} size="sm" />
+          )}
+          <span className={`text-xs font-medium px-2.5 py-1 rounded-full capitalize ${statusColors[order.status] || "bg-gray-100 text-gray-700"}`}>
+            {order.status}
+          </span>
+        </div>
       </div>
 
       {/* Cancel error */}
@@ -251,6 +268,30 @@ export default function OrderDetailPage() {
             <div className="flex justify-between text-sm text-green-600">
               <span>Discount</span>
               <span>-₹{order.discount.toLocaleString("en-IN")}</span>
+            </div>
+          )}
+          {order.taxBreakdown ? (
+            order.taxBreakdown.taxType === "INTRA" ? (
+              <>
+                <div className="flex justify-between text-sm text-muted-foreground">
+                  <span>CGST (9%)</span>
+                  <span>₹{order.taxBreakdown.cgst.toLocaleString("en-IN")}</span>
+                </div>
+                <div className="flex justify-between text-sm text-muted-foreground">
+                  <span>SGST (9%)</span>
+                  <span>₹{order.taxBreakdown.sgst.toLocaleString("en-IN")}</span>
+                </div>
+              </>
+            ) : (
+              <div className="flex justify-between text-sm text-muted-foreground">
+                <span>IGST (18%)</span>
+                <span>₹{order.taxBreakdown.igst.toLocaleString("en-IN")}</span>
+              </div>
+            )
+          ) : order.tax > 0 && (
+            <div className="flex justify-between text-sm text-muted-foreground">
+              <span>Tax</span>
+              <span>₹{order.tax.toLocaleString("en-IN")}</span>
             </div>
           )}
           <div className="flex justify-between text-base font-bold text-foreground border-t border-border pt-2">

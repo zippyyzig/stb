@@ -11,6 +11,7 @@ import {
   User,
   Shield,
   Store,
+  Bell,
 } from "lucide-react";
 
 const menuItems = [
@@ -18,6 +19,7 @@ const menuItems = [
   { title: "My Orders", href: "/dashboard/orders", icon: ShoppingBag, exact: false },
   { title: "Addresses", href: "/dashboard/addresses", icon: MapPin, exact: false },
   { title: "Wishlist", href: "/dashboard/wishlist", icon: Heart, exact: false },
+  { title: "Notifications", href: "/dashboard/notifications", icon: Bell, exact: false },
   { title: "Support", href: "/dashboard/support", icon: LifeBuoy, exact: false },
   { title: "Profile", href: "/dashboard/profile", icon: User, exact: false },
   { title: "Security", href: "/dashboard/security", icon: Shield, exact: false },

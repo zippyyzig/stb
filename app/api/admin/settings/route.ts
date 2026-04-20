@@ -20,8 +20,12 @@ export async function GET() {
     if (!settings) {
       // Create default settings
       settings = await Settings.create({
-        storeName: "My Store",
-        storeEmail: "store@example.com",
+        storeName: "Sabka Tech Bazar",
+        storeEmail: "sales@sabkatechbazar.com",
+        storePhone: "+91 9353919299",
+        storeAddress: "2nd Floor, No. 94/1, Behind Sharda Theater, SP Road, Bangalore - 560002",
+        businessGstin: "",
+        businessState: "Karnataka",
         currency: "INR",
         currencySymbol: "₹",
         taxRate: 18,

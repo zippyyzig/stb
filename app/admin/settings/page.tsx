@@ -26,6 +26,8 @@ interface SettingsData {
   storeEmail: string;
   storePhone?: string;
   storeAddress?: string;
+  businessGstin?: string;
+  businessState?: string;
   currency: string;
   currencySymbol: string;
   taxRate: number;
@@ -201,6 +203,44 @@ export default function SettingsPage() {
                 }
                 className="mt-1"
               />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="text-sm font-medium">Business GSTIN</label>
+                <Input
+                  value={settings.businessGstin || ""}
+                  onChange={(e) =>
+                    setSettings({ ...settings, businessGstin: e.target.value.toUpperCase() })
+                  }
+                  placeholder="29AABCU9603R1ZM"
+                  maxLength={15}
+                  className="mt-1 font-mono uppercase"
+                />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Required for GST invoices
+                </p>
+              </div>
+              <div>
+                <label className="text-sm font-medium">Business State</label>
+                <select
+                  value={settings.businessState || "Karnataka"}
+                  onChange={(e) =>
+                    setSettings({ ...settings, businessState: e.target.value })
+                  }
+                  className="mt-1 w-full rounded-md border bg-background p-2"
+                >
+                  <option value="Karnataka">Karnataka</option>
+                  <option value="Maharashtra">Maharashtra</option>
+                  <option value="Tamil Nadu">Tamil Nadu</option>
+                  <option value="Delhi">Delhi</option>
+                  <option value="Gujarat">Gujarat</option>
+                  <option value="Rajasthan">Rajasthan</option>
+                  <option value="Uttar Pradesh">Uttar Pradesh</option>
+                  <option value="West Bengal">West Bengal</option>
+                  <option value="Telangana">Telangana</option>
+                  <option value="Andhra Pradesh">Andhra Pradesh</option>
+                </select>
+              </div>
             </div>
           </CardContent>
         </Card>
