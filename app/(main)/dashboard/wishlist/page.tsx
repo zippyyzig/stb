@@ -82,8 +82,10 @@ export default function WishlistPage() {
       <p className="text-sm text-muted-foreground">{items.length} item{items.length !== 1 ? "s" : ""} saved</p>
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {items.map(({ product, addedAt }) => {
-          const displayPrice = product.salePrice || product.price;
-          const hasDiscount = product.salePrice && product.salePrice < product.price;
+          const price = product.price ?? 0;
+          const salePrice = product.salePrice ?? 0;
+          const displayPrice = salePrice > 0 && salePrice < price ? salePrice : price;
+          const hasDiscount = salePrice > 0 && salePrice < price;
           const isOutOfStock = product.stock === 0;
 
           return (
@@ -121,7 +123,7 @@ export default function WishlistPage() {
                 <div className="flex items-center gap-2 mt-2">
                   <span className="text-base font-bold text-foreground">₹{displayPrice.toLocaleString("en-IN")}</span>
                   {hasDiscount && (
-                    <span className="text-xs text-muted-foreground line-through">₹{product.price.toLocaleString("en-IN")}</span>
+                    <span className="text-xs text-muted-foreground line-through">₹{price.toLocaleString("en-IN")}</span>
                   )}
                 </div>
                 <p className="text-[10px] text-muted-foreground mt-1">
