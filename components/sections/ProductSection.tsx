@@ -32,8 +32,9 @@ interface Product {
   slug: string;
   image: string;
   secondImage?: string;
-  price: number;
-  originalPrice?: number;
+  priceB2C: number;
+  priceB2B: number;
+  mrp: number;
   inStock: boolean;
   brand: string;
   brandLogo?: string;
@@ -72,12 +73,12 @@ function ProductCardInSection({ product }: { product: Product }) {
 
   const isWishlisted = isInWishlist(product.id);
 
+  // Use B2B price for GST verified users, B2C price for others
+  const isB2B = session?.user?.isGstVerified === true;
+  const displayPrice = isB2B ? product.priceB2B : product.priceB2C;
   const discount =
-    product.originalPrice && product.originalPrice > product.price
-      ? Math.round(
-          ((product.originalPrice - product.price) / product.originalPrice) *
-            100
-        )
+    product.mrp > displayPrice
+      ? Math.round(((product.mrp - displayPrice) / product.mrp) * 100)
       : 0;
 
   const rating = product.rating || 0;
@@ -206,11 +207,11 @@ function ProductCardInSection({ product }: { product: Product }) {
           <div className="flex items-start justify-between gap-2">
             <div className="flex flex-col">
               <span className="price-new text-base font-bold text-foreground">
-                ₹{product.price.toLocaleString("en-IN")}
+                ₹{displayPrice.toLocaleString("en-IN")}
               </span>
-              {product.originalPrice && product.originalPrice > product.price && (
+              {product.mrp > displayPrice && (
                 <span className="price-old text-[10px] text-muted-foreground line-through">
-                  ₹{product.originalPrice.toLocaleString("en-IN")}
+                  ₹{product.mrp.toLocaleString("en-IN")}
                 </span>
               )}
             </div>
@@ -234,7 +235,7 @@ function ProductCardInSection({ product }: { product: Product }) {
             </div>
           </div>
           <span className="price-tax text-[9px] text-muted-foreground">
-            Ex Tax:₹{product.price.toLocaleString("en-IN")}
+            Ex Tax:₹{displayPrice.toLocaleString("en-IN")}
           </span>
         </div>
 

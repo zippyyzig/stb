@@ -34,8 +34,9 @@ interface ProductData {
   slug: string;
   image: string;
   secondImage?: string;
-  price: number;
-  originalPrice?: number;
+  priceB2C: number;
+  priceB2B: number;
+  mrp: number;
   inStock: boolean;
   brand: string;
   brandLogo?: string;
@@ -196,8 +197,9 @@ async function getHomepageSections(): Promise<SectionData[]> {
               slug: p.slug,
               image: p.images?.[0] || "https://picsum.photos/280/280",
               secondImage: p.images?.[1],
-              price: p.priceB2C || p.mrp,
-              originalPrice: p.mrp > (p.priceB2C || 0) ? p.mrp : undefined,
+              priceB2C: p.priceB2C || p.mrp,
+              priceB2B: p.priceB2B || p.priceB2C || p.mrp,
+              mrp: p.mrp,
               inStock: p.stock > 0,
               brand: brandName,
               brandLogo: brandLogo,
@@ -279,8 +281,9 @@ async function getHomepageSections(): Promise<SectionData[]> {
             slug: p.slug,
             image: p.images?.[0] || "https://picsum.photos/280/280",
             secondImage: p.images?.[1],
-            price: p.priceB2C || p.mrp,
-            originalPrice: p.mrp > (p.priceB2C || 0) ? p.mrp : undefined,
+            priceB2C: p.priceB2C || p.mrp,
+            priceB2B: p.priceB2B || p.priceB2C || p.mrp,
+            mrp: p.mrp,
             inStock: p.stock > 0,
             brand: brandName,
             brandLogo: brandLogo,

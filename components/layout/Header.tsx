@@ -284,6 +284,12 @@ export default function Header() {
       <div className="bg-primary">
         <div className="mx-auto max-w-7xl overflow-x-auto px-4">
           <nav className="flex items-center gap-1 py-2">
+            <Link
+              href="/products"
+              className="label-uppercase shrink-0 rounded bg-white/20 px-4 py-2 font-semibold text-white transition-colors hover:bg-white/30"
+            >
+              All Products
+            </Link>
             {navCategories.map((cat) => (
               <Link
                 key={cat.slug}
