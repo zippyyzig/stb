@@ -70,117 +70,19 @@ export async function generateMetadata({
   };
 }
 
-// Sample product for display when DB is empty
-const sampleProduct = {
-  _id: "sample-product",
-  name: "Hikvision 4MP ColorVu IP Camera DS-2CD2347G2-L",
-  slug: "hikvision-4mp-colorvu-ip-camera",
-  description: `
-    <h3>Experience True Color Night Vision</h3>
-    <p>The Hikvision ColorVu technology delivers vivid colorful images in a 24/7 environment. With warm supplemental lighting, advanced lens design, and high performance sensor, ColorVu cameras meet the challenge of low light conditions, providing full color capture even in near zero-light environments.</p>
-    
-    <h3>Key Features</h3>
-    <ul>
-      <li>4 Megapixel high resolution imaging</li>
-      <li>24/7 colorful imaging with F1.0 aperture</li>
-      <li>Water and dust resistant (IP67)</li>
-      <li>Built-in microphone for audio recording</li>
-      <li>Smart hybrid light with warm and IR LEDs</li>
-      <li>H.265+ compression for efficient storage</li>
-    </ul>
-    
-    <h3>Applications</h3>
-    <p>Perfect for retail stores, parking lots, building entrances, and any location requiring color video surveillance at all times.</p>
-  `,
-  shortDescription:
-    "24/7 colorful imaging with F1.0 aperture and warm supplemental lighting for exceptional low-light performance.",
-  sku: "HIK-2CD2347G2-L",
-  category: { _id: "cat-1", name: "Security", slug: "security" },
-  brand: "Hikvision",
-  images: [
-    "https://images.unsplash.com/photo-1576088137266-a6cba01057ed?w=600&h=600&fit=crop",
-    "https://images.unsplash.com/photo-1557324232-b8917d3c3dcb?w=600&h=600&fit=crop",
-    "https://images.unsplash.com/photo-1580584869245-fca9e24e2b62?w=600&h=600&fit=crop",
-  ],
-  priceB2C: 6999,
-  priceB2B: 6299,
-  mrp: 8499,
-  stock: 45,
-  minOrderQty: 1,
-  maxOrderQty: 50,
-  unit: "piece",
-  specifications: [
-    { key: "Resolution", value: "4 Megapixel (2560 x 1440)" },
-    { key: "Lens", value: "2.8mm / 4mm Fixed" },
-    { key: "Night Vision", value: "ColorVu (24/7 Color)" },
-    { key: "IR Distance", value: "30 meters" },
-    { key: "Weather Proof", value: "IP67" },
-    { key: "Audio", value: "Built-in Microphone" },
-    { key: "Compression", value: "H.265+ / H.264+" },
-    { key: "Power", value: "DC 12V / PoE (802.3af)" },
-  ],
-  tags: ["cctv", "ip camera", "colorvu", "hikvision", "4mp"],
-  isFeatured: true,
-  isNewArrival: true,
-  isBestSeller: false,
-  views: 1234,
-  soldCount: 156,
-};
 
-const sampleRelatedProducts = [
-  {
-    _id: "rel-1",
-    name: "Hikvision 8CH NVR DS-7608NI-K2",
-    slug: "hikvision-8ch-nvr",
-    images: ["https://images.unsplash.com/photo-1576088137266-a6cba01057ed?w=300&h=300&fit=crop"],
-    priceB2C: 12999,
-    priceB2B: 11999,
-    mrp: 15999,
-    stock: 20,
-    brand: "Hikvision",
-  },
-  {
-    _id: "rel-2",
-    name: "CP-Plus 2MP Dome Camera",
-    slug: "cp-plus-2mp-dome",
-    images: ["https://images.unsplash.com/photo-1557324232-b8917d3c3dcb?w=300&h=300&fit=crop"],
-    priceB2C: 1899,
-    priceB2B: 1699,
-    mrp: 2299,
-    stock: 50,
-    brand: "CP-Plus",
-  },
-  {
-    _id: "rel-3",
-    name: "Dahua 4MP Bullet Camera",
-    slug: "dahua-4mp-bullet",
-    images: ["https://images.unsplash.com/photo-1580584869245-fca9e24e2b62?w=300&h=300&fit=crop"],
-    priceB2C: 3499,
-    priceB2B: 3199,
-    mrp: 4199,
-    stock: 30,
-    brand: "Dahua",
-  },
-  {
-    _id: "rel-4",
-    name: "CCTV BNC Connector Pack",
-    slug: "cctv-bnc-connector",
-    images: ["https://images.unsplash.com/photo-1576088137266-a6cba01057ed?w=300&h=300&fit=crop"],
-    priceB2C: 199,
-    priceB2B: 149,
-    mrp: 299,
-    stock: 200,
-    brand: "Generic",
-  },
-];
 
 export default async function ProductPage({ params }: ProductPageProps) {
   const { slug } = await params;
   const data = await getProductData(slug);
 
-  // Use sample data if no DB data
-  const product = data?.product || sampleProduct;
-  const relatedProducts = data?.relatedProducts || sampleRelatedProducts;
+  // Return 404 if product not found
+  if (!data?.product) {
+    notFound();
+  }
+
+  const product = data.product;
+  const relatedProducts = data.relatedProducts || [];
 
   return (
     <div className="flex min-h-screen flex-col">

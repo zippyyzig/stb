@@ -514,7 +514,33 @@ export function lowStockAlertTemplate(
   return baseTemplate(content, `Low stock alert: ${products.length} products need attention`);
 }
 
-// 11. Account Verification Email
+// 11. Email Verification Code Template (8-digit code)
+export function emailVerificationCodeTemplate(userName: string, verificationCode: string): string {
+  const content = `
+    <div class="content">
+      <h2>Verify Your Email Address</h2>
+      <p>Dear <strong>${userName}</strong>,</p>
+      <p>Thank you for registering with ${COMPANY_NAME}! Please use the verification code below to verify your email address.</p>
+      
+      <div style="background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%); padding: 30px; border-radius: 12px; text-align: center; margin: 30px 0;">
+        <p style="color: rgba(255,255,255,0.8); font-size: 14px; margin-bottom: 10px;">Your Verification Code</p>
+        <p style="font-size: 36px; font-family: 'Courier New', monospace; letter-spacing: 8px; color: #ffffff; font-weight: bold; margin: 0;">${verificationCode}</p>
+      </div>
+      
+      <div class="info-box">
+        <h3>Important</h3>
+        <p>This code will expire in <strong>15 minutes</strong>.</p>
+        <p>Do not share this code with anyone.</p>
+      </div>
+      
+      <div class="divider"></div>
+      <p class="text-muted">If you didn't create an account with ${COMPANY_NAME}, please ignore this email.</p>
+    </div>
+  `;
+  return baseTemplate(content, `Your verification code: ${verificationCode}`);
+}
+
+// 11b. Account Verification Email (legacy link-based)
 export function accountVerificationTemplate(userName: string, verificationLink: string): string {
   const content = `
     <div class="content">

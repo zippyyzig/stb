@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
-import Ticket from "@/models/Ticket";
+import mongoose from "mongoose";
+import Ticket, { ITicketReply } from "@/models/Ticket";
 import User from "@/models/User";
 import { sendEmail } from "@/lib/email";
 import { ticketReplyTemplate } from "@/lib/email-templates";
@@ -38,16 +39,23 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Ticket not found" }, { status: 404 });
     }
 
-    const reply = {
-      user: session.user.id,
+    const reply: ITicketReply = {
+      _id: new mongoose.Types.ObjectId(),
+      user: new mongoose.Types.ObjectId(session.user.id),
+      userName: session.user.name || "Admin",
+      userRole: session.user.role as ITicketReply["userRole"],
       message: message.trim(),
+      attachments: [],
       isInternal: isInternal || false,
       createdAt: new Date(),
     };
 
     ticket.replies.push(reply);
-    ticket.lastReplyAt = new Date();
-    ticket.updatedAt = new Date();
+
+    // Set firstResponseAt if this is the first admin reply
+    if (!ticket.firstResponseAt) {
+      ticket.firstResponseAt = new Date();
+    }
 
     // If ticket is open and admin replies, change to in_progress
     if (ticket.status === "open") {
@@ -57,14 +65,14 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     await ticket.save();
 
     const updatedTicket = await Ticket.findById(id)
-      .populate("customer", "name email phone")
+      .populate("user", "name email phone")
       .populate("assignedTo", "name email")
       .populate("replies.user", "name email role")
       .lean();
 
     // Send email notification to customer (only for non-internal replies)
     if (!isInternal) {
-      const customer = await User.findById(ticket.customer);
+      const customer = await User.findById(ticket.user);
       if (customer) {
         const isResolved = ticket.status === "resolved" || ticket.status === "closed";
         const replyEmail = ticketReplyTemplate(

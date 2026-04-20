@@ -188,9 +188,8 @@ export default function WishlistPage() {
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {items.map((item) => {
                 const product = item.product;
-                const isB2B =
-                  session?.user?.role === "admin" ||
-                  session?.user?.role === "super_admin";
+                // Users with verified GST get B2B wholesale prices
+                const isB2B = session?.user?.isGstVerified === true;
                 const price = isB2B ? product.priceB2B : product.priceB2C;
                 const discount = Math.round(
                   ((product.mrp - price) / product.mrp) * 100

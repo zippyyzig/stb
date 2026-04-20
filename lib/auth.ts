@@ -8,6 +8,10 @@ declare module "next-auth" {
   interface User {
     id: string;
     role: UserRole;
+    isEmailVerified: boolean;
+    isOnboardingComplete: boolean;
+    gstNumber?: string;
+    isGstVerified: boolean;
   }
   interface Session {
     user: {
@@ -16,6 +20,10 @@ declare module "next-auth" {
       name: string;
       role: UserRole;
       image?: string;
+      isEmailVerified: boolean;
+      isOnboardingComplete: boolean;
+      gstNumber?: string;
+      isGstVerified: boolean;
     };
   }
 }
@@ -24,6 +32,10 @@ declare module "next-auth/jwt" {
   interface JWT {
     id: string;
     role: UserRole;
+    isEmailVerified: boolean;
+    isOnboardingComplete: boolean;
+    gstNumber?: string;
+    isGstVerified: boolean;
   }
 }
 
@@ -72,6 +84,10 @@ export const authOptions: NextAuthOptions = {
           name: user.name,
           role: user.role,
           image: user.avatar,
+          isEmailVerified: user.isEmailVerified || false,
+          isOnboardingComplete: user.isOnboardingComplete || false,
+          gstNumber: user.gstNumber,
+          isGstVerified: user.isGstVerified || false,
         };
       },
     }),
@@ -100,6 +116,7 @@ export const authOptions: NextAuthOptions = {
 
         if (!user) {
           // Create new customer account for Google sign-in
+          // Google users are automatically email verified
           user = await User.create({
             email: credentials.email.toLowerCase(),
             name: credentials.name || credentials.email.split("@")[0],
@@ -107,6 +124,9 @@ export const authOptions: NextAuthOptions = {
             avatar: credentials.avatar,
             role: "customer",
             isActive: true,
+            isEmailVerified: true, // Google email is already verified
+            isOnboardingComplete: false,
+            isGstVerified: false,
           });
         } else if (!user.googleId) {
           // Link Google account to existing email account
@@ -132,6 +152,10 @@ export const authOptions: NextAuthOptions = {
           name: user.name,
           role: user.role,
           image: user.avatar,
+          isEmailVerified: user.isEmailVerified || false,
+          isOnboardingComplete: user.isOnboardingComplete || false,
+          gstNumber: user.gstNumber,
+          isGstVerified: user.isGstVerified || false,
         };
       },
     }),
@@ -145,10 +169,25 @@ export const authOptions: NextAuthOptions = {
     error: "/auth/error",
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
       if (user) {
         token.id = user.id;
         token.role = user.role;
+        token.isEmailVerified = user.isEmailVerified;
+        token.isOnboardingComplete = user.isOnboardingComplete;
+        token.gstNumber = user.gstNumber;
+        token.isGstVerified = user.isGstVerified;
+      }
+      // Refresh user data on update trigger
+      if (trigger === "update") {
+        await dbConnect();
+        const freshUser = await User.findById(token.id);
+        if (freshUser) {
+          token.isEmailVerified = freshUser.isEmailVerified || false;
+          token.isOnboardingComplete = freshUser.isOnboardingComplete || false;
+          token.gstNumber = freshUser.gstNumber;
+          token.isGstVerified = freshUser.isGstVerified || false;
+        }
       }
       return token;
     },
@@ -156,6 +195,10 @@ export const authOptions: NextAuthOptions = {
       if (token && session.user) {
         session.user.id = token.id;
         session.user.role = token.role;
+        session.user.isEmailVerified = token.isEmailVerified;
+        session.user.isOnboardingComplete = token.isOnboardingComplete;
+        session.user.gstNumber = token.gstNumber;
+        session.user.isGstVerified = token.isGstVerified;
       }
       return session;
     },

@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
 import Cart from "@/models/Cart";
 import Product from "@/models/Product";
+import User from "@/models/User";
 
 // GET user's cart
 export async function GET() {
@@ -22,13 +23,14 @@ export async function GET() {
     });
 
     if (!cart) {
-      return NextResponse.json({ items: [], total: 0 });
+      return NextResponse.json({ items: [], total: 0, isB2B: false });
     }
 
-    // Calculate totals based on user role
-    const isB2B = session.user.role === "admin" || session.user.role === "super_admin";
+    // Get user's GST verification status for pricing
+    const user = await User.findById(session.user.id);
+    const isB2B = user?.isGstVerified === true;
     
-    const items = cart.items.map((item: {
+    type PopulatedCartItem = {
       product: {
         _id: string;
         name: string;
@@ -41,7 +43,10 @@ export async function GET() {
         brand?: string;
       };
       quantity: number;
-    }) => {
+      addedAt: Date;
+    };
+
+    const items = (cart.items as unknown as PopulatedCartItem[]).map((item) => {
       const price = isB2B ? item.product.priceB2B : item.product.priceB2C;
       return {
         product: item.product,

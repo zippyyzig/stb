@@ -4,9 +4,11 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useCart, useWishlist } from "@/components/providers/CartWishlistProvider";
 import {
   Heart,
   ShoppingCart,
@@ -15,6 +17,7 @@ import {
   ChevronDown,
   Star,
   Scale,
+  Loader2,
 } from "lucide-react";
 
 interface Product {
@@ -41,14 +44,17 @@ interface ProductCardProps {
 
 export default function ProductCard({ product }: ProductCardProps) {
   const { data: session } = useSession();
-  const [isWishlisted, setIsWishlisted] = useState(false);
+  const router = useRouter();
+  const { addToCart } = useCart();
+  const { isInWishlist, toggle: toggleWishlist, isLoading: isWishlistLoading } = useWishlist();
+  
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [quantity, setQuantity] = useState(1);
 
-  // Determine price based on user type
-  const isB2B =
-    session?.user?.role === "admin" || session?.user?.role === "super_admin";
+  // Determine price based on user GST verification status
+  const isB2B = session?.user?.isGstVerified === true;
   const displayPrice = isB2B ? product.priceB2B : product.priceB2C;
+  const isWishlisted = isInWishlist(product._id);
   const discount = Math.round(
     ((product.mrp - displayPrice) / product.mrp) * 100
   );
@@ -56,17 +62,23 @@ export default function ProductCard({ product }: ProductCardProps) {
 
   const handleAddToCart = async () => {
     if (!session) {
-      window.location.href = "/auth/login";
+      router.push(`/auth/login?callbackUrl=/product/${product.slug}`);
       return;
     }
     setIsAddingToCart(true);
-    // TODO: Implement add to cart with quantity
-    setTimeout(() => setIsAddingToCart(false), 500);
+    try {
+      await addToCart(product._id, quantity);
+    } finally {
+      setIsAddingToCart(false);
+    }
   };
 
-  const handleWishlist = () => {
-    setIsWishlisted(!isWishlisted);
-    // TODO: Implement wishlist
+  const handleWishlist = async () => {
+    if (!session) {
+      router.push(`/auth/login?callbackUrl=/product/${product.slug}`);
+      return;
+    }
+    await toggleWishlist(product._id);
   };
 
   const incrementQty = () => {
@@ -196,10 +208,10 @@ export default function ProductCard({ product }: ProductCardProps) {
           )}
         </div>
 
-        {/* B2B Indicator */}
+        {/* B2B Indicator - shown for GST verified users */}
         {isB2B && (
           <span className="text-xs font-medium text-stb-success">
-            B2B Price Applied
+            GST Verified - B2B Price
           </span>
         )}
 
@@ -266,16 +278,21 @@ export default function ProductCard({ product }: ProductCardProps) {
         <div className="mt-1 flex items-center gap-2">
           <button
             onClick={handleWishlist}
-            className={`flex flex-1 items-center justify-center gap-1.5 rounded border py-1.5 text-[10px] font-medium transition-colors ${
+            disabled={isWishlistLoading}
+            className={`flex flex-1 items-center justify-center gap-1.5 rounded border py-1.5 text-[10px] font-medium transition-colors disabled:opacity-50 ${
               isWishlisted
                 ? "border-primary bg-primary/10 text-primary"
                 : "border-border text-muted-foreground hover:border-primary hover:text-primary"
             }`}
           >
-            <Heart
-              className={`h-3 w-3 ${isWishlisted ? "fill-current" : ""}`}
-            />
-            Wishlist
+            {isWishlistLoading ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <Heart
+                className={`h-3 w-3 ${isWishlisted ? "fill-current" : ""}`}
+              />
+            )}
+            {isWishlisted ? "Saved" : "Wishlist"}
           </button>
           <button className="flex flex-1 items-center justify-center gap-1.5 rounded border border-border py-1.5 text-[10px] font-medium text-muted-foreground transition-colors hover:border-primary hover:text-primary">
             <Scale className="h-3 w-3" />

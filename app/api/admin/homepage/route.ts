@@ -3,8 +3,9 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
 import Settings from "@/models/Settings";
-import Product from "@/models/Product";
+import Product, { IProduct } from "@/models/Product";
 import Category from "@/models/Category";
+import { FlattenMaps } from "mongoose";
 
 interface HomepageSectionInput {
   categoryId: string;
@@ -38,7 +39,7 @@ export async function GET() {
     // Fetch products for each section
     const sectionsWithProducts = await Promise.all(
       sections.map(async (section) => {
-        let products = [];
+        let products: FlattenMaps<IProduct>[] = [];
 
         if (section.productIds && section.productIds.length > 0) {
           products = await Product.find({

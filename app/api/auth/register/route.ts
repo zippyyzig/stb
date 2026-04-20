@@ -3,7 +3,12 @@ import bcrypt from "bcryptjs";
 import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
 import { sendEmail, COMPANY_EMAIL } from "@/lib/email";
-import { welcomeEmailTemplate, newUserNotificationTemplate } from "@/lib/email-templates";
+import { emailVerificationCodeTemplate, newUserNotificationTemplate } from "@/lib/email-templates";
+
+// Generate 8-digit verification code
+function generateVerificationCode(): string {
+  return Math.floor(10000000 + Math.random() * 90000000).toString();
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -38,7 +43,11 @@ export async function POST(request: NextRequest) {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // Create user
+    // Generate verification code
+    const verificationCode = generateVerificationCode();
+    const verificationExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+    // Create user with verification code
     const user = await User.create({
       name,
       email: email.toLowerCase(),
@@ -46,14 +55,19 @@ export async function POST(request: NextRequest) {
       password: hashedPassword,
       role: "customer",
       isActive: true,
+      isEmailVerified: false,
+      emailVerificationCode: verificationCode,
+      emailVerificationExpires: verificationExpires,
+      isOnboardingComplete: false,
+      isGstVerified: false,
     });
 
-    // Send welcome email to customer
-    const welcomeEmail = welcomeEmailTemplate(name);
+    // Send verification code email
+    const verificationEmail = emailVerificationCodeTemplate(name, verificationCode);
     await sendEmail({
       to: email.toLowerCase(),
-      subject: `Welcome to SabKaTechBazar, ${name}!`,
-      html: welcomeEmail,
+      subject: `Verify your email - ${verificationCode}`,
+      html: verificationEmail,
     });
 
     // Send notification email to admin
@@ -70,13 +84,16 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(
       {
-        message: "Account created successfully",
+        message: "Account created successfully. Please verify your email.",
         user: {
           id: user._id,
           name: user.name,
           email: user.email,
           role: user.role,
+          isEmailVerified: false,
+          isOnboardingComplete: false,
         },
+        requiresVerification: true,
       },
       { status: 201 }
     );
