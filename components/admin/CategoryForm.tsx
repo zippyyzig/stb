@@ -183,7 +183,7 @@ export default function CategoryForm({
 
   // Get icon component
   const getIconComponent = (iconName: string) => {
-    const IconComponent = (LucideIcons as Record<string, React.ComponentType<{ className?: string }>>)[iconName];
+    const IconComponent = (LucideIcons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[iconName];
     return IconComponent || null;
   };
 
