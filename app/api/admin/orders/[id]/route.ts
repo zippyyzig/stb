@@ -120,7 +120,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
           type: "payment",
           title: "Payment Status Updated",
           message: `Payment for order #${order.orderNumber} is now ${data.paymentStatus}`,
-          link: `/orders/${order._id}`,
+          link: `/dashboard/orders/${order._id}`,
         });
       }
     }
@@ -151,7 +151,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         type: "order",
         title: "Order Status Updated",
         message: `Your order #${order.orderNumber} is now ${data.status}`,
-        link: `/orders/${order._id}`,
+        link: `/dashboard/orders/${order._id}`,
       });
 
       // Send email notification for status change

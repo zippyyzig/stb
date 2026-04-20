@@ -4,14 +4,14 @@ import nodemailer from "nodemailer";
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: process.env.SMTP_EMAIL || "sabkatechbazarr@gmail.com",
-    pass: process.env.SMTP_PASSWORD || "xlgz oqow jakm ipje",
+    user: process.env.SMTP_EMAIL,
+    pass: process.env.SMTP_PASSWORD,
   },
 });
 
 // Company email for notifications
-export const COMPANY_EMAIL = process.env.COMPANY_EMAIL || "sabkatechbazarr@gmail.com";
-export const COMPANY_NAME = process.env.COMPANY_NAME || "SabKaTechBazar";
+export const COMPANY_EMAIL = process.env.COMPANY_EMAIL || process.env.SMTP_EMAIL || "";
+export const COMPANY_NAME = process.env.COMPANY_NAME || "Sabka Tech Bazar";
 export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
 interface EmailOptions {
