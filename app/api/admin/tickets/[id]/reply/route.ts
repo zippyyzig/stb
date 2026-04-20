@@ -41,7 +41,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     const reply: ITicketReply = {
       _id: new mongoose.Types.ObjectId(),
-      user: session.user.id,
+      user: new mongoose.Types.ObjectId(session.user.id),
       userName: session.user.name || "Admin",
       userRole: session.user.role as ITicketReply["userRole"],
       message: message.trim(),
