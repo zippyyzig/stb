@@ -40,7 +40,10 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     const reply = {
       user: session.user.id,
+      userName: session.user.name || "Admin",
+      userRole: session.user.role as "admin" | "super_admin",
       message: message.trim(),
+      attachments: [] as string[],
       isInternal: isInternal || false,
       createdAt: new Date(),
     };
