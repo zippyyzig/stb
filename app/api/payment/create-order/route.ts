@@ -12,6 +12,15 @@ import {
   STATE_CODES,
   GSTBreakdown,
 } from "@/lib/gst";
+import {
+  validatePhoneNumber,
+  validatePincode,
+  validateName,
+  validateAddress,
+  validateQuantity,
+  validateObjectId,
+  sanitizeString,
+} from "@/lib/validation";
 
 // Initialize Razorpay instance
 const razorpay = new Razorpay({
@@ -111,6 +120,66 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Validate shipping address fields
+    const nameValidation = validateName(shippingAddress.name);
+    if (!nameValidation.valid) {
+      return NextResponse.json(
+        { error: nameValidation.error },
+        { status: 400 }
+      );
+    }
+
+    const phoneValidation = validatePhoneNumber(shippingAddress.phone);
+    if (!phoneValidation.valid) {
+      return NextResponse.json(
+        { error: phoneValidation.error },
+        { status: 400 }
+      );
+    }
+
+    const addressValidation = validateAddress(shippingAddress.address);
+    if (!addressValidation.valid) {
+      return NextResponse.json(
+        { error: addressValidation.error },
+        { status: 400 }
+      );
+    }
+
+    const pincodeValidation = validatePincode(shippingAddress.pincode);
+    if (!pincodeValidation.valid) {
+      return NextResponse.json(
+        { error: pincodeValidation.error },
+        { status: 400 }
+      );
+    }
+
+    // Validate cart items
+    for (const item of items) {
+      if (!validateObjectId(item.productId)) {
+        return NextResponse.json(
+          { error: "Invalid product ID" },
+          { status: 400 }
+        );
+      }
+      const qtyValidation = validateQuantity(item.quantity);
+      if (!qtyValidation.valid) {
+        return NextResponse.json(
+          { error: qtyValidation.error },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Sanitize inputs
+    const sanitizedAddress = {
+      name: nameValidation.normalized,
+      phone: phoneValidation.normalized,
+      address: addressValidation.normalized,
+      city: sanitizeString(shippingAddress.city, 100),
+      state: sanitizeString(shippingAddress.state, 50),
+      pincode: pincodeValidation.normalized,
+    };
 
     // 3. Connect to database
     await dbConnect();

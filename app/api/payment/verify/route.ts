@@ -8,6 +8,15 @@ import Product from "@/models/Product";
 import User from "@/models/User";
 import Cart from "@/models/Cart";
 import Razorpay from "razorpay";
+import {
+  validatePhoneNumber,
+  validatePincode,
+  validateName,
+  validateAddress,
+  validateQuantity,
+  validateObjectId,
+  sanitizeString,
+} from "@/lib/validation";
 
 // Initialize Razorpay instance for fetching order details
 const razorpay = new Razorpay({
@@ -121,6 +130,47 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // 3.5. Validate and sanitize inputs
+    const nameValidation = validateName(shippingAddress.name);
+    const phoneValidation = validatePhoneNumber(shippingAddress.phone);
+    const addressValidation = validateAddress(shippingAddress.address);
+    const pincodeValidation = validatePincode(shippingAddress.pincode);
+
+    if (!nameValidation.valid || !phoneValidation.valid || 
+        !addressValidation.valid || !pincodeValidation.valid) {
+      return NextResponse.json(
+        { error: "Invalid address data" },
+        { status: 400 }
+      );
+    }
+
+    // Validate items
+    for (const item of items) {
+      if (!validateObjectId(item.productId)) {
+        return NextResponse.json(
+          { error: "Invalid product ID" },
+          { status: 400 }
+        );
+      }
+      const qtyValidation = validateQuantity(item.quantity);
+      if (!qtyValidation.valid) {
+        return NextResponse.json(
+          { error: qtyValidation.error },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Create sanitized address object
+    const sanitizedShippingAddress = {
+      name: nameValidation.normalized,
+      phone: phoneValidation.normalized,
+      address: addressValidation.normalized,
+      city: sanitizeString(shippingAddress.city, 100),
+      state: sanitizeString(shippingAddress.state, 50),
+      pincode: pincodeValidation.normalized,
+    };
 
     // 4. CRITICAL: Verify payment signature
     const isValidSignature = verifyPaymentSignature(
@@ -257,8 +307,8 @@ export async function POST(request: NextRequest) {
     const order = new Order({
       user: session.user.id,
       items: orderItems,
-      shippingAddress,
-      billingAddress: billingAddress || shippingAddress,
+      shippingAddress: sanitizedShippingAddress,
+      billingAddress: billingAddress || sanitizedShippingAddress,
       subtotal,
       shippingCost,
       tax: totalTax,

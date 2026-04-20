@@ -166,13 +166,13 @@ export default function CheckoutPage() {
     }
   }, [status, router]);
 
-  // Calculate tax when address changes
+  // Calculate tax when address changes (lightweight endpoint, no Razorpay order created)
   const calculateTax = useCallback(async (address: Address) => {
     if (!address || items.length === 0) return;
 
     setIsCalculatingTax(true);
     try {
-      const response = await fetch("/api/payment/create-order", {
+      const response = await fetch("/api/payment/calculate-tax", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -181,17 +181,12 @@ export default function CheckoutPage() {
             quantity: item.quantity,
           })),
           shippingAddress: {
-            name: address.name,
-            phone: address.phone,
-            address: address.address,
-            city: address.city,
             state: address.state,
-            pincode: address.pincode,
           },
         }),
       });
 
-      const data: PaymentOrderResponse = await response.json();
+      const data = await response.json();
       
       if (data.success && data.breakdown) {
         setTaxBreakdown(data.breakdown.taxBreakdown);
