@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
+import Script from "next/script";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -18,7 +19,49 @@ import {
   Truck,
   ShieldCheck,
   Plus,
+  AlertCircle,
+  CheckCircle2,
 } from "lucide-react";
+
+// Razorpay types
+declare global {
+  interface Window {
+    Razorpay: new (options: RazorpayOptions) => RazorpayInstance;
+  }
+}
+
+interface RazorpayOptions {
+  key: string;
+  amount: number;
+  currency: string;
+  name: string;
+  description: string;
+  order_id: string;
+  prefill: {
+    name: string;
+    email: string;
+    contact: string;
+  };
+  notes?: Record<string, string>;
+  theme: {
+    color: string;
+  };
+  handler: (response: RazorpayResponse) => void;
+  modal?: {
+    ondismiss?: () => void;
+  };
+}
+
+interface RazorpayInstance {
+  open: () => void;
+  on: (event: string, handler: () => void) => void;
+}
+
+interface RazorpayResponse {
+  razorpay_payment_id: string;
+  razorpay_order_id: string;
+  razorpay_signature: string;
+}
 
 interface CartItem {
   product: {
@@ -46,6 +89,43 @@ interface Address {
   isDefault: boolean;
 }
 
+interface TaxBreakdown {
+  taxType: "INTRA" | "INTER";
+  cgst: number;
+  sgst: number;
+  igst: number;
+  totalTax: number;
+  customerState: string;
+  isIntraState: boolean;
+}
+
+interface PaymentOrderResponse {
+  success: boolean;
+  orderId: string;
+  amount: number;
+  currency: string;
+  keyId: string;
+  breakdown: {
+    items: Array<{
+      productId: string;
+      name: string;
+      price: number;
+      quantity: number;
+      total: number;
+    }>;
+    subtotal: number;
+    shippingCost: number;
+    discount: number;
+    taxBreakdown: TaxBreakdown;
+    total: number;
+  };
+  prefill: {
+    name: string;
+    email: string;
+    contact: string;
+  };
+}
+
 export default function CheckoutPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -55,9 +135,15 @@ export default function CheckoutPage() {
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
   const [savedAddresses, setSavedAddresses] = useState<Address[]>([]);
-  const [paymentMethod, setPaymentMethod] = useState<"cod" | "razorpay">("cod");
+  const [paymentMethod, setPaymentMethod] = useState<"cod" | "razorpay">("razorpay");
   const [shippingCost, setShippingCost] = useState(99);
   const [showAddressForm, setShowAddressForm] = useState(false);
+  const [razorpayLoaded, setRazorpayLoaded] = useState(false);
+  const [orderError, setOrderError] = useState<string | null>(null);
+  
+  // Tax breakdown state
+  const [taxBreakdown, setTaxBreakdown] = useState<TaxBreakdown | null>(null);
+  const [isCalculatingTax, setIsCalculatingTax] = useState(false);
 
   const [newAddress, setNewAddress] = useState({
     name: "",
@@ -79,6 +165,51 @@ export default function CheckoutPage() {
       fetchSavedAddresses();
     }
   }, [status, router]);
+
+  // Calculate tax when address changes
+  const calculateTax = useCallback(async (address: Address) => {
+    if (!address || items.length === 0) return;
+
+    setIsCalculatingTax(true);
+    try {
+      const response = await fetch("/api/payment/create-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: items.map(item => ({
+            productId: item.product._id,
+            quantity: item.quantity,
+          })),
+          shippingAddress: {
+            name: address.name,
+            phone: address.phone,
+            address: address.address,
+            city: address.city,
+            state: address.state,
+            pincode: address.pincode,
+          },
+        }),
+      });
+
+      const data: PaymentOrderResponse = await response.json();
+      
+      if (data.success && data.breakdown) {
+        setTaxBreakdown(data.breakdown.taxBreakdown);
+        setShippingCost(data.breakdown.shippingCost);
+      }
+    } catch (error) {
+      console.error("Error calculating tax:", error);
+    } finally {
+      setIsCalculatingTax(false);
+    }
+  }, [items]);
+
+  // Recalculate tax when address or items change
+  useEffect(() => {
+    if (selectedAddress && items.length > 0) {
+      calculateTax(selectedAddress);
+    }
+  }, [selectedAddress, calculateTax]);
 
   const fetchCart = async () => {
     try {
@@ -147,13 +278,127 @@ export default function CheckoutPage() {
     setShowAddressForm(false);
   };
 
-  const handlePlaceOrder = async () => {
+  const initiateRazorpayPayment = async () => {
     if (!selectedAddress) {
-      alert("Please add a delivery address");
+      setOrderError("Please add a delivery address");
+      return;
+    }
+
+    if (!razorpayLoaded) {
+      setOrderError("Payment system is loading. Please try again.");
       return;
     }
 
     setIsPlacingOrder(true);
+    setOrderError(null);
+
+    try {
+      // Step 1: Create Razorpay order on server
+      const createOrderResponse = await fetch("/api/payment/create-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: items.map(item => ({
+            productId: item.product._id,
+            quantity: item.quantity,
+          })),
+          shippingAddress: {
+            name: selectedAddress.name,
+            phone: selectedAddress.phone,
+            address: selectedAddress.address,
+            city: selectedAddress.city,
+            state: selectedAddress.state,
+            pincode: selectedAddress.pincode,
+          },
+        }),
+      });
+
+      const orderData: PaymentOrderResponse = await createOrderResponse.json();
+
+      if (!createOrderResponse.ok || !orderData.success) {
+        throw new Error((orderData as unknown as { error: string }).error || "Failed to create payment order");
+      }
+
+      // Step 2: Open Razorpay checkout
+      const options: RazorpayOptions = {
+        key: orderData.keyId,
+        amount: orderData.amount,
+        currency: orderData.currency,
+        name: "SabKaTechBazar",
+        description: "Order Payment",
+        order_id: orderData.orderId,
+        prefill: {
+          name: orderData.prefill.name,
+          email: orderData.prefill.email || "",
+          contact: orderData.prefill.contact,
+        },
+        theme: {
+          color: "#FF6B00", // Primary brand color
+        },
+        handler: async function (response: RazorpayResponse) {
+          // Step 3: Verify payment on server
+          try {
+            const verifyResponse = await fetch("/api/payment/verify", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                shippingAddress: {
+                  name: selectedAddress.name,
+                  phone: selectedAddress.phone,
+                  address: selectedAddress.address,
+                  city: selectedAddress.city,
+                  state: selectedAddress.state,
+                  pincode: selectedAddress.pincode,
+                },
+                items: items.map(item => ({
+                  productId: item.product._id,
+                  quantity: item.quantity,
+                })),
+              }),
+            });
+
+            const verifyData = await verifyResponse.json();
+
+            if (verifyResponse.ok && verifyData.success) {
+              // Payment successful - redirect to success page
+              router.push(`/order-success?orderId=${verifyData.orderId}&orderNumber=${verifyData.orderNumber}`);
+            } else {
+              setOrderError(verifyData.error || "Payment verification failed. Please contact support.");
+              setIsPlacingOrder(false);
+            }
+          } catch {
+            setOrderError("Payment verification failed. Please contact support if amount was deducted.");
+            setIsPlacingOrder(false);
+          }
+        },
+        modal: {
+          ondismiss: function () {
+            setIsPlacingOrder(false);
+          },
+        },
+      };
+
+      const razorpay = new window.Razorpay(options);
+      razorpay.open();
+
+    } catch (error) {
+      console.error("Payment error:", error);
+      setOrderError(error instanceof Error ? error.message : "Failed to initiate payment. Please try again.");
+      setIsPlacingOrder(false);
+    }
+  };
+
+  const handlePlaceCODOrder = async () => {
+    if (!selectedAddress) {
+      setOrderError("Please add a delivery address");
+      return;
+    }
+
+    setIsPlacingOrder(true);
+    setOrderError(null);
 
     try {
       const orderData = {
@@ -168,8 +413,8 @@ export default function CheckoutPage() {
         shippingAddress: selectedAddress,
         subtotal: total,
         shippingCost,
-        total: total + shippingCost,
-        paymentMethod,
+        total: grandTotal,
+        paymentMethod: "cod",
       };
 
       const response = await fetch("/api/orders", {
@@ -181,23 +426,25 @@ export default function CheckoutPage() {
       const data = await response.json();
 
       if (response.ok) {
-        if (paymentMethod === "razorpay" && data.razorpayOrderId) {
-          // Initiate Razorpay payment
-          // TODO: Implement Razorpay payment
-          alert("Razorpay payment coming soon. Using COD for now.");
-        }
-
         // Clear cart and redirect to success
         await fetch("/api/cart", { method: "DELETE" });
         router.push(`/order-success?orderId=${data.order._id}`);
       } else {
-        alert(data.error || "Failed to place order");
+        setOrderError(data.error || "Failed to place order");
       }
     } catch (error) {
       console.error("Error placing order:", error);
-      alert("Failed to place order. Please try again.");
+      setOrderError("Failed to place order. Please try again.");
     } finally {
       setIsPlacingOrder(false);
+    }
+  };
+
+  const handlePlaceOrder = () => {
+    if (paymentMethod === "razorpay") {
+      initiateRazorpayPayment();
+    } else {
+      handlePlaceCODOrder();
     }
   };
 
@@ -213,10 +460,19 @@ export default function CheckoutPage() {
     );
   }
 
-  const grandTotal = total + shippingCost;
+  // Calculate totals including tax
+  const taxAmount = taxBreakdown?.totalTax || 0;
+  const grandTotal = total + shippingCost + taxAmount;
 
   return (
     <div className="flex min-h-screen flex-col">
+      {/* Load Razorpay Script */}
+      <Script
+        src="https://checkout.razorpay.com/v1/checkout.js"
+        onLoad={() => setRazorpayLoaded(true)}
+        strategy="lazyOnload"
+      />
+      
       <Header />
       <main className="flex-1 bg-background">
         {/* Breadcrumb */}
@@ -239,6 +495,20 @@ export default function CheckoutPage() {
 
         <div className="mx-auto max-w-7xl px-4 py-8">
           <h1 className="heading-xl mb-8">Checkout</h1>
+
+          {/* Error Alert */}
+          {orderError && (
+            <div className="mb-6 flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-red-800">
+              <AlertCircle className="h-5 w-5 shrink-0" />
+              <p>{orderError}</p>
+              <button 
+                onClick={() => setOrderError(null)}
+                className="ml-auto text-red-600 hover:text-red-800"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
 
           <div className="grid gap-8 lg:grid-cols-3">
             {/* Checkout Form */}
@@ -389,6 +659,35 @@ export default function CheckoutPage() {
                 <div className="flex flex-col gap-3">
                   <label
                     className={`flex cursor-pointer items-center gap-4 rounded-lg border p-4 transition-colors ${
+                      paymentMethod === "razorpay"
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:bg-muted/50"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="payment"
+                      value="razorpay"
+                      checked={paymentMethod === "razorpay"}
+                      onChange={() => setPaymentMethod("razorpay")}
+                      className="h-4 w-4 text-primary"
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium">Pay Online (Razorpay)</p>
+                        <span className="text-[10px] font-semibold text-green-600 bg-green-100 px-1.5 py-0.5 rounded">
+                          Recommended
+                        </span>
+                      </div>
+                      <p className="body-sm text-muted-foreground">
+                        UPI, Cards, Net Banking, Wallets
+                      </p>
+                    </div>
+                    <ShieldCheck className="h-5 w-5 text-green-600" />
+                  </label>
+
+                  <label
+                    className={`flex cursor-pointer items-center gap-4 rounded-lg border p-4 transition-colors ${
                       paymentMethod === "cod"
                         ? "border-primary bg-primary/5"
                         : "border-border hover:bg-muted/50"
@@ -406,29 +705,6 @@ export default function CheckoutPage() {
                       <p className="font-medium">Cash on Delivery</p>
                       <p className="body-sm text-muted-foreground">
                         Pay when you receive your order
-                      </p>
-                    </div>
-                  </label>
-
-                  <label
-                    className={`flex cursor-pointer items-center gap-4 rounded-lg border p-4 transition-colors ${
-                      paymentMethod === "razorpay"
-                        ? "border-primary bg-primary/5"
-                        : "border-border hover:bg-muted/50"
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="payment"
-                      value="razorpay"
-                      checked={paymentMethod === "razorpay"}
-                      onChange={() => setPaymentMethod("razorpay")}
-                      className="h-4 w-4 text-primary"
-                    />
-                    <div>
-                      <p className="font-medium">Pay Online (Razorpay)</p>
-                      <p className="body-sm text-muted-foreground">
-                        UPI, Cards, Net Banking, Wallets
                       </p>
                     </div>
                   </label>
@@ -498,6 +774,53 @@ export default function CheckoutPage() {
                         : `₹${shippingCost.toLocaleString("en-IN")}`}
                     </span>
                   </div>
+
+                  {/* GST Breakdown */}
+                  {taxBreakdown && (
+                    <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-muted-foreground">
+                          GST ({taxBreakdown.taxType === "INTRA" ? "Intra-State" : "Inter-State"})
+                        </span>
+                        {taxBreakdown.customerState && (
+                          <span className="text-xs text-muted-foreground">
+                            {taxBreakdown.customerState}
+                          </span>
+                        )}
+                      </div>
+                      
+                      {taxBreakdown.isIntraState ? (
+                        <>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">CGST @9%</span>
+                            <span>₹{taxBreakdown.cgst.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">SGST @9%</span>
+                            <span>₹{taxBreakdown.sgst.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">IGST @18%</span>
+                          <span>₹{taxBreakdown.igst.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+                        </div>
+                      )}
+                      
+                      <div className="flex justify-between text-sm font-medium border-t border-border pt-2">
+                        <span>Total Tax</span>
+                        <span>₹{taxBreakdown.totalTax.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {isCalculatingTax && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Calculating tax...
+                    </div>
+                  )}
+
                   {total < 5000 && (
                     <p className="body-sm text-muted-foreground">
                       Add ₹{(5000 - total).toLocaleString("en-IN")} more for
@@ -511,24 +834,24 @@ export default function CheckoutPage() {
                 <div className="flex justify-between text-lg">
                   <span className="font-medium">Total</span>
                   <span className="font-bold text-primary">
-                    ₹{grandTotal.toLocaleString("en-IN")}
+                    ₹{grandTotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                   </span>
                 </div>
 
                 <Button
                   onClick={handlePlaceOrder}
-                  disabled={!selectedAddress || isPlacingOrder}
+                  disabled={!selectedAddress || isPlacingOrder || isCalculatingTax}
                   className="mt-6 w-full gap-2"
                   size="lg"
                 >
                   {isPlacingOrder ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      Placing Order...
+                      {paymentMethod === "razorpay" ? "Processing..." : "Placing Order..."}
                     </>
                   ) : (
                     <>
-                      Place Order
+                      {paymentMethod === "razorpay" ? "Pay Now" : "Place Order"}
                       <ChevronRight className="h-4 w-4" />
                     </>
                   )}
@@ -538,7 +861,11 @@ export default function CheckoutPage() {
                 <div className="mt-6 flex flex-col gap-3 text-center">
                   <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
                     <ShieldCheck className="h-4 w-4 text-stb-success" />
-                    Secure checkout
+                    Secure checkout with Razorpay
+                  </div>
+                  <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                    <CheckCircle2 className="h-4 w-4 text-stb-success" />
+                    GST Invoice included
                   </div>
                   <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
                     <Truck className="h-4 w-4 text-primary" />
