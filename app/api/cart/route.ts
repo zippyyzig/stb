@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
         existingItem.quantity = newQuantity;
       } else {
         // Add new item
-        cart.items.push({ product: productId, quantity });
+        cart.items.push({ product: productId, quantity, addedAt: new Date() });
       }
 
       await cart.save();
