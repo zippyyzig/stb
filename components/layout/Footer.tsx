@@ -6,8 +6,6 @@ import {
   Mail,
   Phone,
   MapPin,
-  Building2,
-  CreditCard,
   ExternalLink,
   ArrowUp,
   Globe,
@@ -96,8 +94,17 @@ export default function Footer() {
               <div className="flex items-start gap-2 text-white/70">
                 <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                 <span className="body-sm">
-                  2nd Floor, Industrial Area, Jaipur - 302006, Rajasthan, India
+                  2nd Floor, No. 94/1, Behind Sharda Theater, SP Road, Bangalore - 560002
                 </span>
+              </div>
+              <div className="flex items-center gap-2 text-white/70">
+                <Phone className="h-4 w-4 shrink-0 text-primary" />
+                <a
+                  href="tel:+919353919299"
+                  className="body-sm hover:text-white"
+                >
+                  +91 93539 19299
+                </a>
               </div>
               <div className="flex items-center gap-2 text-white/70">
                 <Mail className="h-4 w-4 shrink-0 text-primary" />
@@ -194,21 +201,7 @@ export default function Footer() {
               ))}
             </div>
 
-            {/* Bank Details */}
-            <div className="mt-6 rounded-lg border border-white/10 bg-white/5 p-4">
-              <div className="mb-3 flex items-center gap-2">
-                <Building2 className="h-4 w-4 text-primary" />
-                <span className="heading-sm text-sm text-white">Bank Details</span>
-              </div>
-              <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-2 text-white/60">
-                  <CreditCard className="h-3.5 w-3.5 shrink-0" />
-                  <span className="body-sm">A/C: 1234567890</span>
-                </div>
-                <div className="body-sm text-white/60">IFSC: HDFC0001234</div>
-                <div className="body-sm text-white/60">Branch: Main Branch, Jaipur</div>
-              </div>
-            </div>
+
           </div>
         </div>
       </div>
