@@ -111,7 +111,7 @@ export default function Header() {
                     />
                     <div className="absolute right-0 top-full z-50 mt-2 w-48 rounded-lg bg-card py-1 shadow-lg border border-border">
                       <Link
-                        href="/account"
+                        href="/dashboard"
                         className="flex items-center gap-2 px-4 py-2 text-sm text-foreground hover:bg-muted"
                         onClick={() => setShowUserMenu(false)}
                       >
@@ -119,7 +119,7 @@ export default function Header() {
                         My Account
                       </Link>
                       <Link
-                        href="/account/orders"
+                        href="/dashboard/orders"
                         className="flex items-center gap-2 px-4 py-2 text-sm text-foreground hover:bg-muted"
                         onClick={() => setShowUserMenu(false)}
                       >
@@ -284,6 +284,12 @@ export default function Header() {
       <div className="bg-primary">
         <div className="mx-auto max-w-7xl overflow-x-auto px-4">
           <nav className="flex items-center gap-1 py-2">
+            <Link
+              href="/products"
+              className="label-uppercase shrink-0 rounded bg-white/20 px-4 py-2 font-semibold text-white transition-colors hover:bg-white/30"
+            >
+              All Products
+            </Link>
             {navCategories.map((cat) => (
               <Link
                 key={cat.slug}

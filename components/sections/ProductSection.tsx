@@ -3,6 +3,8 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import {
   Carousel,
   CarouselContent,
@@ -10,9 +12,9 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useCart, useWishlist } from "@/components/providers/CartWishlistProvider";
 import {
   Heart,
   ShoppingCart,
@@ -21,15 +23,18 @@ import {
   ChevronDown,
   Star,
   Scale,
+  Loader2,
 } from "lucide-react";
 
 interface Product {
   id: string;
   name: string;
+  slug: string;
   image: string;
   secondImage?: string;
-  price: number;
-  originalPrice?: number;
+  priceB2C: number;
+  priceB2B: number;
+  mrp: number;
   inStock: boolean;
   brand: string;
   brandLogo?: string;
@@ -57,27 +62,49 @@ interface ProductSectionProps {
 }
 
 function ProductCardInSection({ product }: { product: Product }) {
-  const [isWishlisted, setIsWishlisted] = useState(false);
+  const { data: session } = useSession();
+  const router = useRouter();
+  const { addToCart } = useCart();
+  const { isInWishlist, toggle: toggleWishlist, isLoading: isWishlistLoading } = useWishlist();
+
   const [quantity, setQuantity] = useState(1);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
 
+  const isWishlisted = isInWishlist(product.id);
+
+  // Use B2B price for GST verified users, B2C price for others
+  const isB2B = session?.user?.isGstVerified === true;
+  const displayPrice = isB2B ? product.priceB2B : product.priceB2C;
   const discount =
-    product.originalPrice && product.originalPrice > product.price
-      ? Math.round(
-          ((product.originalPrice - product.price) / product.originalPrice) *
-            100
-        )
+    product.mrp > displayPrice
+      ? Math.round(((product.mrp - displayPrice) / product.mrp) * 100)
       : 0;
 
   const rating = product.rating || 0;
 
-  const incrementQty = () => setQuantity((q) => q + 1);
+  const incrementQty = () => setQuantity((q) => (product.inStock ? q + 1 : q));
   const decrementQty = () => setQuantity((q) => Math.max(1, q - 1));
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
+    if (!session) {
+      router.push(`/auth/login?callbackUrl=/product/${product.slug}`);
+      return;
+    }
     setIsAddingToCart(true);
-    setTimeout(() => setIsAddingToCart(false), 500);
+    try {
+      await addToCart(product.id, quantity);
+    } finally {
+      setIsAddingToCart(false);
+    }
+  };
+
+  const handleWishlist = async () => {
+    if (!session) {
+      router.push(`/auth/login?callbackUrl=/product/${product.slug}`);
+      return;
+    }
+    await toggleWishlist(product.id);
   };
 
   return (
@@ -100,7 +127,7 @@ function ProductCardInSection({ product }: { product: Product }) {
         {/* Quickview Button */}
         <div className={`quickview-button absolute inset-0 z-10 flex items-center justify-center bg-black/5 transition-opacity duration-200 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
           <Link
-            href={`/product/${product.id}`}
+            href={`/product/${product.slug}`}
             className="btn-quickview flex items-center gap-1.5 rounded bg-white px-3 py-2 text-xs font-medium text-stb-dark shadow-md transition-all hover:bg-primary hover:text-white"
           >
             <Eye className="h-3.5 w-3.5" />
@@ -109,7 +136,7 @@ function ProductCardInSection({ product }: { product: Product }) {
         </div>
 
         {/* Product Images with Swap on Hover */}
-        <Link href={`/product/${product.id}`} className="product-img block p-3">
+        <Link href={`/product/${product.slug}`} className="product-img block p-3">
           <div className="relative mx-auto h-40 w-40">
             <Image
               src={product.image}
@@ -147,7 +174,7 @@ function ProductCardInSection({ product }: { product: Product }) {
         {/* Product Name */}
         <div className="name">
           <Link 
-            href={`/product/${product.id}`}
+            href={`/product/${product.slug}`}
             className="line-clamp-2 text-[13px] font-medium leading-tight text-foreground transition-colors hover:text-primary"
           >
             {product.name}
@@ -180,11 +207,11 @@ function ProductCardInSection({ product }: { product: Product }) {
           <div className="flex items-start justify-between gap-2">
             <div className="flex flex-col">
               <span className="price-new text-base font-bold text-foreground">
-                ₹{product.price.toLocaleString("en-IN")}
+                ₹{displayPrice.toLocaleString("en-IN")}
               </span>
-              {product.originalPrice && product.originalPrice > product.price && (
+              {product.mrp > displayPrice && (
                 <span className="price-old text-[10px] text-muted-foreground line-through">
-                  ₹{product.originalPrice.toLocaleString("en-IN")}
+                  ₹{product.mrp.toLocaleString("en-IN")}
                 </span>
               )}
             </div>
@@ -208,7 +235,7 @@ function ProductCardInSection({ product }: { product: Product }) {
             </div>
           </div>
           <span className="price-tax text-[9px] text-muted-foreground">
-            Ex Tax:₹{product.price.toLocaleString("en-IN")}
+            Ex Tax:₹{displayPrice.toLocaleString("en-IN")}
           </span>
         </div>
 
@@ -272,15 +299,20 @@ function ProductCardInSection({ product }: { product: Product }) {
             {/* Wish Group */}
             <div className="wish-group flex items-center gap-1.5">
               <button
-                onClick={() => setIsWishlisted(!isWishlisted)}
-                className={`btn-wishlist flex flex-1 items-center justify-center gap-1 rounded border py-1.5 text-[10px] font-medium transition-all ${
+                onClick={handleWishlist}
+                disabled={isWishlistLoading}
+                className={`btn-wishlist flex flex-1 items-center justify-center gap-1 rounded border py-1.5 text-[10px] font-medium transition-all disabled:opacity-50 ${
                   isWishlisted
                     ? "border-primary bg-primary/10 text-primary"
                     : "border-border bg-white text-muted-foreground hover:border-primary hover:text-primary"
                 }`}
               >
-                <Heart className={`h-2.5 w-2.5 ${isWishlisted ? "fill-current" : ""}`} />
-                <span className="btn-text">Wishlist</span>
+                {isWishlistLoading ? (
+                  <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                ) : (
+                  <Heart className={`h-2.5 w-2.5 ${isWishlisted ? "fill-current" : ""}`} />
+                )}
+                <span className="btn-text">{isWishlisted ? "Saved" : "Wishlist"}</span>
               </button>
               <button className="btn-compare flex flex-1 items-center justify-center gap-1 rounded border border-border bg-white py-1.5 text-[10px] font-medium text-muted-foreground transition-all hover:border-primary hover:text-primary">
                 <Scale className="h-2.5 w-2.5" />
