@@ -51,8 +51,11 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     };
 
     ticket.replies.push(reply);
-    ticket.lastReplyAt = new Date();
-    ticket.updatedAt = new Date();
+
+    // Set firstResponseAt if this is the first admin reply
+    if (!ticket.firstResponseAt) {
+      ticket.firstResponseAt = new Date();
+    }
 
     // If ticket is open and admin replies, change to in_progress
     if (ticket.status === "open") {
@@ -62,14 +65,14 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     await ticket.save();
 
     const updatedTicket = await Ticket.findById(id)
-      .populate("customer", "name email phone")
+      .populate("user", "name email phone")
       .populate("assignedTo", "name email")
       .populate("replies.user", "name email role")
       .lean();
 
     // Send email notification to customer (only for non-internal replies)
     if (!isInternal) {
-      const customer = await User.findById(ticket.customer);
+      const customer = await User.findById(ticket.user);
       if (customer) {
         const isResolved = ticket.status === "resolved" || ticket.status === "closed";
         const replyEmail = ticketReplyTemplate(
