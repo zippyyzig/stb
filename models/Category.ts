@@ -58,7 +58,7 @@ const CategorySchema = new Schema<ICategory>(
 );
 
 // Create indexes
-CategorySchema.index({ slug: 1 });
+// Note: slug index is created automatically via unique: true in the schema field definition
 CategorySchema.index({ parent: 1 });
 CategorySchema.index({ isActive: 1 });
 CategorySchema.index({ sortOrder: 1 });

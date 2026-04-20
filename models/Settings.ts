@@ -47,7 +47,7 @@ const SettingsSchema = new Schema<ISettings>(
 );
 
 // Create indexes
-SettingsSchema.index({ key: 1 });
+// Note: key index is created automatically via unique: true in the schema field definition
 SettingsSchema.index({ category: 1 });
 
 const Settings: Model<ISettings> =

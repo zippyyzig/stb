@@ -176,8 +176,7 @@ const ProductSchema = new Schema<IProduct>(
 );
 
 // Create indexes
-ProductSchema.index({ slug: 1 });
-ProductSchema.index({ sku: 1 });
+// Note: slug and sku indexes are created automatically via unique: true in the schema field definitions
 ProductSchema.index({ category: 1 });
 ProductSchema.index({ isActive: 1 });
 ProductSchema.index({ isFeatured: 1 });

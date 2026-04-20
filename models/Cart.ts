@@ -46,8 +46,7 @@ const CartSchema = new Schema<ICart>(
   }
 );
 
-// Create indexes
-CartSchema.index({ user: 1 });
+// Note: user index is created automatically via unique: true in the schema field definition
 
 const Cart: Model<ICart> =
   mongoose.models.Cart || mongoose.model<ICart>("Cart", CartSchema);

@@ -139,9 +139,8 @@ const UserSchema = new Schema<IUser>(
 );
 
 // Create indexes
-UserSchema.index({ email: 1 });
 UserSchema.index({ role: 1 });
-UserSchema.index({ googleId: 1 }, { sparse: true });
+// Note: email and googleId indexes are created automatically via unique: true / sparse: true in the schema field definitions
 
 const User: Model<IUser> =
   mongoose.models.User || mongoose.model<IUser>("User", UserSchema);
