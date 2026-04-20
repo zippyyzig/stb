@@ -23,6 +23,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import OrderStatusUpdater from "@/components/admin/OrderStatusUpdater";
 import DeleteOrderButton from "@/components/admin/DeleteOrderButton";
+import ViewInvoiceButton from "@/components/orders/ViewInvoiceButton";
 
 interface OrderDetailPageProps {
   params: Promise<{ id: string }>;
@@ -115,6 +116,7 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
         </div>
 
         <div className="flex gap-3">
+          <ViewInvoiceButton orderId={order._id} />
           <OrderStatusUpdater
             orderId={order._id}
             currentStatus={order.status}
@@ -196,7 +198,27 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
                     <span>-₹{order.discount.toLocaleString("en-IN")}</span>
                   </div>
                 )}
-                {order.tax > 0 && (
+                {order.taxBreakdown ? (
+                  <>
+                    {order.taxBreakdown.taxType === "INTRA" ? (
+                      <>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">CGST (9%)</span>
+                          <span>₹{order.taxBreakdown.cgst.toLocaleString("en-IN")}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">SGST (9%)</span>
+                          <span>₹{order.taxBreakdown.sgst.toLocaleString("en-IN")}</span>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">IGST (18%)</span>
+                        <span>₹{order.taxBreakdown.igst.toLocaleString("en-IN")}</span>
+                      </div>
+                    )}
+                  </>
+                ) : order.tax > 0 && (
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Tax</span>
                     <span>₹{order.tax.toLocaleString("en-IN")}</span>
@@ -346,6 +368,12 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Coupon</span>
                   <span className="font-mono text-sm">{order.couponCode}</span>
+                </div>
+              )}
+              {order.taxBreakdown?.customerGstin && (
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Customer GSTIN</span>
+                  <span className="font-mono text-xs">{order.taxBreakdown.customerGstin}</span>
                 </div>
               )}
             </div>

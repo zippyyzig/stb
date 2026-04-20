@@ -22,6 +22,17 @@ export interface IOrderItem {
   total: number;
 }
 
+export interface ITaxBreakdown {
+  taxType: "INTRA" | "INTER";
+  cgst: number;
+  sgst: number;
+  igst: number;
+  totalTax: number;
+  customerStateCode: string;
+  customerGstin?: string | null;
+  businessGstin?: string | null;
+}
+
 export interface IOrder extends Document {
   _id: mongoose.Types.ObjectId;
   orderNumber: string;
@@ -55,6 +66,7 @@ export interface IOrder extends Document {
   razorpayOrderId?: string;
   razorpayPaymentId?: string;
   razorpaySignature?: string;
+  taxBreakdown?: ITaxBreakdown;
   notes?: string;
   trackingNumber?: string;
   trackingUrl?: string;
@@ -87,6 +99,21 @@ const AddressSchema = new Schema({
   city: { type: String, required: true },
   state: { type: String, required: true },
   pincode: { type: String, required: true },
+});
+
+const TaxBreakdownSchema = new Schema({
+  taxType: {
+    type: String,
+    enum: ["INTRA", "INTER"],
+    required: true,
+  },
+  cgst: { type: Number, default: 0, min: 0 },
+  sgst: { type: Number, default: 0, min: 0 },
+  igst: { type: Number, default: 0, min: 0 },
+  totalTax: { type: Number, required: true, min: 0 },
+  customerStateCode: { type: String, required: true },
+  customerGstin: { type: String, default: null },
+  businessGstin: { type: String, default: null },
 });
 
 const OrderSchema = new Schema<IOrder>(
@@ -160,6 +187,7 @@ const OrderSchema = new Schema<IOrder>(
     razorpayOrderId: String,
     razorpayPaymentId: String,
     razorpaySignature: String,
+    taxBreakdown: TaxBreakdownSchema,
     notes: String,
     trackingNumber: String,
     trackingUrl: String,

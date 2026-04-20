@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import OrderFilters from "@/components/admin/OrderFilters";
+import ExportOrdersButton from "@/components/admin/ExportOrdersButton";
 
 interface OrdersPageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -160,11 +161,17 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
   return (
     <div className="flex flex-col gap-6">
       {/* Header */}
-      <div>
-        <h1 className="heading-xl">Orders</h1>
-        <p className="body-md mt-1 text-muted-foreground">
-          Manage and track customer orders
-        </p>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="heading-xl">Orders</h1>
+          <p className="body-md mt-1 text-muted-foreground">
+            Manage and track customer orders
+          </p>
+        </div>
+        <ExportOrdersButton
+          currentStatus={params.status as string | undefined}
+          currentPaymentStatus={params.paymentStatus as string | undefined}
+        />
       </div>
 
       {/* Stats Cards */}

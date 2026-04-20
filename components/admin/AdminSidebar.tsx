@@ -51,6 +51,12 @@ const menuItems = [
     roles: ["admin", "super_admin"],
   },
   {
+    title: "Coupons",
+    href: "/admin/coupons",
+    icon: Tag,
+    roles: ["admin", "super_admin"],
+  },
+  {
     title: "Inventory",
     href: "/admin/inventory",
     icon: Warehouse,
