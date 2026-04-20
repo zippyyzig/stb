@@ -44,7 +44,8 @@ async function getShippingRates(searchParams: { [key: string]: string | string[]
       .lean();
 
     // Group by state
-    const groupedRates = rates.reduce((acc: Record<string, typeof rates>, rate: { state: string }) => {
+    type LeanRate = (typeof rates)[number];
+    const groupedRates = rates.reduce((acc: Record<string, LeanRate[]>, rate: LeanRate) => {
       if (!acc[rate.state]) {
         acc[rate.state] = [];
       }
