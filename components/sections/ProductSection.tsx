@@ -29,6 +29,7 @@ import {
 interface Product {
   id: string;
   name: string;
+  slug: string;
   image: string;
   secondImage?: string;
   price: number;
@@ -86,7 +87,7 @@ function ProductCardInSection({ product }: { product: Product }) {
 
   const handleAddToCart = async () => {
     if (!session) {
-      router.push(`/auth/login?callbackUrl=/product/${product.slug || product.id}`);
+      router.push(`/auth/login?callbackUrl=/product/${product.slug}`);
       return;
     }
     setIsAddingToCart(true);
@@ -99,7 +100,7 @@ function ProductCardInSection({ product }: { product: Product }) {
 
   const handleWishlist = async () => {
     if (!session) {
-      router.push(`/auth/login?callbackUrl=/product/${product.slug || product.id}`);
+      router.push(`/auth/login?callbackUrl=/product/${product.slug}`);
       return;
     }
     await toggleWishlist(product.id);
@@ -125,7 +126,7 @@ function ProductCardInSection({ product }: { product: Product }) {
         {/* Quickview Button */}
         <div className={`quickview-button absolute inset-0 z-10 flex items-center justify-center bg-black/5 transition-opacity duration-200 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
           <Link
-            href={`/product/${product.id}`}
+            href={`/product/${product.slug}`}
             className="btn-quickview flex items-center gap-1.5 rounded bg-white px-3 py-2 text-xs font-medium text-stb-dark shadow-md transition-all hover:bg-primary hover:text-white"
           >
             <Eye className="h-3.5 w-3.5" />
@@ -134,7 +135,7 @@ function ProductCardInSection({ product }: { product: Product }) {
         </div>
 
         {/* Product Images with Swap on Hover */}
-        <Link href={`/product/${product.id}`} className="product-img block p-3">
+        <Link href={`/product/${product.slug}`} className="product-img block p-3">
           <div className="relative mx-auto h-40 w-40">
             <Image
               src={product.image}
@@ -172,7 +173,7 @@ function ProductCardInSection({ product }: { product: Product }) {
         {/* Product Name */}
         <div className="name">
           <Link 
-            href={`/product/${product.id}`}
+            href={`/product/${product.slug}`}
             className="line-clamp-2 text-[13px] font-medium leading-tight text-foreground transition-colors hover:text-primary"
           >
             {product.name}
