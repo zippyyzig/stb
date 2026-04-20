@@ -31,7 +31,9 @@ export async function POST(request: NextRequest) {
 
     await dbConnect();
 
-    const user = await User.findById(session.user.id);
+    // Use lean() to get plain JS object to ensure all fields are returned
+    // This bypasses any Mongoose schema field filtering
+    const user = await User.findById(session.user.id).lean();
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
@@ -43,26 +45,39 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if code matches and hasn't expired
-    if (user.emailVerificationCode !== code) {
+    // Check if user has a verification code
+    if (!user.emailVerificationCode) {
+      return NextResponse.json(
+        { error: "No verification code found. Please request a new one." },
+        { status: 400 }
+      );
+    }
+
+    // Trim and normalize both codes for comparison
+    const submittedCode = String(code).trim();
+    const storedCode = String(user.emailVerificationCode).trim();
+
+    // Check if code matches
+    if (storedCode !== submittedCode) {
       return NextResponse.json(
         { error: "Invalid verification code" },
         { status: 400 }
       );
     }
 
-    if (user.emailVerificationExpires && new Date() > user.emailVerificationExpires) {
+    // Check if code has expired
+    if (user.emailVerificationExpires && new Date() > new Date(user.emailVerificationExpires)) {
       return NextResponse.json(
         { error: "Verification code has expired. Please request a new one." },
         { status: 400 }
       );
     }
 
-    // Mark email as verified
-    user.isEmailVerified = true;
-    user.emailVerificationCode = undefined;
-    user.emailVerificationExpires = undefined;
-    await user.save();
+    // Mark email as verified using findByIdAndUpdate to ensure persistence
+    await User.findByIdAndUpdate(session.user.id, {
+      $set: { isEmailVerified: true },
+      $unset: { emailVerificationCode: 1, emailVerificationExpires: 1 },
+    });
 
     return NextResponse.json({
       message: "Email verified successfully",
@@ -78,7 +93,7 @@ export async function POST(request: NextRequest) {
 }
 
 // PUT - Resend verification code
-export async function PUT(request: NextRequest) {
+export async function PUT() {
   try {
     const session = await getServerSession(authOptions);
     
@@ -88,7 +103,8 @@ export async function PUT(request: NextRequest) {
 
     await dbConnect();
 
-    const user = await User.findById(session.user.id);
+    // Use lean() to get plain JS object
+    const user = await User.findById(session.user.id).lean();
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
@@ -104,9 +120,21 @@ export async function PUT(request: NextRequest) {
     const verificationCode = generateVerificationCode();
     const verificationExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
 
-    user.emailVerificationCode = verificationCode;
-    user.emailVerificationExpires = verificationExpires;
-    await user.save();
+    // Use findByIdAndUpdate with $set to ensure the update is persisted
+    const updatedUser = await User.findByIdAndUpdate(
+      session.user.id,
+      {
+        $set: {
+          emailVerificationCode: verificationCode,
+          emailVerificationExpires: verificationExpires,
+        },
+      },
+      { new: true }
+    );
+
+    if (!updatedUser) {
+      return NextResponse.json({ error: "Failed to update user" }, { status: 500 });
+    }
 
     // Send new verification email
     const verificationEmail = emailVerificationCodeTemplate(user.name, verificationCode);
