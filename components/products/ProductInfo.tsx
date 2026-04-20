@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { useCart, useWishlist } from "@/components/providers/CartWishlistProvider";
 import {
   Heart,
   ShoppingCart,
@@ -46,30 +47,19 @@ interface ProductInfoProps {
 export default function ProductInfo({ product }: ProductInfoProps) {
   const { data: session } = useSession();
   const router = useRouter();
+  const { addToCart: addToCartContext } = useCart();
+  const { isInWishlist, toggle: toggleWishlistContext, isLoading: isWishlistLoading } = useWishlist();
+  
   const [quantity, setQuantity] = useState(product.minOrderQty || 1);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
-  const [isWishlisted, setIsWishlisted] = useState(false);
-  const [isWishlistLoading, setIsWishlistLoading] = useState(false);
   const [cartAdded, setCartAdded] = useState(false);
 
-  // Check wishlist status on mount (only when logged in)
-  useEffect(() => {
-    if (!session) return;
-    fetch("/api/wishlist")
-      .then((r) => r.json())
-      .then((data) => {
-        const wishlisted = data.items?.some(
-          (item: { product: { _id: string } }) =>
-            item.product._id === product._id
-        );
-        setIsWishlisted(!!wishlisted);
-      })
-      .catch(() => {});
-  }, [session, product._id]);
+  // Check wishlist status from context
+  const isWishlisted = isInWishlist(product._id);
 
-  // Determine price based on user type
-  const isB2B =
-    session?.user?.role === "admin" || session?.user?.role === "super_admin";
+  // Determine price based on user GST verification status
+  // Users with verified GST get B2B wholesale prices
+  const isB2B = session?.user?.isGstVerified === true;
   const displayPrice = isB2B ? product.priceB2B : product.priceB2C;
   const discount = Math.round(((product.mrp - displayPrice) / product.mrp) * 100);
   const inStock = product.stock > 0;
@@ -91,12 +81,8 @@ export default function ProductInfo({ product }: ProductInfoProps) {
     }
     setIsAddingToCart(true);
     try {
-      const res = await fetch("/api/cart", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productId: product._id, quantity }),
-      });
-      if (res.ok) {
+      const success = await addToCartContext(product._id, quantity);
+      if (success) {
         setCartAdded(true);
         setTimeout(() => setCartAdded(false), 2000);
       }
@@ -118,33 +104,12 @@ export default function ProductInfo({ product }: ProductInfoProps) {
 
   const handleWishlistToggle = async () => {
     if (!session) {
-      // Redirect to login; after login the user returns to this product page
       router.push(
         `/auth/login?callbackUrl=/product/${product.slug}&wishlistProduct=${product._id}`
       );
       return;
     }
-
-    setIsWishlistLoading(true);
-    try {
-      if (isWishlisted) {
-        const res = await fetch(`/api/wishlist?productId=${product._id}`, {
-          method: "DELETE",
-        });
-        if (res.ok) setIsWishlisted(false);
-      } else {
-        const res = await fetch("/api/wishlist", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ productId: product._id }),
-        });
-        if (res.ok) setIsWishlisted(true);
-      }
-    } catch (error) {
-      console.error("Error toggling wishlist:", error);
-    } finally {
-      setIsWishlistLoading(false);
-    }
+    await toggleWishlistContext(product._id);
   };
 
   const handleShare = async () => {

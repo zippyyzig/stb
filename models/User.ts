@@ -15,6 +15,16 @@ export interface IUser extends Document {
   lastLoginAt?: Date;
   passwordResetToken?: string;
   passwordResetExpires?: Date;
+  // Email verification fields
+  isEmailVerified: boolean;
+  emailVerificationCode?: string;
+  emailVerificationExpires?: Date;
+  // GST & Onboarding fields
+  gstNumber?: string;
+  isGstVerified: boolean;
+  isOnboardingComplete: boolean;
+  businessName?: string;
+  businessType?: "retailer" | "wholesaler" | "distributor" | "manufacturer" | "other";
   addresses: {
     _id: mongoose.Types.ObjectId;
     name: string;
@@ -87,6 +97,39 @@ const UserSchema = new Schema<IUser>(
     },
     passwordResetExpires: {
       type: Date,
+    },
+    // Email verification
+    isEmailVerified: {
+      type: Boolean,
+      default: false,
+    },
+    emailVerificationCode: {
+      type: String,
+    },
+    emailVerificationExpires: {
+      type: Date,
+    },
+    // GST & Onboarding
+    gstNumber: {
+      type: String,
+      trim: true,
+      uppercase: true,
+    },
+    isGstVerified: {
+      type: Boolean,
+      default: false,
+    },
+    isOnboardingComplete: {
+      type: Boolean,
+      default: false,
+    },
+    businessName: {
+      type: String,
+      trim: true,
+    },
+    businessType: {
+      type: String,
+      enum: ["retailer", "wholesaler", "distributor", "manufacturer", "other"],
     },
     addresses: [AddressSchema],
   },

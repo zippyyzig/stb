@@ -78,7 +78,8 @@ export default function RegisterPage() {
       if (signInResult?.error) {
         setErrorMessage("Account created but sign-in failed. Please login manually.");
       } else {
-        router.push("/");
+        // Redirect to onboarding for email verification
+        router.push("/auth/onboarding");
         router.refresh();
       }
     } catch {
@@ -107,7 +108,8 @@ export default function RegisterPage() {
       if (signInResult?.error) {
         setErrorMessage(signInResult.error);
       } else {
-        router.push("/");
+        // Google users have verified email, redirect to GST step or home
+        router.push("/auth/onboarding");
         router.refresh();
       }
     } catch (error) {

@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
+import { useCart, useWishlist } from "@/components/providers/CartWishlistProvider";
+import { useRouter } from "next/navigation";
 import {
   Search,
   Heart,
@@ -45,10 +47,26 @@ const navCategories = [
 
 export default function Header() {
   const { data: session, status } = useSession();
+  const router = useRouter();
+  const { cartCount } = useCart();
+  const { wishlistCount } = useWishlist();
   const [searchQuery, setSearchQuery] = useState("");
   const [showUserMenu, setShowUserMenu] = useState(false);
 
   const isAdmin = session?.user?.role === "admin" || session?.user?.role === "super_admin";
+
+  // Redirect to onboarding if not completed
+  useEffect(() => {
+    if (
+      status === "authenticated" &&
+      session?.user &&
+      !session.user.isOnboardingComplete &&
+      typeof window !== "undefined" &&
+      !window.location.pathname.startsWith("/auth/")
+    ) {
+      router.push("/auth/onboarding");
+    }
+  }, [status, session, router]);
 
   return (
     <header className="sticky top-0 z-50 w-full bg-card shadow-sm">
@@ -238,9 +256,11 @@ export default function Header() {
               className="relative h-11 w-11 rounded-lg text-foreground hover:bg-stb-red-light hover:text-primary"
             >
               <Heart className="h-5 w-5" />
-              <span className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-white">
-                0
-              </span>
+              {wishlistCount > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-white animate-in zoom-in-50 duration-200">
+                  {wishlistCount > 99 ? "99+" : wishlistCount}
+                </span>
+              )}
             </Button>
           </Link>
           <Link href="/cart">
@@ -250,9 +270,11 @@ export default function Header() {
               className="relative h-11 w-11 rounded-lg text-foreground hover:bg-stb-red-light hover:text-primary"
             >
               <ShoppingCart className="h-5 w-5" />
-              <span className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-white">
-                0
-              </span>
+              {cartCount > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-white animate-in zoom-in-50 duration-200">
+                  {cartCount > 99 ? "99+" : cartCount}
+                </span>
+              )}
             </Button>
           </Link>
         </div>
