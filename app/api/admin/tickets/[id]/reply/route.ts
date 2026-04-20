@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
+import mongoose from "mongoose";
 import Ticket, { ITicketReply } from "@/models/Ticket";
 import User from "@/models/User";
 import { sendEmail } from "@/lib/email";
@@ -38,15 +39,16 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Ticket not found" }, { status: 404 });
     }
 
-    const reply = {
+    const reply: ITicketReply = {
+      _id: new mongoose.Types.ObjectId(),
       user: session.user.id,
       userName: session.user.name || "Admin",
       userRole: session.user.role as ITicketReply["userRole"],
       message: message.trim(),
-      attachments: [] as string[],
+      attachments: [],
       isInternal: isInternal || false,
       createdAt: new Date(),
-    } as ITicketReply;
+    };
 
     ticket.replies.push(reply);
     ticket.lastReplyAt = new Date();
