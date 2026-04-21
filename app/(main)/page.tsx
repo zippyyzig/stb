@@ -68,37 +68,44 @@ interface BrandData {
   slug: string;
 }
 
-// Fetch categories from database
+// Fetch categories from database (single aggregation, no N+1)
 async function getCategories(): Promise<CategoryData[]> {
   try {
     await dbConnect();
 
-    const categories = await Category.find({
-      isActive: true,
-      parent: null, // Only parent categories
-    })
-      .sort({ sortOrder: 1 })
-      .limit(12)
-      .lean();
+    const categories = await Category.aggregate([
+      { $match: { isActive: true, parent: null } },
+      { $sort: { sortOrder: 1 } },
+      { $limit: 12 },
+      {
+        $lookup: {
+          from: "products",
+          let: { catId: "$_id" },
+          pipeline: [
+            { $match: { $expr: { $and: [{ $eq: ["$category", "$$catId"] }, { $eq: ["$isActive", true] }] } } },
+            { $count: "n" },
+          ],
+          as: "productStats",
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          name: 1,
+          image: 1,
+          slug: 1,
+          productCount: { $ifNull: [{ $arrayElemAt: ["$productStats.n", 0] }, 0] },
+        },
+      },
+    ]);
 
-    // Get product counts for each category
-    const categoriesWithCounts = await Promise.all(
-      categories.map(async (cat) => {
-        const productCount = await Product.countDocuments({
-          category: cat._id,
-          isActive: true,
-        });
-        return {
-          id: cat._id.toString(),
-          name: cat.name,
-          image: cat.image || `https://images.unsplash.com/photo-1587202372775-e229f172b9d7?w=200&h=200&fit=crop`,
-          slug: cat.slug,
-          productCount,
-        };
-      })
-    );
-
-    return categoriesWithCounts;
+    return categories.map((cat) => ({
+      id: cat._id.toString(),
+      name: cat.name,
+      image: cat.image || "https://images.unsplash.com/photo-1587202372775-e229f172b9d7?w=200&h=200&fit=crop",
+      slug: cat.slug,
+      productCount: cat.productCount,
+    }));
   } catch (error) {
     console.error("Error fetching categories:", error);
     return [];

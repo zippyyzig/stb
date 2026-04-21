@@ -235,7 +235,7 @@ function ProductCardInSection({ product }: { product: Product }) {
             </div>
           </div>
           <span className="price-tax text-[9px] text-muted-foreground">
-            Ex Tax:₹{displayPrice.toLocaleString("en-IN")}
+            Incl. all taxes
           </span>
         </div>
 
@@ -378,11 +378,11 @@ export default function ProductSection({ section }: ProductSectionProps) {
               opts={{ align: "start", loop: false, skipSnaps: true }} 
               className="swiper w-full"
             >
-              <CarouselContent className="swiper-wrapper product-grid -ml-2.5">
+              <CarouselContent className="swiper-wrapper product-grid -ml-3">
                 {section.products.map((product) => (
                   <CarouselItem
                     key={product.id}
-                    className="product-layout swiper-slide basis-1/2 pl-2.5 sm:basis-1/3 md:basis-1/4 lg:basis-1/5"
+                    className="product-layout swiper-slide basis-1/2 pl-3 sm:basis-1/3 md:basis-1/4 lg:basis-1/5"
                   >
                     <ProductCardInSection product={product} />
                   </CarouselItem>

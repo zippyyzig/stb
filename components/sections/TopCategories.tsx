@@ -92,11 +92,11 @@ export default function TopCategories({ categories }: TopCategoriesProps) {
         opts={{ align: "start", loop: false }}
         className="w-full"
       >
-        <CarouselContent className="-ml-3">
+        <CarouselContent className="-ml-4">
           {displayCategories.map((category) => (
             <CarouselItem
               key={category.id}
-              className="basis-1/3 pl-3 sm:basis-1/4 md:basis-1/5 lg:basis-1/6"
+              className="basis-1/3 pl-4 sm:basis-1/4 md:basis-1/5 lg:basis-1/6"
             >
               <Link
                 href={`/category/${category.slug}`}
