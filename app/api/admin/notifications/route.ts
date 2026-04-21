@@ -20,11 +20,11 @@ export async function GET(request: NextRequest) {
     const unreadOnly = searchParams.get("unread") === "true";
 
     const query: Record<string, unknown> = {
-      recipient: session.user.id,
+      user: session.user.id,
     };
 
     if (unreadOnly) {
-      query.read = false;
+      query.isRead = false;
     }
 
     const [notifications, unreadCount] = await Promise.all([
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
         .sort({ createdAt: -1 })
         .limit(limit)
         .lean(),
-      Notification.countDocuments({ recipient: session.user.id, read: false }),
+      Notification.countDocuments({ user: session.user.id, isRead: false }),
     ]);
 
     return NextResponse.json({
@@ -64,14 +64,14 @@ export async function POST(request: NextRequest) {
     if (action === "mark_read") {
       if (notificationIds && notificationIds.length > 0) {
         await Notification.updateMany(
-          { _id: { $in: notificationIds }, recipient: session.user.id },
-          { read: true }
+          { _id: { $in: notificationIds }, user: session.user.id },
+          { isRead: true }
         );
       }
     } else if (action === "mark_all_read") {
       await Notification.updateMany(
-        { recipient: session.user.id, read: false },
-        { read: true }
+        { user: session.user.id, isRead: false },
+        { isRead: true }
       );
     }
 
