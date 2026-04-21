@@ -205,32 +205,21 @@ export default function NotificationsPage() {
           {notifications.map((notification) => {
             const Icon = typeIcons[notification.type] || Bell;
             const colorClass = typeColors[notification.type] || "bg-gray-100 text-gray-600";
-            const Wrapper = notification.link ? Link : "div";
-            const wrapperProps = notification.link
-              ? { href: notification.link }
-              : {};
 
-            return (
-              <Wrapper
-                key={notification._id}
-                {...wrapperProps}
-                onClick={() => {
-                  if (!notification.isRead) {
-                    markAsRead(notification._id);
-                  }
-                }}
-                className={`bg-card rounded-xl border transition-all flex items-start gap-4 px-4 py-3.5 ${
-                  notification.isRead
-                    ? "border-border"
-                    : "border-primary/30 bg-primary/5"
-                } ${notification.link ? "cursor-pointer hover:shadow-md hover:border-primary/50" : ""}`}
-              >
+            const handleClick = () => {
+              if (!notification.isRead) {
+                markAsRead(notification._id);
+              }
+            };
+
+            const content = (
+              <>
                 <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${colorClass}`}>
                   <Icon className="h-5 w-5" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
-                    <p className={`text-sm font-medium ${notification.isRead ? "text-foreground" : "text-foreground"}`}>
+                    <p className="text-sm font-medium text-foreground">
                       {notification.title}
                     </p>
                     <span className="text-[10px] text-muted-foreground shrink-0">
@@ -247,7 +236,36 @@ export default function NotificationsPage() {
                 {!notification.isRead && (
                   <div className="h-2 w-2 rounded-full bg-primary shrink-0 mt-1.5" />
                 )}
-              </Wrapper>
+              </>
+            );
+
+            const baseClassName = `bg-card rounded-xl border transition-all flex items-start gap-4 px-4 py-3.5 ${
+              notification.isRead
+                ? "border-border"
+                : "border-primary/30 bg-primary/5"
+            }`;
+
+            if (notification.link) {
+              return (
+                <Link
+                  key={notification._id}
+                  href={notification.link}
+                  onClick={handleClick}
+                  className={`${baseClassName} cursor-pointer hover:shadow-md hover:border-primary/50`}
+                >
+                  {content}
+                </Link>
+              );
+            }
+
+            return (
+              <div
+                key={notification._id}
+                onClick={handleClick}
+                className={baseClassName}
+              >
+                {content}
+              </div>
             );
           })}
         </div>
