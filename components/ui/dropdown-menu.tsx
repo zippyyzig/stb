@@ -8,8 +8,26 @@ function DropdownMenu({ ...props }: MenuPrimitive.Root.Props) {
   return <MenuPrimitive.Root data-slot="dropdown-menu" {...props} />
 }
 
-function DropdownMenuTrigger({ ...props }: MenuPrimitive.Trigger.Props) {
-  return <MenuPrimitive.Trigger data-slot="dropdown-menu-trigger" {...props} />
+interface DropdownMenuTriggerProps extends MenuPrimitive.Trigger.Props {
+  asChild?: boolean;
+  children?: React.ReactNode;
+}
+
+function DropdownMenuTrigger({ asChild, children, ...props }: DropdownMenuTriggerProps) {
+  if (asChild && React.isValidElement(children)) {
+    return (
+      <MenuPrimitive.Trigger
+        data-slot="dropdown-menu-trigger"
+        render={children}
+        {...props}
+      />
+    );
+  }
+  return (
+    <MenuPrimitive.Trigger data-slot="dropdown-menu-trigger" {...props}>
+      {children}
+    </MenuPrimitive.Trigger>
+  );
 }
 
 function DropdownMenuPortal({ ...props }: MenuPrimitive.Portal.Props) {
