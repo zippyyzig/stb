@@ -245,7 +245,8 @@ export async function POST(request: NextRequest) {
 
     // 10. Fetch and validate products (use server prices)
     const productIds = items.map(item => item.productId);
-    const products = await Product.find({ _id: { $in: productIds } });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const products = await Product.find({ _id: { $in: productIds } }) as any[];
 
     if (products.length !== items.length) {
       return NextResponse.json(
@@ -301,7 +302,7 @@ export async function POST(request: NextRequest) {
     const customerStateCode = orderNotes?.customerStateCode || "";
 
     // 13. Calculate total from Razorpay (source of truth)
-    const total = razorpayOrder.amount / 100; // Convert from paise
+    const total = Number(razorpayOrder.amount) / 100; // Convert from paise
 
     // 14. Create order in database
     const order = new Order({
