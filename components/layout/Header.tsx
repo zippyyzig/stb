@@ -177,13 +177,11 @@ export default function Header() {
       <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-4 lg:gap-8">
         {/* Mobile Menu */}
         <Sheet>
-          <SheetTrigger
-            render={
-              <Button variant="ghost" size="icon" className="lg:hidden">
-                <Menu className="h-6 w-6" />
-              </Button>
-            }
-          />
+          <SheetTrigger asChild>
+            <Button variant="ghost" size="icon" className="lg:hidden">
+              <Menu className="h-6 w-6" />
+            </Button>
+          </SheetTrigger>
           <SheetContent side="left" className="w-[300px] p-0 bg-stb-dark text-white">
             <SheetHeader className="border-b border-white/10 p-4">
               <SheetTitle className="heading-md text-white">

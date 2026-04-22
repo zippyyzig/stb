@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -9,7 +9,9 @@ import {
   CarouselItem,
   CarouselNext,
   CarouselPrevious,
+  type CarouselApi,
 } from "@/components/ui/carousel";
+import Autoplay from "embla-carousel-autoplay";
 import {
   Monitor,
   Laptop,
@@ -27,7 +29,7 @@ import {
   Phone,
 } from "lucide-react";
 
-// Category links similar to megajaipur
+// Category links
 const categoryLinks = [
   { name: "Desktop", href: "/category/desktop", icon: Monitor },
   { name: "Laptop", href: "/category/laptop", icon: Laptop },
@@ -114,24 +116,47 @@ const mainSliderImages = [
 ];
 
 export default function HeroBanner() {
-  const [activeLeftSlide, setActiveLeftSlide] = useState(0);
-  const [activeMainSlide, setActiveMainSlide] = useState(0);
+  // Main slider API + state
+  const [mainApi, setMainApi] = useState<CarouselApi>();
+  const [mainCurrent, setMainCurrent] = useState(0);
 
-  // Auto-rotate main slider
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setActiveMainSlide((prev) => (prev + 1) % mainSliderImages.length);
-    }, 5000);
-    return () => clearInterval(interval);
-  }, []);
+  // Left slider API + state
+  const [leftApi, setLeftApi] = useState<CarouselApi>();
+  const [leftCurrent, setLeftCurrent] = useState(0);
 
-  // Auto-rotate left slider
+  // Sync main slider selected index
+  const onMainSelect = useCallback(() => {
+    if (!mainApi) return;
+    setMainCurrent(mainApi.selectedScrollSnap());
+  }, [mainApi]);
+
   useEffect(() => {
-    const interval = setInterval(() => {
-      setActiveLeftSlide((prev) => (prev + 1) % leftSliderImages.length);
-    }, 4000);
-    return () => clearInterval(interval);
-  }, []);
+    if (!mainApi) return;
+    onMainSelect();
+    mainApi.on("select", onMainSelect);
+    mainApi.on("reInit", onMainSelect);
+    return () => {
+      mainApi.off("select", onMainSelect);
+      mainApi.off("reInit", onMainSelect);
+    };
+  }, [mainApi, onMainSelect]);
+
+  // Sync left slider selected index
+  const onLeftSelect = useCallback(() => {
+    if (!leftApi) return;
+    setLeftCurrent(leftApi.selectedScrollSnap());
+  }, [leftApi]);
+
+  useEffect(() => {
+    if (!leftApi) return;
+    onLeftSelect();
+    leftApi.on("select", onLeftSelect);
+    leftApi.on("reInit", onLeftSelect);
+    return () => {
+      leftApi.off("select", onLeftSelect);
+      leftApi.off("reInit", onLeftSelect);
+    };
+  }, [leftApi, onLeftSelect]);
 
   return (
     <section className="mx-auto max-w-7xl px-4 pt-4">
@@ -154,8 +179,13 @@ export default function HeroBanner() {
       {/* Three Column Hero Layout */}
       <div className="grid gap-3 lg:grid-cols-12">
         {/* Left Promotional Slider */}
-        <div className="hidden overflow-hidden rounded-xl lg:col-span-3 lg:block">
-          <Carousel opts={{ loop: true }} className="w-full">
+        <div className="relative hidden overflow-hidden rounded-xl lg:col-span-3 lg:block">
+          <Carousel
+            opts={{ loop: true }}
+            plugins={[Autoplay({ delay: 4000, stopOnInteraction: false })]}
+            setApi={setLeftApi}
+            className="w-full"
+          >
             <CarouselContent>
               {leftSliderImages.map((slide, index) => (
                 <CarouselItem key={index}>
@@ -173,26 +203,32 @@ export default function HeroBanner() {
                 </CarouselItem>
               ))}
             </CarouselContent>
-            {/* Pagination Dots */}
-            <div className="absolute bottom-3 left-1/2 z-10 flex -translate-x-1/2 gap-1.5">
-              {leftSliderImages.map((_, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setActiveLeftSlide(idx)}
-                  className={`h-2 w-2 rounded-full transition-all ${
-                    idx === activeLeftSlide
-                      ? "w-4 bg-primary"
-                      : "bg-white/60 hover:bg-white"
-                  }`}
-                />
-              ))}
-            </div>
           </Carousel>
+          {/* Pagination Dots — outside Carousel, positioned over the slide area */}
+          <div className="pointer-events-none absolute bottom-3 left-0 right-0 z-10 flex justify-center gap-1.5">
+            {leftSliderImages.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => leftApi?.scrollTo(idx)}
+                aria-label={`Go to slide ${idx + 1}`}
+                className={`pointer-events-auto h-2 rounded-full transition-all duration-300 ${
+                  idx === leftCurrent
+                    ? "w-5 bg-primary"
+                    : "w-2 bg-white/70 hover:bg-white"
+                }`}
+              />
+            ))}
+          </div>
         </div>
 
         {/* Main Slider */}
-        <div className="lg:col-span-6">
-          <Carousel opts={{ loop: true }} className="w-full">
+        <div className="relative lg:col-span-6">
+          <Carousel
+            opts={{ loop: true }}
+            plugins={[Autoplay({ delay: 5000, stopOnInteraction: false })]}
+            setApi={setMainApi}
+            className="w-full"
+          >
             <CarouselContent>
               {mainSliderImages.map((slide, index) => (
                 <CarouselItem key={index}>
@@ -203,13 +239,14 @@ export default function HeroBanner() {
                         alt={slide.alt}
                         fill
                         className="object-cover transition-transform duration-500 hover:scale-105"
+                        priority={index === 0}
                         unoptimized
                       />
                       {/* Dark overlay for text readability */}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                       {/* Slide Label */}
-                      <div className="absolute bottom-4 left-4 z-10">
-                        <span className="rounded bg-primary px-3 py-1.5 text-sm font-medium text-white">
+                      <div className="absolute bottom-10 left-4 z-10">
+                        <span className="rounded bg-primary px-3 py-1.5 text-sm font-medium text-white shadow">
                           {slide.alt}
                         </span>
                       </div>
@@ -220,21 +257,22 @@ export default function HeroBanner() {
             </CarouselContent>
             <CarouselPrevious className="-left-3 h-10 w-10 border-0 bg-white/90 shadow-lg hover:bg-white md:-left-5" />
             <CarouselNext className="-right-3 h-10 w-10 border-0 bg-white/90 shadow-lg hover:bg-white md:-right-5" />
-            {/* Pagination Dots */}
-            <div className="absolute bottom-3 left-1/2 z-10 flex -translate-x-1/2 gap-1.5">
-              {mainSliderImages.map((_, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setActiveMainSlide(idx)}
-                  className={`h-2 w-2 rounded-full transition-all ${
-                    idx === activeMainSlide
-                      ? "w-5 bg-primary"
-                      : "bg-white/60 hover:bg-white"
-                  }`}
-                />
-              ))}
-            </div>
           </Carousel>
+          {/* Pagination Dots */}
+          <div className="pointer-events-none absolute bottom-3 left-0 right-0 z-10 flex justify-center gap-1.5">
+            {mainSliderImages.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => mainApi?.scrollTo(idx)}
+                aria-label={`Go to slide ${idx + 1}`}
+                className={`pointer-events-auto h-2 rounded-full transition-all duration-300 ${
+                  idx === mainCurrent
+                    ? "w-6 bg-primary"
+                    : "w-2 bg-white/70 hover:bg-white"
+                }`}
+              />
+            ))}
+          </div>
         </div>
 
         {/* Right Side Banner Stack */}
@@ -261,6 +299,7 @@ export default function HeroBanner() {
               </span>
             </div>
             <div className="absolute -bottom-6 -right-6 h-28 w-28 rounded-full bg-white/10" />
+            <div className="absolute -top-4 -right-4 h-16 w-16 rounded-full bg-white/5" />
           </Link>
 
           {/* Bottom Banner */}
@@ -285,6 +324,7 @@ export default function HeroBanner() {
               </span>
             </div>
             <div className="absolute -bottom-6 -right-6 h-28 w-28 rounded-full bg-primary/20" />
+            <div className="absolute -top-4 -right-4 h-16 w-16 rounded-full bg-primary/10" />
           </Link>
         </div>
       </div>

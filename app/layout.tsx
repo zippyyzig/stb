@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import SessionProvider from "@/components/providers/SessionProvider";
+import { CartWishlistProvider } from "@/components/providers/CartWishlistProvider";
 
 export const metadata: Metadata = {
   title: {
@@ -56,7 +57,9 @@ export default function RootLayout({
   return (
     <html lang="en" className="bg-background">
       <body className="min-h-screen">
-        <SessionProvider>{children}</SessionProvider>
+        <SessionProvider>
+          <CartWishlistProvider>{children}</CartWishlistProvider>
+        </SessionProvider>
       </body>
     </html>
   );

@@ -15,7 +15,7 @@ interface Notification {
   title: string;
   message: string;
   link?: string;
-  read: boolean;
+  isRead: boolean;
   createdAt: string;
 }
 
@@ -62,7 +62,7 @@ export default function NotificationsDropdown() {
         body: JSON.stringify({ action: "mark_all_read" }),
       });
 
-      setNotifications(notifications.map((n) => ({ ...n, read: true })));
+      setNotifications(notifications.map((n) => ({ ...n, isRead: true })));
       setUnreadCount(0);
     } catch (error) {
       console.error("Error marking notifications as read:", error);
@@ -81,7 +81,7 @@ export default function NotificationsDropdown() {
 
       setNotifications(
         notifications.map((n) =>
-          n._id === notificationId ? { ...n, read: true } : n
+          n._id === notificationId ? { ...n, isRead: true } : n
         )
       );
       setUnreadCount(Math.max(0, unreadCount - 1));
@@ -127,7 +127,7 @@ export default function NotificationsDropdown() {
               <div
                 key={notification._id}
                 className={`flex gap-3 border-b px-4 py-3 last:border-0 ${
-                  !notification.read ? "bg-primary/5" : ""
+                  !notification.isRead ? "bg-primary/5" : ""
                 }`}
               >
                 <div className="mt-0.5">
@@ -144,7 +144,7 @@ export default function NotificationsDropdown() {
                     {new Date(notification.createdAt).toLocaleString()}
                   </p>
                 </div>
-                {!notification.read && (
+                {!notification.isRead && (
                   <button
                     onClick={() => markAsRead(notification._id)}
                     className="mt-0.5 rounded p-1 hover:bg-muted"

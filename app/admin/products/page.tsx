@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import DeleteProductButton from "@/components/admin/DeleteProductButton";
+import ProductImportExport from "@/components/admin/ProductImportExport";
 
 interface ProductsPageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -83,12 +84,15 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
             Manage your product catalog ({total} products)
           </p>
         </div>
-        <Link href="/admin/products/new">
-          <Button className="gap-2">
-            <Plus className="h-4 w-4" />
-            Add Product
-          </Button>
-        </Link>
+        <div className="flex items-center gap-3">
+          <ProductImportExport />
+          <Link href="/admin/products/new">
+            <Button className="gap-2">
+              <Plus className="h-4 w-4" />
+              Add Product
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Filters */}

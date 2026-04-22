@@ -21,9 +21,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     await dbConnect();
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const order = await Order.findById(id)
       .populate("user", "name email phone gstNumber businessName")
-      .lean();
+      .lean() as any;
 
     if (!order) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
@@ -38,7 +39,13 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // Get store settings
-    const settings = await Settings.findOne().lean();
+    const settings = await Settings.findOne().lean() as {
+      storeName?: string;
+      storeEmail?: string;
+      storePhone?: string;
+      storeAddress?: string;
+      businessGstin?: string;
+    } | null;
 
     const invoiceData = {
       // Invoice details

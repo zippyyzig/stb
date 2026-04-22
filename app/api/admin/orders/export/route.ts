@@ -81,30 +81,8 @@ export async function GET(request: NextRequest) {
       "Tracking Number",
     ];
 
-    const csvRows = orders.map((order: {
-      orderNumber: string;
-      user?: { name: string; email: string; phone?: string };
-      shippingAddress: {
-        name: string;
-        phone: string;
-        address: string;
-        city: string;
-        state: string;
-        pincode: string;
-      };
-      status: string;
-      paymentStatus: string;
-      paymentMethod: string;
-      subtotal: number;
-      shippingCost: number;
-      tax: number;
-      discount: number;
-      total: number;
-      items: { quantity: number }[];
-      taxBreakdown?: { customerGstin?: string };
-      createdAt: string;
-      trackingNumber?: string;
-    }) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const csvRows = orders.map((order: any) => {
       const row = [
         order.orderNumber,
         order.shippingAddress.name,
@@ -118,7 +96,7 @@ export async function GET(request: NextRequest) {
         order.tax || 0,
         order.discount || 0,
         order.total,
-        order.items.reduce((acc, item) => acc + item.quantity, 0),
+        order.items.reduce((acc: number, item: { quantity: number }) => acc + item.quantity, 0),
         order.shippingAddress.address.replace(/,/g, ";"),
         order.shippingAddress.city,
         order.shippingAddress.state,

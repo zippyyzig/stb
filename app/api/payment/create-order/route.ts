@@ -207,7 +207,8 @@ export async function POST(request: NextRequest) {
 
     // 6. Fetch and validate products from database (prevent price manipulation)
     const productIds = items.map(item => item.productId);
-    const products = await Product.find({ _id: { $in: productIds } }).lean();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const products = await Product.find({ _id: { $in: productIds } }).lean() as any[];
 
     if (products.length !== items.length) {
       return NextResponse.json(

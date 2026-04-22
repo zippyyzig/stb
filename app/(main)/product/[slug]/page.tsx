@@ -7,6 +7,7 @@ import Footer from "@/components/layout/Footer";
 import ProductGallery from "@/components/products/ProductGallery";
 import ProductInfo from "@/components/products/ProductInfo";
 import RelatedProducts from "@/components/products/RelatedProducts";
+import ProductReviews from "@/components/products/ProductReviews";
 import dbConnect from "@/lib/mongodb";
 import Product from "@/models/Product";
 import Category from "@/models/Category";
@@ -162,6 +163,13 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 </div>
               </div>
             </div>
+          </div>
+        </section>
+
+        {/* Reviews Section */}
+        <section className="border-t border-border">
+          <div className="mx-auto max-w-7xl px-4 py-8">
+            <ProductReviews productId={product._id} productName={product.name} />
           </div>
         </section>
 

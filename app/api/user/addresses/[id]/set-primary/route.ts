@@ -19,7 +19,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     await dbConnect();
 
-    const user = await User.findById(session.user.id);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const user = await User.findById(session.user.id) as any;
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
@@ -30,7 +31,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     }
 
     // Clear all defaults then set the target
-    user.addresses.forEach((addr) => { addr.isDefault = false; });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    user.addresses.forEach((addr: any) => { addr.isDefault = false; });
     targetAddr.isDefault = true;
 
     await user.save();
