@@ -17,14 +17,20 @@ interface TopCategoriesProps {
 }
 
 const defaultCategories: Category[] = [
-  { id: "desktop", name: "Desktop", image: "https://images.unsplash.com/photo-1587202372775-e229f172b9d7?w=200&h=200&fit=crop", slug: "desktop", productCount: 0 },
-  { id: "laptop", name: "Laptop", image: "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=200&h=200&fit=crop", slug: "laptop", productCount: 0 },
-  { id: "storage", name: "Storage", image: "https://images.unsplash.com/photo-1653179767378-98bb414f9bfd?w=200&h=200&fit=crop", slug: "storage", productCount: 0 },
-  { id: "display", name: "Display", image: "https://images.unsplash.com/photo-1572476359541-2a41ec8405e5?w=200&h=200&fit=crop", slug: "display", productCount: 0 },
-  { id: "peripherals", name: "Peripherals", image: "https://images.unsplash.com/photo-1662758392656-0e5d4b0f53fb?w=200&h=200&fit=crop", slug: "peripherals", productCount: 0 },
-  { id: "networking", name: "Networking", image: "https://images.unsplash.com/photo-1544985562-128e7b377a21?w=200&h=200&fit=crop", slug: "networking", productCount: 0 },
-  { id: "printers", name: "Printers", image: "https://images.unsplash.com/photo-1612815154858-60aa4c59eaa6?w=200&h=200&fit=crop", slug: "printers", productCount: 0 },
-  { id: "security", name: "Security", image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=200&h=200&fit=crop", slug: "security", productCount: 0 },
+  { id: "desktop",              name: "Desktop",               image: "https://images.unsplash.com/photo-1587202372775-e229f172b9d7?w=200&h=200&fit=crop",    slug: "desktop",              productCount: 0 },
+  { id: "laptops",              name: "Laptops",               image: "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=200&h=200&fit=crop",    slug: "laptops",              productCount: 0 },
+  { id: "storage",              name: "Storage",               image: "https://images.unsplash.com/photo-1653179767378-98bb414f9bfd?w=200&h=200&fit=crop",    slug: "storage",              productCount: 0 },
+  { id: "display",              name: "Display",               image: "https://images.unsplash.com/photo-1572476359541-2a41ec8405e5?w=200&h=200&fit=crop",    slug: "display",              productCount: 0 },
+  { id: "peripherals",          name: "Peripherals",           image: "https://images.unsplash.com/photo-1662758392656-0e5d4b0f53fb?w=200&h=200&fit=crop",    slug: "peripherals",          productCount: 0 },
+  { id: "printers-scanners",    name: "Printers & Scanners",   image: "https://images.unsplash.com/photo-1612815154858-60aa4c59eaa6?w=200&h=200&fit=crop",    slug: "printers-scanners",    productCount: 0 },
+  { id: "security",             name: "Security",              image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=200&h=200&fit=crop",       slug: "security",             productCount: 0 },
+  { id: "networking",           name: "Networking",            image: "https://images.unsplash.com/photo-1544985562-128e7b377a21?w=200&h=200&fit=crop",       slug: "networking",           productCount: 0 },
+  { id: "software",             name: "Software",              image: "https://images.unsplash.com/photo-1518770660439-4636190af475?w=200&h=200&fit=crop",    slug: "software",             productCount: 0 },
+  { id: "mobility",             name: "Mobility",              image: "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=200&h=200&fit=crop",    slug: "mobility",             productCount: 0 },
+  { id: "cables",               name: "Cables",                image: "https://images.unsplash.com/photo-1601524909162-ae8725290836?w=200&h=200&fit=crop",    slug: "cables",               productCount: 0 },
+  { id: "connectors-converters",name: "Connectors & Converters",image: "https://images.unsplash.com/photo-1625895197185-efcec01cffe0?w=200&h=200&fit=crop",  slug: "connectors-converters",productCount: 0 },
+  { id: "accessories",          name: "Accessories",           image: "https://images.unsplash.com/photo-1614624532983-4ce03382d63d?w=200&h=200&fit=crop",    slug: "accessories",          productCount: 0 },
+  { id: "refurbished-laptops",  name: "Refurbished Laptops",   image: "https://images.unsplash.com/photo-1541807084-5c52b6b3adef?w=200&h=200&fit=crop",      slug: "refurbished-laptops",  productCount: 0 },
 ];
 
 export default function TopCategories({ categories }: TopCategoriesProps) {
@@ -49,7 +55,7 @@ export default function TopCategories({ categories }: TopCategoriesProps) {
 
         {/* ── Mobile: horizontal pill-scroll ─────────────────────────────── */}
         <div className="flex gap-2.5 overflow-x-auto pb-1 scrollbar-hide md:hidden">
-          {displayCategories.slice(0, 10).map((cat) => (
+          {displayCategories.map((cat) => (
             <Link
               key={cat.id}
               href={`/category/${cat.slug}`}
@@ -84,8 +90,8 @@ export default function TopCategories({ categories }: TopCategoriesProps) {
         </div>
 
         {/* ── Desktop: 8-column card grid ─────────────────────────────────── */}
-        <div className="hidden grid-cols-4 gap-3 md:grid lg:grid-cols-8">
-          {displayCategories.slice(0, 8).map((cat) => (
+        <div className="hidden grid-cols-4 gap-3 md:grid lg:grid-cols-7">
+          {displayCategories.map((cat) => (
             <Link
               key={cat.id}
               href={`/category/${cat.slug}`}

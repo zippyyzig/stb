@@ -34,15 +34,19 @@ import {
 
 const navCategories = [
   { name: "Desktop", slug: "desktop" },
-  { name: "Laptop", slug: "laptop" },
+  { name: "Laptops", slug: "laptops" },
   { name: "Storage", slug: "storage" },
   { name: "Display", slug: "display" },
   { name: "Peripherals", slug: "peripherals" },
-  { name: "Printers", slug: "printers" },
+  { name: "Printers & Scanners", slug: "printers-scanners" },
   { name: "Security", slug: "security" },
   { name: "Networking", slug: "networking" },
   { name: "Software", slug: "software" },
+  { name: "Mobility", slug: "mobility" },
   { name: "Cables", slug: "cables" },
+  { name: "Connectors & Converters", slug: "connectors-converters" },
+  { name: "Accessories", slug: "accessories" },
+  { name: "Refurbished Laptops", slug: "refurbished-laptops" },
 ];
 
 const mobileNavItems = [
@@ -369,8 +373,8 @@ export default function Header() {
       </header>
 
       {/* Mobile bottom navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-white pb-safe md:hidden">
-        <div className="grid grid-cols-5">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-white md:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+        <div className="grid h-14 grid-cols-5">
           {mobileNavItems.map((item) => {
             const isActive = pathname === item.href;
             const isCart = item.href === "/cart";
@@ -381,19 +385,29 @@ export default function Header() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex flex-col items-center justify-center gap-0.5 py-2 transition-colors ${
-                  isActive ? "text-primary" : "text-muted-foreground"
-                }`}
+                className="relative flex flex-col items-center justify-center gap-[3px] px-1 transition-colors"
               >
-                <div className="relative">
-                  <item.icon className={`h-[18px] w-[18px] ${isActive ? "stroke-[2.5px]" : "stroke-[1.5px]"}`} />
+                {/* Active top indicator */}
+                {isActive && (
+                  <span className="absolute top-0 left-1/2 h-[2.5px] w-8 -translate-x-1/2 rounded-b-full bg-primary" />
+                )}
+                <div className="relative flex h-5 w-5 items-center justify-center">
+                  <item.icon
+                    className={`h-[19px] w-[19px] transition-colors ${
+                      isActive ? "text-primary stroke-[2.5]" : "text-[#9CA3AF] stroke-[1.5]"
+                    }`}
+                  />
                   {count > 0 && (
-                    <span className="absolute -right-1.5 -top-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-primary px-0.5 text-[8px] font-semibold text-white">
+                    <span className="absolute -right-1.5 -top-1 flex h-[14px] min-w-[14px] items-center justify-center rounded-full bg-primary px-0.5 text-[8px] font-bold leading-none text-white">
                       {count > 9 ? "9+" : count}
                     </span>
                   )}
                 </div>
-                <span className={`text-[9px] font-medium ${isActive ? "text-primary" : ""}`}>
+                <span
+                  className={`text-[10px] font-medium leading-none transition-colors ${
+                    isActive ? "text-primary" : "text-[#9CA3AF]"
+                  }`}
+                >
                   {item.name}
                 </span>
               </Link>
