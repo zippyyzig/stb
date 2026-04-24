@@ -7,7 +7,6 @@ import {
   Mail,
   Phone,
   MapPin,
-  ExternalLink,
   ArrowUp,
   Globe,
   MessageCircle,
@@ -15,8 +14,8 @@ import {
   Play,
   CheckCircle2,
   Loader2,
+  ChevronRight,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 const infoLinks = [
   { name: "About Us", href: "/about" },
@@ -47,14 +46,11 @@ export default function Footer() {
   const [email, setEmail] = useState("");
   const [subscribeStatus, setSubscribeStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
 
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
+  const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
   const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || subscribeStatus === "loading") return;
-
     setSubscribeStatus("loading");
     try {
       const res = await fetch("/api/newsletter/subscribe", {
@@ -67,7 +63,6 @@ export default function Footer() {
         setEmail("");
       } else {
         setSubscribeStatus("error");
-        // Reset after 3 seconds
         setTimeout(() => setSubscribeStatus("idle"), 3000);
       }
     } catch {
@@ -78,133 +73,99 @@ export default function Footer() {
 
   return (
     <footer className="bg-stb-dark text-white">
-      {/* Newsletter Section */}
-      <div className="border-b border-white/10 bg-stb-darker py-8">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-4 md:flex-row">
+      {/* Newsletter */}
+      <div className="border-b border-white/10 bg-stb-darker">
+        <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-4 px-4 py-6 md:flex-row md:items-center">
           <div>
-            <h3 className="heading-md text-white">Subscribe to Our Newsletter</h3>
-            <p className="body-sm mt-1 text-white/60">
-              Get updates on new products and exclusive deals
-            </p>
+            <h3 className="text-sm font-bold text-white md:text-base">Subscribe to Our Newsletter</h3>
+            <p className="mt-0.5 text-xs text-white/50">Get updates on new products and exclusive deals</p>
           </div>
-
           {subscribeStatus === "success" ? (
-            <div className="flex items-center gap-2 rounded-lg bg-stb-success/20 px-5 py-3 text-stb-success">
-              <CheckCircle2 className="h-5 w-5 shrink-0" />
-              <span className="text-sm font-medium">{"You're subscribed! Thank you."}</span>
+            <div className="flex items-center gap-2 rounded-xl bg-stb-success/20 px-4 py-2.5 text-stb-success">
+              <CheckCircle2 className="h-4 w-4 shrink-0" />
+              <span className="text-xs font-medium">{"You're subscribed!"}</span>
             </div>
           ) : (
-            <form onSubmit={handleSubscribe} className="flex w-full max-w-md gap-2">
+            <form onSubmit={handleSubscribe} className="flex w-full max-w-sm gap-2">
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email"
                 required
-                className="flex-1 rounded bg-white/10 px-4 py-2.5 text-sm text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-primary"
+                className="h-9 flex-1 rounded-lg bg-white/10 px-3 text-xs text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-primary"
               />
-              <Button
+              <button
                 type="submit"
                 disabled={subscribeStatus === "loading"}
-                className="rounded bg-primary px-6 hover:bg-stb-red-dark disabled:opacity-70"
+                className="h-9 rounded-lg bg-primary px-4 text-xs font-semibold text-white transition-colors hover:bg-stb-red-dark disabled:opacity-70"
               >
-                {subscribeStatus === "loading" ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : subscribeStatus === "error" ? (
-                  "Retry"
-                ) : (
-                  "Subscribe"
-                )}
-              </Button>
+                {subscribeStatus === "loading" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Subscribe"}
+              </button>
             </form>
           )}
         </div>
       </div>
 
       {/* Main Footer */}
-      <div className="mx-auto max-w-7xl px-4 py-12">
-        <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-5">
-          {/* Company Info */}
+      <div className="mx-auto max-w-7xl px-4 py-8 md:py-12">
+        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-5">
+          {/* Brand Info */}
           <div className="lg:col-span-2">
             <div className="mb-4 flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary">
-                <span className="font-heading text-2xl font-bold text-white">S</span>
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary">
+                <span className="font-heading text-xl font-bold text-white">S</span>
               </div>
               <div>
-                <h3 className="font-heading text-xl font-bold tracking-wide">STB</h3>
-                <p className="body-sm -mt-0.5 text-primary">TECHNOLOGIES</p>
+                <h3 className="font-heading text-lg font-bold tracking-wide">STB</h3>
+                <p className="text-[10px] font-semibold text-primary">TECHNOLOGIES</p>
               </div>
             </div>
-            <p className="body-md mb-4 max-w-sm text-white/70">
+            <p className="mb-4 max-w-sm text-xs leading-relaxed text-white/60">
               Your trusted partner for computer accessories, CCTV cameras, printers,
-              networking equipment, and all your technology needs. Serving businesses
-              with quality products since 2010.
+              networking equipment, and all your technology needs. Serving businesses with
+              quality products since 2010.
             </p>
-            <div className="flex flex-col gap-3">
-              <div className="flex items-start gap-2 text-white/70">
-                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                <span className="body-sm">
-                  2nd Floor, No. 94/1, Behind Sharda Theater, SP Road, Bangalore - 560002
-                </span>
+            <div className="flex flex-col gap-2.5">
+              <div className="flex items-start gap-2 text-white/60">
+                <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+                <span className="text-xs">2nd Floor, No. 94/1, Behind Sharda Theater, SP Road, Bangalore - 560002</span>
               </div>
-              <div className="flex items-center gap-2 text-white/70">
-                <Phone className="h-4 w-4 shrink-0 text-primary" />
-                <a href="tel:+919353919299" className="body-sm hover:text-white">
-                  +91 93539 19299
-                </a>
+              <div className="flex items-center gap-2 text-white/60">
+                <Phone className="h-3.5 w-3.5 shrink-0 text-primary" />
+                <a href="tel:+919353919299" className="text-xs hover:text-white">+91 93539 19299</a>
               </div>
-              <div className="flex items-center gap-2 text-white/70">
-                <Mail className="h-4 w-4 shrink-0 text-primary" />
-                <a href="mailto:sales@sabkatechbazar.com" className="body-sm hover:text-white">
-                  sales@sabkatechbazar.com
-                </a>
+              <div className="flex items-center gap-2 text-white/60">
+                <Mail className="h-3.5 w-3.5 shrink-0 text-primary" />
+                <a href="mailto:sales@sabkatechbazar.com" className="text-xs hover:text-white">sales@sabkatechbazar.com</a>
               </div>
             </div>
-
-            {/* Social Links */}
-            <div className="mt-6 flex gap-3">
-              <a
-                href="#"
-                aria-label="Website"
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white/80 transition-colors hover:bg-primary hover:text-white"
-              >
-                <Globe className="h-5 w-5" />
-              </a>
-              <a
-                href="#"
-                aria-label="WhatsApp"
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white/80 transition-colors hover:bg-primary hover:text-white"
-              >
-                <MessageCircle className="h-5 w-5" />
-              </a>
-              <a
-                href="#"
-                aria-label="Telegram"
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white/80 transition-colors hover:bg-primary hover:text-white"
-              >
-                <Send className="h-5 w-5" />
-              </a>
-              <a
-                href="#"
-                aria-label="YouTube"
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white/80 transition-colors hover:bg-primary hover:text-white"
-              >
-                <Play className="h-5 w-5" />
-              </a>
+            {/* Social */}
+            <div className="mt-5 flex gap-2">
+              {[{ icon: Globe, label: "Website" }, { icon: MessageCircle, label: "WhatsApp" }, { icon: Send, label: "Telegram" }, { icon: Play, label: "YouTube" }].map(({ icon: Icon, label }) => (
+                <a
+                  key={label}
+                  href="#"
+                  aria-label={label}
+                  className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 text-white/70 transition-colors hover:bg-primary hover:text-white"
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                </a>
+              ))}
             </div>
           </div>
 
           {/* Quick Links */}
           <div>
-            <h3 className="heading-sm mb-4 text-white">Quick Links</h3>
-            <nav className="flex flex-col gap-2.5">
+            <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-white">Quick Links</h3>
+            <nav className="flex flex-col gap-2">
               {infoLinks.map((link) => (
                 <Link
                   key={link.name}
                   href={link.href}
-                  className="body-sm flex items-center gap-1.5 text-white/60 transition-colors hover:text-primary"
+                  className="flex items-center gap-1 text-xs text-white/50 transition-colors hover:text-primary"
                 >
-                  <ExternalLink className="h-3 w-3 shrink-0" />
+                  <ChevronRight className="h-3 w-3 shrink-0" />
                   {link.name}
                 </Link>
               ))}
@@ -213,43 +174,38 @@ export default function Footer() {
 
           {/* Categories */}
           <div>
-            <h3 className="heading-sm mb-4 text-white">Categories</h3>
-            <nav className="flex flex-col gap-2.5">
+            <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-white">Categories</h3>
+            <nav className="flex flex-col gap-2">
               {categoryLinks.map((link) => (
                 <Link
                   key={link.name}
                   href={link.href}
-                  className="body-sm flex items-center gap-1.5 text-white/60 transition-colors hover:text-primary"
+                  className="flex items-center gap-1 text-xs text-white/50 transition-colors hover:text-primary"
                 >
-                  <ExternalLink className="h-3 w-3 shrink-0" />
+                  <ChevronRight className="h-3 w-3 shrink-0" />
                   {link.name}
                 </Link>
               ))}
             </nav>
           </div>
 
-          {/* Contact Details */}
+          {/* Contact */}
           <div>
-            <h3 className="heading-sm mb-4 text-white">Contact Us</h3>
-            <div className="flex flex-col gap-3">
+            <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-white">Contact Us</h3>
+            <div className="flex flex-col gap-2.5">
               {contactDetails.map((contact) => (
                 <div key={contact.department} className="flex items-center justify-between">
-                  <span className="body-sm text-white/60">{contact.department}</span>
-                  <a
-                    href={`tel:${contact.number}`}
-                    className="body-sm flex items-center gap-1.5 text-white/80 hover:text-primary"
-                  >
+                  <span className="text-xs text-white/50">{contact.department}</span>
+                  <a href={`tel:${contact.number}`} className="flex items-center gap-1 text-xs text-white/70 hover:text-primary">
                     <Phone className="h-3 w-3 text-primary" />
                     {contact.number}
                   </a>
                 </div>
               ))}
             </div>
-
-            {/* GST Info */}
-            <div className="mt-6 rounded-lg border border-white/10 bg-white/5 p-3">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-white/50">GSTIN</p>
-              <p className="mt-1 text-sm font-mono text-white/80">29AABCU9603R1ZM</p>
+            <div className="mt-5 rounded-xl border border-white/10 bg-white/5 p-3">
+              <p className="text-[9px] font-semibold uppercase tracking-wider text-white/40">GSTIN</p>
+              <p className="mt-1 font-mono text-xs text-white/70">29AABCU9603R1ZM</p>
             </div>
           </div>
         </div>
@@ -257,19 +213,17 @@ export default function Footer() {
 
       <Separator className="bg-white/10" />
 
-      {/* Copyright Bar */}
+      {/* Copyright */}
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4">
-        <p className="body-sm text-white/50">
+        <p className="text-xs text-white/40">
           Copyright 2025, STB Technologies. All Rights Reserved.
         </p>
-        <Button
-          variant="ghost"
-          size="icon"
+        <button
           onClick={scrollToTop}
-          className="h-10 w-10 rounded-full bg-primary/20 text-white hover:bg-primary hover:text-white"
+          className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 text-white/70 transition-colors hover:bg-primary hover:text-white"
         >
-          <ArrowUp className="h-5 w-5" />
-        </Button>
+          <ArrowUp className="h-4 w-4" />
+        </button>
       </div>
     </footer>
   );

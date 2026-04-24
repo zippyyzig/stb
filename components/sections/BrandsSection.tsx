@@ -14,7 +14,6 @@ interface BrandsSectionProps {
   brands: Brand[];
 }
 
-// Default brands shown when DB returns empty
 const defaultBrands: Brand[] = [
   { id: "hp", name: "HP", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ad/HP_logo_2012.svg/120px-HP_logo_2012.svg.png", slug: "hp" },
   { id: "dell", name: "Dell", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/Dell_Logo.svg/120px-Dell_Logo.svg.png", slug: "dell" },
@@ -28,54 +27,48 @@ const defaultBrands: Brand[] = [
 
 export default function BrandsSection({ brands }: BrandsSectionProps) {
   const displayBrands = brands.length > 0 ? brands : defaultBrands;
-
-  // Triple the array so the marquee seamlessly loops (we animate the first 2/3)
   const scrollBrands = [...displayBrands, ...displayBrands, ...displayBrands];
 
   return (
-    <section className="mx-auto max-w-7xl px-4 py-10">
+    <section className="mx-auto max-w-7xl px-3 py-4 md:px-4 md:py-6">
       {/* Section Header */}
-      <div className="mb-6 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="h-8 w-1 rounded-full bg-primary" />
-          <h2 className="heading-lg">Our Trusted Brands</h2>
+      <div className="mb-3 flex items-center justify-between md:mb-4">
+        <div className="flex items-center gap-2.5">
+          <div className="h-5 w-1 rounded-full bg-primary md:h-6" />
+          <h2 className="text-base font-bold text-foreground md:text-lg">Our Trusted Brands</h2>
         </div>
-        <Link
-          href="/brands"
-          className="body-sm font-medium text-primary transition-colors hover:text-stb-red-dark"
-        >
-          View All Brands
+        <Link href="/brands" className="text-xs font-medium text-primary hover:text-stb-red-dark">
+          View All
         </Link>
       </div>
 
       {/* Brands Marquee */}
-      <div className="relative overflow-hidden rounded-xl border border-border bg-card py-6">
-        {/* Gradient fade edges */}
-        <div className="pointer-events-none absolute left-0 top-0 z-10 h-full w-20 bg-gradient-to-r from-card to-transparent" />
-        <div className="pointer-events-none absolute right-0 top-0 z-10 h-full w-20 bg-gradient-to-l from-card to-transparent" />
+      <div className="relative overflow-hidden rounded-2xl border border-border bg-white py-5">
+        {/* Gradient edges */}
+        <div className="pointer-events-none absolute left-0 top-0 z-10 h-full w-12 bg-gradient-to-r from-white to-transparent" />
+        <div className="pointer-events-none absolute right-0 top-0 z-10 h-full w-12 bg-gradient-to-l from-white to-transparent" />
 
-        {/* Scrolling track — animation drives translateX from 0 to -33.33% (one full copy width) */}
         <div
-          className="brand-track flex min-w-max items-center gap-10 px-4"
+          className="brand-track flex min-w-max items-center gap-6 px-4 md:gap-10"
           style={{ animation: "brandScroll 40s linear infinite" }}
         >
           {scrollBrands.map((brand, index) => (
             <Link
               key={`${brand.slug}-${index}`}
               href={`/brand/${brand.slug}`}
-              className="group flex shrink-0 flex-col items-center gap-2 transition-transform hover:scale-105"
+              className="group flex shrink-0 flex-col items-center gap-1.5 transition-transform hover:scale-105"
             >
-              <div className="flex h-16 w-28 items-center justify-center rounded-lg bg-muted p-3 transition-colors group-hover:bg-stb-red-light">
+              <div className="flex h-12 w-20 items-center justify-center rounded-lg bg-secondary p-2 transition-colors group-hover:bg-stb-red-light md:h-14 md:w-24">
                 <Image
                   src={brand.logo}
                   alt={brand.name}
-                  width={100}
-                  height={50}
-                  className="h-auto max-h-10 w-auto max-w-[90px] object-contain grayscale transition-all group-hover:grayscale-0"
+                  width={80}
+                  height={40}
+                  className="h-auto max-h-8 w-auto max-w-[68px] object-contain grayscale transition-all group-hover:grayscale-0"
                   unoptimized
                 />
               </div>
-              <span className="body-sm font-medium text-muted-foreground transition-colors group-hover:text-primary">
+              <span className="text-[10px] font-medium text-muted-foreground transition-colors group-hover:text-primary md:text-xs">
                 {brand.name}
               </span>
             </Link>

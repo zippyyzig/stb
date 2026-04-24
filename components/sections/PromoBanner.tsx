@@ -1,62 +1,61 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, Percent, Clock } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ArrowRight, Clock, Percent } from "lucide-react";
 
 export default function PromoBanner() {
   return (
-    <section className="mx-auto max-w-7xl px-4 py-6">
-      <div className="grid gap-4 md:grid-cols-2">
+    <section className="mx-auto max-w-7xl px-3 py-4 md:px-4 md:py-5">
+      <div className="grid gap-3 sm:grid-cols-2">
         {/* Deal of the Day */}
-        <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-stb-dark to-stb-darker p-6 md:p-8">
+        <Link
+          href="/deals"
+          className="group relative flex flex-col justify-between overflow-hidden rounded-2xl bg-stb-dark p-5 md:p-7"
+        >
           <div className="relative z-10">
-            <div className="mb-3 flex items-center gap-2">
-              <Clock className="h-5 w-5 text-primary" />
-              <span className="label-uppercase text-primary">Deal of the Day</span>
+            <div className="mb-2 flex items-center gap-2">
+              <Clock className="h-4 w-4 text-primary" />
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-primary">Deal of the Day</span>
             </div>
-            <h3 className="heading-lg text-white">
-              Up to 50% Off on Networking Equipment
+            <h3 className="text-lg font-bold text-white leading-snug md:text-xl">
+              Up to 50% Off on<br />Networking Equipment
             </h3>
-            <p className="body-md mt-2 max-w-sm text-white/70">
-              Get enterprise-grade routers and switches at unbeatable prices. Limited time offer!
+            <p className="mt-1.5 text-xs text-white/60 md:text-sm">
+              Enterprise-grade routers and switches at unbeatable prices.
             </p>
-            <Link href="/deals">
-              <Button className="mt-6 gap-2 bg-primary hover:bg-stb-red-dark">
-                Shop Deals
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
           </div>
-          {/* Decorative elements */}
-          <div className="absolute -bottom-10 -right-10 h-40 w-40 rounded-full bg-primary/20" />
-          <div className="absolute -top-10 right-20 h-24 w-24 rounded-full bg-primary/10" />
-        </div>
+          <div className="relative z-10 mt-4 flex items-center gap-1.5 text-sm font-semibold text-white transition-all group-hover:gap-2.5">
+            Shop Deals <ArrowRight className="h-4 w-4" />
+          </div>
+          {/* Decorative */}
+          <div className="absolute -bottom-8 -right-8 h-36 w-36 rounded-full bg-white/5" />
+          <div className="absolute -top-6 right-16 h-20 w-20 rounded-full bg-primary/10" />
+        </Link>
 
-        {/* Bulk Order Discount */}
-        <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-primary to-stb-red-dark p-6 md:p-8">
+        {/* B2B Special */}
+        <Link
+          href="/auth/register?type=dealer"
+          className="group relative flex flex-col justify-between overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-stb-red-dark p-5 md:p-7"
+        >
           <div className="relative z-10">
-            <div className="mb-3 flex items-center gap-2">
-              <Percent className="h-5 w-5 text-white" />
-              <span className="label-uppercase text-white/90">B2B Special</span>
+            <div className="mb-2 flex items-center gap-2">
+              <Percent className="h-4 w-4 text-white" />
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-white/90">B2B Special</span>
             </div>
-            <h3 className="heading-lg text-white">
-              Bulk Order Discounts Available
+            <h3 className="text-lg font-bold text-white leading-snug md:text-xl">
+              Bulk Order Discounts<br />Available
             </h3>
-            <p className="body-md mt-2 max-w-sm text-white/80">
-              Register as a dealer and get exclusive wholesale prices on all products.
+            <p className="mt-1.5 text-xs text-white/70 md:text-sm">
+              Register as a dealer and get exclusive wholesale prices.
             </p>
-            <Link href="/auth/register?type=dealer">
-              <Button className="mt-6 gap-2 bg-white text-primary hover:bg-white/90">
-                Register as Dealer
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
           </div>
-          {/* Decorative elements */}
-          <div className="absolute -bottom-10 -right-10 h-40 w-40 rounded-full bg-white/10" />
-          <div className="absolute -top-10 right-20 h-24 w-24 rounded-full bg-white/5" />
-        </div>
+          <div className="relative z-10 mt-4 flex items-center gap-1.5 text-sm font-semibold text-white transition-all group-hover:gap-2.5">
+            Register as Dealer <ArrowRight className="h-4 w-4" />
+          </div>
+          {/* Decorative */}
+          <div className="absolute -bottom-8 -right-8 h-36 w-36 rounded-full bg-white/10" />
+          <div className="absolute -top-6 right-16 h-20 w-20 rounded-full bg-white/5" />
+        </Link>
       </div>
     </section>
   );
