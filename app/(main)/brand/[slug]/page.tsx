@@ -113,7 +113,7 @@ async function getBrandData(slug: string) {
       .lean();
 
     // Get unique categories from products
-    const categoryIds = [...new Set(products.map((p: { category?: { _id: string } }) => p.category?._id?.toString()).filter(Boolean))];
+    const categoryIds = [...new Set(products.map((p: { category?: { _id: unknown } }) => p.category?._id?.toString()).filter(Boolean))];
     const categories = await Category.find({ _id: { $in: categoryIds }, isActive: true })
       .select("_id name slug")
       .lean();
