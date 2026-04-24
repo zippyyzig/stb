@@ -88,28 +88,28 @@ export default async function ProductPage({ params }: ProductPageProps) {
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
-      <main className="flex-1 bg-background">
+      <main className="flex-1 bg-[#F7F8FA] pb-32 md:pb-0">
         {/* Breadcrumb */}
-        <div className="border-b border-border bg-card">
-          <div className="mx-auto flex max-w-7xl items-center gap-2 px-4 py-3 text-sm">
-            <Link href="/" className="text-muted-foreground hover:text-primary">
+        <div className="border-b border-border bg-white">
+          <div className="mx-auto flex max-w-7xl items-center gap-1.5 px-3 py-2.5 md:px-4">
+            <Link href="/" className="text-[11px] text-muted-foreground hover:text-primary">
               Home
             </Link>
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            <ChevronRight className="h-3 w-3 text-muted-foreground" />
             <Link
               href={`/category/${product.category?.slug || "products"}`}
-              className="text-muted-foreground hover:text-primary"
+              className="text-[11px] text-muted-foreground hover:text-primary"
             >
               {product.category?.name || "Products"}
             </Link>
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
-            <span className="line-clamp-1 text-foreground">{product.name}</span>
+            <ChevronRight className="h-3 w-3 text-muted-foreground" />
+            <span className="line-clamp-1 text-[11px] font-medium text-foreground">{product.name}</span>
           </div>
         </div>
 
         {/* Product Section */}
-        <section className="mx-auto max-w-7xl px-4 py-8">
-          <div className="grid gap-8 lg:grid-cols-2">
+        <section className="mx-auto max-w-7xl px-3 py-4 md:px-4 md:py-8">
+          <div className="grid gap-4 md:gap-8 lg:grid-cols-2">
             {/* Gallery */}
             <ProductGallery images={product.images || []} name={product.name} />
 
