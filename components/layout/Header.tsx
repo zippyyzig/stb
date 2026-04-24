@@ -2,60 +2,74 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useSession, signOut } from "next-auth/react";
 import { useCart, useWishlist } from "@/components/providers/CartWishlistProvider";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import {
   Search,
   Heart,
   ShoppingCart,
   Menu,
-  MapPin,
-  LogIn,
-  UserPlus,
-  Phone,
   X,
   User,
   LogOut,
   Settings,
   Package,
   ChevronDown,
-  Headphones,
+  Home,
+  Grid3X3,
+  Phone,
+  MapPin,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
+  SheetClose,
 } from "@/components/ui/sheet";
 
 const navCategories = [
   { name: "Desktop", slug: "desktop" },
-  { name: "Laptop", slug: "laptop" },
+  { name: "Laptops", slug: "laptops" },
   { name: "Storage", slug: "storage" },
   { name: "Display", slug: "display" },
   { name: "Peripherals", slug: "peripherals" },
-  { name: "Printers", slug: "printers" },
+  { name: "Printers & Scanners", slug: "printers-scanners" },
   { name: "Security", slug: "security" },
   { name: "Networking", slug: "networking" },
   { name: "Software", slug: "software" },
+  { name: "Mobility", slug: "mobility" },
   { name: "Cables", slug: "cables" },
+  { name: "Connectors & Converters", slug: "connectors-converters" },
+  { name: "Accessories", slug: "accessories" },
+  { name: "Refurbished Laptops", slug: "refurbished-laptops" },
+];
+
+const mobileNavItems = [
+  { name: "Home", href: "/", icon: Home },
+  { name: "Shop", href: "/products", icon: Grid3X3 },
+  { name: "Wishlist", href: "/wishlist", icon: Heart },
+  { name: "Cart", href: "/cart", icon: ShoppingCart },
+  { name: "Account", href: "/dashboard", icon: User },
 ];
 
 export default function Header() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const pathname = usePathname();
   const { cartCount } = useCart();
   const { wishlistCount } = useWishlist();
   const [searchQuery, setSearchQuery] = useState("");
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
   const isAdmin = session?.user?.role === "admin" || session?.user?.role === "super_admin";
 
-  // Redirect to onboarding if not completed
   useEffect(() => {
     if (
       status === "authenticated" &&
@@ -68,238 +82,342 @@ export default function Header() {
     }
   }, [status, session, router]);
 
+  // Close menus when clicking outside
+  useEffect(() => {
+    const handleClick = () => setShowUserMenu(false);
+    if (showUserMenu) {
+      document.addEventListener("click", handleClick);
+      return () => document.removeEventListener("click", handleClick);
+    }
+  }, [showUserMenu]);
+
   return (
-    <header className="sticky top-0 z-50 w-full bg-card shadow-sm">
-      {/* Top Bar - Black */}
-      <div className="bg-stb-dark text-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-2">
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-2 text-white/90">
-              <Phone className="h-4 w-4 text-primary" />
-              <span className="body-sm font-medium">+91 9876543210</span>
+    <>
+      <header className="sticky top-0 z-50 w-full bg-white">
+        {/* Top utility bar - Desktop */}
+        <div className="hidden border-b border-border bg-muted/50 md:block">
+          <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-1.5">
+            <div className="flex items-center gap-4 text-[11px] text-muted-foreground">
+              <span className="flex items-center gap-1">
+                <Phone className="h-3 w-3" />
+                +91 93539 19299
+              </span>
+              <span className="flex items-center gap-1">
+                <MapPin className="h-3 w-3" />
+                Bangalore
+              </span>
             </div>
-            <div className="hidden items-center gap-2 text-white/90 md:flex">
-              <Headphones className="h-4 w-4 text-primary" />
-              <span className="body-sm">24/7 Support</span>
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <Link
-              href="/store-locator"
-              className="body-sm hidden items-center gap-1.5 text-white/80 transition-colors hover:text-white sm:flex"
-            >
-              <MapPin className="h-3.5 w-3.5" />
-              Location
-            </Link>
-            {status === "loading" ? (
-              <span className="body-sm text-white/60">Loading...</span>
-            ) : session ? (
-              <div className="relative">
-                <button
-                  onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="body-sm flex items-center gap-1.5 text-white/80 transition-colors hover:text-white"
-                >
-                  <User className="h-3.5 w-3.5" />
-                  {session.user?.name?.split(" ")[0]}
-                  <ChevronDown className="h-3 w-3" />
-                </button>
-                {showUserMenu && (
-                  <>
-                    <div
-                      className="fixed inset-0 z-40"
-                      onClick={() => setShowUserMenu(false)}
-                    />
-                    <div className="absolute right-0 top-full z-50 mt-2 w-48 rounded-lg bg-card py-1 shadow-lg border border-border">
+            <div className="flex items-center gap-3 text-[11px]">
+              <span className="text-muted-foreground">Free shipping on orders above ₹5,000</span>
+              <span className="text-muted-foreground">|</span>
+              {status === "loading" ? (
+                <span className="text-muted-foreground">Loading...</span>
+              ) : session ? (
+                <div className="relative">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setShowUserMenu(!showUserMenu); }}
+                    className="flex items-center gap-1.5 font-medium text-foreground transition-colors hover:text-primary"
+                  >
+                    <div className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-white">
+                      {session.user?.name?.[0]?.toUpperCase()}
+                    </div>
+                    {session.user?.name?.split(" ")[0]}
+                    <ChevronDown className="h-3 w-3" />
+                  </button>
+                  {showUserMenu && (
+                    <div className="absolute right-0 top-full z-50 mt-2 w-44 rounded-lg bg-white py-1 shadow-lg ring-1 ring-border animate-fade-in">
                       <Link
                         href="/dashboard"
-                        className="flex items-center gap-2 px-4 py-2 text-sm text-foreground hover:bg-muted"
-                        onClick={() => setShowUserMenu(false)}
+                        className="flex items-center gap-2 px-3 py-2 text-xs text-foreground hover:bg-muted"
                       >
-                        <User className="h-4 w-4" />
+                        <User className="h-3.5 w-3.5 text-muted-foreground" />
                         My Account
                       </Link>
                       <Link
                         href="/dashboard/orders"
-                        className="flex items-center gap-2 px-4 py-2 text-sm text-foreground hover:bg-muted"
-                        onClick={() => setShowUserMenu(false)}
+                        className="flex items-center gap-2 px-3 py-2 text-xs text-foreground hover:bg-muted"
                       >
-                        <Package className="h-4 w-4" />
-                        My Orders
+                        <Package className="h-3.5 w-3.5 text-muted-foreground" />
+                        Orders
                       </Link>
                       {isAdmin && (
                         <Link
                           href="/admin"
-                          className="flex items-center gap-2 px-4 py-2 text-sm text-foreground hover:bg-muted"
-                          onClick={() => setShowUserMenu(false)}
+                          className="flex items-center gap-2 px-3 py-2 text-xs text-foreground hover:bg-muted"
                         >
-                          <Settings className="h-4 w-4" />
-                          Admin Panel
+                          <Settings className="h-3.5 w-3.5 text-muted-foreground" />
+                          Admin
                         </Link>
                       )}
                       <hr className="my-1 border-border" />
                       <button
-                        onClick={() => {
-                          setShowUserMenu(false);
-                          signOut({ callbackUrl: "/" });
-                        }}
-                        className="flex w-full items-center gap-2 px-4 py-2 text-sm text-destructive hover:bg-muted"
+                        onClick={() => signOut({ callbackUrl: "/" })}
+                        className="flex w-full items-center gap-2 px-3 py-2 text-xs text-destructive hover:bg-muted"
                       >
-                        <LogOut className="h-4 w-4" />
-                        Logout
+                        <LogOut className="h-3.5 w-3.5" />
+                        Sign Out
                       </button>
                     </div>
-                  </>
-                )}
-              </div>
-            ) : (
-              <>
-                <Link
-                  href="/auth/login"
-                  className="body-sm flex items-center gap-1.5 text-white/80 transition-colors hover:text-white"
-                >
-                  <LogIn className="h-3.5 w-3.5" />
-                  Login
-                </Link>
-                <Link
-                  href="/auth/register"
-                  className="body-sm flex items-center gap-1.5 rounded bg-primary px-3 py-1 text-white transition-colors hover:bg-stb-red-dark"
-                >
-                  <UserPlus className="h-3.5 w-3.5" />
-                  Register
-                </Link>
-              </>
-            )}
+                  )}
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Link href="/auth/login" className="text-foreground hover:text-primary transition-colors">
+                    Sign In
+                  </Link>
+                  <span className="text-border">|</span>
+                  <Link href="/auth/register" className="font-medium text-primary hover:text-stb-red-dark transition-colors">
+                    Register
+                  </Link>
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Main Header - White with Red accents */}
-      <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-4 lg:gap-8">
-        {/* Mobile Menu */}
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button variant="ghost" size="icon" className="lg:hidden">
-              <Menu className="h-6 w-6" />
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="w-[300px] p-0 bg-stb-dark text-white">
-            <SheetHeader className="border-b border-white/10 p-4">
-              <SheetTitle className="heading-md text-white">
-                STB Technologies
-              </SheetTitle>
-            </SheetHeader>
-            <nav className="flex flex-col p-2">
+        {/* Main header */}
+        <div className="border-b border-border">
+          <div className="mx-auto flex max-w-7xl items-center gap-3 px-3 py-2 md:gap-6 md:px-4 md:py-3">
+            {/* Mobile menu */}
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 md:hidden">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-[280px] p-0">
+                <SheetHeader className="border-b border-border p-4">
+                  <SheetTitle className="flex items-center gap-2 text-left">
+                    <Image src="/logo.png" alt="Smart Tech Bazaar" width={80} height={32} className="h-8 w-auto object-contain" />
+                  </SheetTitle>
+                </SheetHeader>
+
+                {/* User info in drawer */}
+                {session ? (
+                  <div className="border-b border-border bg-muted/30 px-4 py-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-semibold text-white">
+                        {session.user?.name?.[0]?.toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium text-foreground">{session.user?.name}</p>
+                        <p className="text-[10px] text-muted-foreground">{session.user?.email}</p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="border-b border-border px-4 py-3">
+                    <div className="flex gap-2">
+                      <SheetClose asChild>
+                        <Link href="/auth/login" className="flex-1 rounded border border-border bg-white py-2 text-center text-xs font-medium text-foreground">
+                          Sign In
+                        </Link>
+                      </SheetClose>
+                      <SheetClose asChild>
+                        <Link href="/auth/register" className="flex-1 rounded bg-primary py-2 text-center text-xs font-medium text-white">
+                          Register
+                        </Link>
+                      </SheetClose>
+                    </div>
+                  </div>
+                )}
+
+                <nav className="flex flex-col p-3">
+                  <p className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Shop by Category</p>
+                  {navCategories.map((cat) => (
+                    <SheetClose asChild key={cat.slug}>
+                      <Link
+                        href={`/category/${cat.slug}`}
+                        className="rounded px-3 py-2 text-xs text-foreground transition-colors hover:bg-muted hover:text-primary"
+                      >
+                        {cat.name}
+                      </Link>
+                    </SheetClose>
+                  ))}
+                  {session && (
+                    <>
+                      <p className="mb-2 mt-4 px-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Account</p>
+                      <SheetClose asChild>
+                        <Link href="/dashboard" className="rounded px-3 py-2 text-xs text-foreground hover:bg-muted">My Account</Link>
+                      </SheetClose>
+                      <SheetClose asChild>
+                        <Link href="/dashboard/orders" className="rounded px-3 py-2 text-xs text-foreground hover:bg-muted">Orders</Link>
+                      </SheetClose>
+                      {isAdmin && (
+                        <SheetClose asChild>
+                          <Link href="/admin" className="rounded px-3 py-2 text-xs text-foreground hover:bg-muted">Admin Panel</Link>
+                        </SheetClose>
+                      )}
+                      <button
+                        onClick={() => signOut({ callbackUrl: "/" })}
+                        className="mt-1 rounded px-3 py-2 text-left text-xs text-destructive hover:bg-muted"
+                      >
+                        Sign Out
+                      </button>
+                    </>
+                  )}
+                </nav>
+              </SheetContent>
+            </Sheet>
+
+            {/* Logo */}
+            <Link href="/" className="flex shrink-0 items-center">
+              <Image
+                src="/logo.png"
+                alt="Smart Tech Bazaar"
+                width={120}
+                height={40}
+                className="h-8 w-auto object-contain md:h-10"
+                priority
+              />
+            </Link>
+
+            {/* Desktop search */}
+            <form action="/search" method="GET" className="relative hidden flex-1 md:flex">
+              <div className={`relative w-full transition-all ${searchFocused ? "ring-2 ring-primary/20 rounded-lg" : ""}`}>
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  type="text"
+                  name="q"
+                  placeholder="Search products, brands..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={() => setSearchFocused(true)}
+                  onBlur={() => setSearchFocused(false)}
+                  className="h-9 w-full rounded-lg border border-border bg-muted/50 pl-9 pr-4 text-xs placeholder:text-muted-foreground focus:border-primary focus:bg-white focus:outline-none transition-all"
+                />
+              </div>
+            </form>
+
+            {/* Mobile search toggle */}
+            <button
+              onClick={() => setMobileSearchOpen(!mobileSearchOpen)}
+              className="flex h-8 w-8 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground md:hidden"
+            >
+              {mobileSearchOpen ? <X className="h-4 w-4" /> : <Search className="h-4 w-4" />}
+            </button>
+
+            {/* Actions */}
+            <div className="flex items-center gap-1">
+              {/* Wishlist - desktop */}
+              <Link href="/wishlist" className="relative hidden md:flex h-8 w-8 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+                <Heart className="h-4 w-4" />
+                {wishlistCount > 0 && (
+                  <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-semibold text-white">
+                    {wishlistCount > 9 ? "9+" : wishlistCount}
+                  </span>
+                )}
+              </Link>
+
+              {/* Cart */}
+              <Link href="/cart" className="relative flex h-8 w-8 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+                <ShoppingCart className="h-4 w-4" />
+                {cartCount > 0 && (
+                  <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-semibold text-white">
+                    {cartCount > 9 ? "9+" : cartCount}
+                  </span>
+                )}
+              </Link>
+
+              {/* Desktop user */}
+              {session && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); setShowUserMenu(!showUserMenu); }}
+                  className="hidden md:flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-semibold text-white transition-colors hover:bg-stb-red-dark"
+                >
+                  {session.user?.name?.[0]?.toUpperCase()}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile search bar */}
+        {mobileSearchOpen && (
+          <div className="border-b border-border bg-muted/30 px-3 py-2 md:hidden">
+            <form action="/search" method="GET" className="relative">
+              <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+              <input
+                type="text"
+                name="q"
+                placeholder="Search products..."
+                autoFocus
+                className="h-8 w-full rounded border border-border bg-white pl-8 pr-3 text-xs placeholder:text-muted-foreground focus:border-primary focus:outline-none"
+              />
+            </form>
+          </div>
+        )}
+
+        {/* Desktop category nav */}
+        <div className="hidden border-b border-border md:block">
+          <div className="mx-auto max-w-7xl px-4">
+            <nav className="flex items-center gap-0.5 overflow-x-auto scrollbar-hide">
+              <Link
+                href="/products"
+                className="shrink-0 px-3 py-2.5 text-[11px] font-semibold text-primary transition-colors hover:bg-stb-red-light"
+              >
+                All Products
+              </Link>
               {navCategories.map((cat) => (
                 <Link
                   key={cat.slug}
                   href={`/category/${cat.slug}`}
-                  className="body-md rounded-lg px-4 py-2.5 text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+                  className="shrink-0 px-3 py-2.5 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                 >
                   {cat.name}
                 </Link>
               ))}
             </nav>
-          </SheetContent>
-        </Sheet>
-
-        {/* Logo */}
-        <Link href="/" className="flex shrink-0 items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary">
-            <span className="font-heading text-2xl font-bold text-white">S</span>
           </div>
-          <div className="hidden sm:block">
-            <h1 className="font-heading text-2xl font-bold tracking-wide text-stb-dark">STB</h1>
-            <p className="body-sm -mt-1 font-medium text-primary">TECHNOLOGIES</p>
-          </div>
-        </Link>
-
-        {/* Search */}
-        <form
-          action="/search"
-          method="GET"
-          className="relative flex flex-1 items-center"
-        >
-          <Input
-            type="text"
-            name="q"
-            placeholder="Search products, brands and more..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-12 rounded-lg border-2 border-border bg-muted pl-5 pr-14 focus-visible:border-primary focus-visible:ring-0"
-          />
-          {searchQuery && (
-            <button
-              type="button"
-              onClick={() => setSearchQuery("")}
-              className="absolute right-14 text-muted-foreground hover:text-foreground"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          )}
-          <Button
-            type="submit"
-            size="icon"
-            className="absolute right-1 h-10 w-10 rounded-md bg-primary hover:bg-stb-red-dark"
-          >
-            <Search className="h-5 w-5 text-white" />
-          </Button>
-        </form>
-
-        {/* Action Icons */}
-        <div className="flex items-center gap-2">
-          <Link href="/wishlist">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="relative h-11 w-11 rounded-lg text-foreground hover:bg-stb-red-light hover:text-primary"
-            >
-              <Heart className="h-5 w-5" />
-              {wishlistCount > 0 && (
-                <span className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-white animate-in zoom-in-50 duration-200">
-                  {wishlistCount > 99 ? "99+" : wishlistCount}
-                </span>
-              )}
-            </Button>
-          </Link>
-          <Link href="/cart">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="relative h-11 w-11 rounded-lg text-foreground hover:bg-stb-red-light hover:text-primary"
-            >
-              <ShoppingCart className="h-5 w-5" />
-              {cartCount > 0 && (
-                <span className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-white animate-in zoom-in-50 duration-200">
-                  {cartCount > 99 ? "99+" : cartCount}
-                </span>
-              )}
-            </Button>
-          </Link>
         </div>
-      </div>
+      </header>
 
-      {/* Category Navigation - Red background */}
-      <div className="bg-primary">
-        <div className="mx-auto max-w-7xl overflow-x-auto px-4">
-          <nav className="flex items-center gap-1 py-2">
-            <Link
-              href="/products"
-              className="label-uppercase shrink-0 rounded bg-white/20 px-4 py-2 font-semibold text-white transition-colors hover:bg-white/30"
-            >
-              All Products
-            </Link>
-            {navCategories.map((cat) => (
+      {/* Mobile bottom navigation */}
+      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-white md:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+        <div className="grid h-14 grid-cols-5">
+          {mobileNavItems.map((item) => {
+            const isActive = pathname === item.href;
+            const isCart = item.href === "/cart";
+            const isWishlist = item.href === "/wishlist";
+            const count = isCart ? cartCount : isWishlist ? wishlistCount : 0;
+
+            return (
               <Link
-                key={cat.slug}
-                href={`/category/${cat.slug}`}
-                className="label-uppercase shrink-0 rounded px-4 py-2 text-white/90 transition-colors hover:bg-white/20 hover:text-white"
+                key={item.href}
+                href={item.href}
+                className="relative flex flex-col items-center justify-center gap-[3px] px-1 transition-colors"
               >
-                {cat.name}
+                {/* Active top indicator */}
+                {isActive && (
+                  <span className="absolute top-0 left-1/2 h-[2.5px] w-8 -translate-x-1/2 rounded-b-full bg-primary" />
+                )}
+                <div className="relative flex h-5 w-5 items-center justify-center">
+                  <item.icon
+                    className={`h-[19px] w-[19px] transition-colors ${
+                      isActive ? "text-primary stroke-[2.5]" : "text-[#9CA3AF] stroke-[1.5]"
+                    }`}
+                  />
+                  {count > 0 && (
+                    <span className="absolute -right-1.5 -top-1 flex h-[14px] min-w-[14px] items-center justify-center rounded-full bg-primary px-0.5 text-[8px] font-bold leading-none text-white">
+                      {count > 9 ? "9+" : count}
+                    </span>
+                  )}
+                </div>
+                <span
+                  className={`text-[10px] font-medium leading-none transition-colors ${
+                    isActive ? "text-primary" : "text-[#9CA3AF]"
+                  }`}
+                >
+                  {item.name}
+                </span>
               </Link>
-            ))}
-          </nav>
+            );
+          })}
         </div>
-      </div>
-    </header>
+      </nav>
+
+      {/* Spacer for mobile bottom nav */}
+      <div className="h-14 md:hidden" />
+    </>
   );
 }

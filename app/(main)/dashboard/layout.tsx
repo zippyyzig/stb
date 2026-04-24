@@ -15,17 +15,24 @@ export default async function DashboardLayout({
     redirect("/auth/login?callbackUrl=/dashboard");
   }
 
-  // Admins should go to the admin panel
   if (session.user.role === "admin" || session.user.role === "super_admin") {
     redirect("/admin");
   }
 
   return (
-    <div className="flex min-h-screen bg-muted">
+    <div className="flex min-h-screen bg-[#F7F8FA]">
+      {/* Desktop sidebar — hidden on mobile */}
       <DashboardSidebar />
-      <div className="flex flex-1 flex-col min-w-0">
-        <DashboardHeader />
-        <main className="flex-1 overflow-y-auto p-6">
+
+      {/* Main content column */}
+      <div className="flex min-w-0 flex-1 flex-col">
+        {/* Desktop header */}
+        <div className="hidden md:block">
+          <DashboardHeader />
+        </div>
+
+        {/* Page content — compact padding on mobile */}
+        <main className="flex-1 overflow-y-auto p-3 pb-20 md:p-6 md:pb-6">
           {children}
         </main>
       </div>

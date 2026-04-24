@@ -5,8 +5,8 @@ import { CartWishlistProvider } from "@/components/providers/CartWishlistProvide
 
 export const metadata: Metadata = {
   title: {
-    default: "Sabka Tech Bazar - Computer Accessories, CCTV & IT Solutions",
-    template: "%s | Sabka Tech Bazar",
+    default: "Smart Tech Bazaar - Computer Accessories, CCTV & IT Solutions",
+    template: "%s | Smart Tech Bazaar",
   },
   description:
     "Your trusted partner for computer accessories, CCTV cameras, printers, networking equipment, and all your technology needs. Shop B2B and B2C with competitive prices.",
@@ -18,21 +18,28 @@ export const metadata: Metadata = {
     "IT solutions",
     "B2B wholesale",
     "tech products",
+    "Smart Tech Bazaar",
   ],
-  authors: [{ name: "Sabka Tech Bazar" }],
-  creator: "Sabka Tech Bazar",
+  authors: [{ name: "Smart Tech Bazaar" }],
+  creator: "Smart Tech Bazaar",
+  icons: {
+    icon: "/logo.png",
+    shortcut: "/logo.png",
+    apple: "/logo.png",
+  },
   openGraph: {
     type: "website",
     locale: "en_IN",
-    url: "https://sabkatechbazar.com",
-    siteName: "Sabka Tech Bazar",
-    title: "Sabka Tech Bazar - Computer Accessories, CCTV & IT Solutions",
+    url: "https://smarttechbazaar.com",
+    siteName: "Smart Tech Bazaar",
+    title: "Smart Tech Bazaar - Computer Accessories, CCTV & IT Solutions",
     description:
       "Your trusted partner for computer accessories, CCTV cameras, printers, networking equipment, and all your technology needs.",
+    images: [{ url: "/logo.png" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Sabka Tech Bazar - Computer Accessories, CCTV & IT Solutions",
+    title: "Smart Tech Bazaar - Computer Accessories, CCTV & IT Solutions",
     description:
       "Your trusted partner for computer accessories, CCTV cameras, printers, networking equipment, and all your technology needs.",
   },
@@ -43,7 +50,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#DC2626",
+  themeColor: "#CC0000",
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,

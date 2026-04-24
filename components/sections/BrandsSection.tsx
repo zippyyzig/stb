@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { ChevronRight } from "lucide-react";
 
 interface Brand {
   id: string;
@@ -14,7 +15,6 @@ interface BrandsSectionProps {
   brands: Brand[];
 }
 
-// Default brands shown when DB returns empty
 const defaultBrands: Brand[] = [
   { id: "hp", name: "HP", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ad/HP_logo_2012.svg/120px-HP_logo_2012.svg.png", slug: "hp" },
   { id: "dell", name: "Dell", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/Dell_Logo.svg/120px-Dell_Logo.svg.png", slug: "dell" },
@@ -28,58 +28,57 @@ const defaultBrands: Brand[] = [
 
 export default function BrandsSection({ brands }: BrandsSectionProps) {
   const displayBrands = brands.length > 0 ? brands : defaultBrands;
-
-  // Triple the array so the marquee seamlessly loops (we animate the first 2/3)
   const scrollBrands = [...displayBrands, ...displayBrands, ...displayBrands];
 
   return (
-    <section className="mx-auto max-w-7xl px-4 py-10">
-      {/* Section Header */}
-      <div className="mb-6 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="h-8 w-1 rounded-full bg-primary" />
-          <h2 className="heading-lg">Our Trusted Brands</h2>
+    <section className="bg-white">
+      <div className="mx-auto max-w-7xl px-3 py-4 md:px-4 md:py-6">
+        {/* Section Header */}
+        <div className="mb-3 flex items-center justify-between md:mb-4">
+          <div className="flex items-center gap-2">
+            <div className="h-4 w-0.5 rounded-full bg-primary md:h-5" />
+            <h2 className="text-sm font-semibold text-foreground md:text-base">Shop by Brand</h2>
+          </div>
+          <Link
+            href="/brands"
+            className="flex items-center gap-0.5 text-[11px] font-medium text-primary transition-colors hover:text-stb-red-dark md:text-xs"
+          >
+            View All <ChevronRight className="h-3 w-3" />
+          </Link>
         </div>
-        <Link
-          href="/brands"
-          className="body-sm font-medium text-primary transition-colors hover:text-stb-red-dark"
-        >
-          View All Brands
-        </Link>
-      </div>
 
-      {/* Brands Marquee */}
-      <div className="relative overflow-hidden rounded-xl border border-border bg-card py-6">
-        {/* Gradient fade edges */}
-        <div className="pointer-events-none absolute left-0 top-0 z-10 h-full w-20 bg-gradient-to-r from-card to-transparent" />
-        <div className="pointer-events-none absolute right-0 top-0 z-10 h-full w-20 bg-gradient-to-l from-card to-transparent" />
+        {/* Brands Marquee */}
+        <div className="relative overflow-hidden rounded-lg border border-border bg-muted/30 py-4 md:py-5">
+          {/* Gradient edges */}
+          <div className="pointer-events-none absolute left-0 top-0 z-10 h-full w-8 bg-gradient-to-r from-muted/80 to-transparent md:w-12" />
+          <div className="pointer-events-none absolute right-0 top-0 z-10 h-full w-8 bg-gradient-to-l from-muted/80 to-transparent md:w-12" />
 
-        {/* Scrolling track — animation drives translateX from 0 to -33.33% (one full copy width) */}
-        <div
-          className="brand-track flex min-w-max items-center gap-10 px-4"
-          style={{ animation: "brandScroll 40s linear infinite" }}
-        >
-          {scrollBrands.map((brand, index) => (
-            <Link
-              key={`${brand.slug}-${index}`}
-              href={`/brand/${brand.slug}`}
-              className="group flex shrink-0 flex-col items-center gap-2 transition-transform hover:scale-105"
-            >
-              <div className="flex h-16 w-28 items-center justify-center rounded-lg bg-muted p-3 transition-colors group-hover:bg-stb-red-light">
-                <Image
-                  src={brand.logo}
-                  alt={brand.name}
-                  width={100}
-                  height={50}
-                  className="h-auto max-h-10 w-auto max-w-[90px] object-contain grayscale transition-all group-hover:grayscale-0"
-                  unoptimized
-                />
-              </div>
-              <span className="body-sm font-medium text-muted-foreground transition-colors group-hover:text-primary">
-                {brand.name}
-              </span>
-            </Link>
-          ))}
+          <div
+            className="brand-track flex min-w-max items-center gap-6 px-4 md:gap-8"
+            style={{ animation: "brandScroll 40s linear infinite" }}
+          >
+            {scrollBrands.map((brand, index) => (
+              <Link
+                key={`${brand.slug}-${index}`}
+                href={`/brand/${brand.slug}`}
+                className="group flex shrink-0 flex-col items-center gap-1"
+              >
+                <div className="flex h-10 w-16 items-center justify-center rounded bg-white p-1.5 transition-all group-hover:shadow-sm md:h-12 md:w-20 md:p-2">
+                  <Image
+                    src={brand.logo}
+                    alt={brand.name}
+                    width={64}
+                    height={32}
+                    className="h-auto max-h-6 w-auto max-w-[48px] object-contain opacity-60 grayscale transition-all group-hover:opacity-100 group-hover:grayscale-0 md:max-h-7 md:max-w-[56px]"
+                    unoptimized
+                  />
+                </div>
+                <span className="text-[9px] font-medium text-muted-foreground transition-colors group-hover:text-primary md:text-[10px]">
+                  {brand.name}
+                </span>
+              </Link>
+            ))}
+          </div>
         </div>
       </div>
     </section>

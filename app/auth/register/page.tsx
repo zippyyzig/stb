@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { signInWithPopup } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
 import { signIn } from "next-auth/react";
@@ -124,14 +125,12 @@ export default function RegisterPage() {
     <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
-          <Link href="/" className="inline-flex items-center gap-2">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary">
-              <span className="font-heading text-xl font-bold text-white">S</span>
-            </div>
+          <Link href="/" className="inline-flex items-center justify-center">
+            <Image src="/logo.png" alt="Smart Tech Bazaar" width={140} height={48} className="h-12 w-auto object-contain" />
           </Link>
           <h1 className="heading-lg mt-6">Create Account</h1>
           <p className="body-md mt-2 text-muted-foreground">
-            Join Sabka Tech Bazar for exclusive deals
+            Join Smart Tech Bazaar for exclusive deals
           </p>
         </div>
 

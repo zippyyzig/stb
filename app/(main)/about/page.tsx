@@ -78,7 +78,7 @@ const categories = [
 ];
 
 const milestones = [
-  { year: "2010", event: "STB Technologies founded in Jaipur with a vision to make quality IT products accessible." },
+  { year: "2010", event: "Smart Tech Bazaar founded in Bangalore with a vision to make quality IT products accessible." },
   { year: "2013", event: "Expanded product catalogue to include CCTV and security equipment." },
   { year: "2016", event: "Launched B2B dealer programme, partnering with 200+ resellers across Rajasthan." },
   { year: "2019", event: "Crossed 1,000 active business accounts; opened second warehouse facility." },
@@ -103,12 +103,12 @@ export default function AboutPage() {
         {/* Red accent stripe */}
         <div className="absolute inset-y-0 left-0 w-1.5 bg-primary" />
         <div className="relative mx-auto flex h-full max-w-7xl flex-col justify-center px-4 md:px-8">
-          <p className="label-uppercase mb-3 text-primary">About STB Technologies</p>
+          <p className="label-uppercase mb-3 text-primary">About Smart Tech Bazaar</p>
           <h1 className="heading-xl max-w-2xl text-white">
             Powering India&apos;s Businesses with the Right Technology
           </h1>
           <p className="body-lg mt-5 max-w-xl text-white/70">
-            Since 2010, we have been Jaipur&apos;s trusted IT solutions partner — supplying
+            Since 2010, we have been Bangalore&apos;s trusted IT solutions partner — supplying
             genuine products, competitive prices, and dependable support to businesses
             and individuals across India.
           </p>
@@ -153,12 +153,12 @@ export default function AboutPage() {
               </h2>
               <div className="space-y-4 text-muted-foreground">
                 <p className="body-md">
-                  STB Technologies started in 2010 as a small computer accessories shop in
-                  Jaipur with one simple goal: give businesses access to quality IT products
+                  Smart Tech Bazaar started in 2010 as a small computer accessories shop in
+                  Bangalore with one simple goal: give businesses access to quality IT products
                   without having to compromise on price or authenticity.
                 </p>
                 <p className="body-md">
-                  Over the years we have grown into one of Rajasthan&apos;s leading IT distributors,
+                  Over the years we have grown into one of Karnataka&apos;s leading IT distributors,
                   stocking over 10,000 SKUs across computers, CCTV, networking, printers, and
                   software — all sourced directly from authorised channels.
                 </p>
@@ -322,10 +322,10 @@ export default function AboutPage() {
                     <Mail className="h-4 w-4 text-primary" />
                   </div>
                   <a
-                    href="mailto:sales@sabkatechbazar.com"
+                    href="mailto:sales@smarttechbazaar.com"
                     className="body-md text-white/80 hover:text-primary"
                   >
-                    sales@sabkatechbazar.com
+                    sales@smarttechbazaar.com
                   </a>
                 </div>
                 <div className="flex items-center gap-3">
