@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useSession, signOut } from "next-auth/react";
 import { useCart, useWishlist } from "@/components/providers/CartWishlistProvider";
 import { useRouter, usePathname } from "next/navigation";
@@ -182,14 +183,8 @@ export default function Header() {
               </SheetTrigger>
               <SheetContent side="left" className="w-[280px] p-0">
                 <SheetHeader className="border-b border-border p-4">
-                  <SheetTitle className="flex items-center gap-2.5 text-left">
-                    <div className="flex h-8 w-8 items-center justify-center rounded bg-primary">
-                      <span className="text-sm font-bold text-white">S</span>
-                    </div>
-                    <div>
-                      <div className="text-sm font-bold">STB Technologies</div>
-                      <div className="text-[10px] text-muted-foreground">Your Tech Partner</div>
-                    </div>
+                  <SheetTitle className="flex items-center gap-2 text-left">
+                    <Image src="/logo.png" alt="Smart Tech Bazaar" width={80} height={32} className="h-8 w-auto object-contain" />
                   </SheetTitle>
                 </SheetHeader>
 
@@ -262,14 +257,15 @@ export default function Header() {
             </Sheet>
 
             {/* Logo */}
-            <Link href="/" className="flex shrink-0 items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded bg-primary md:h-9 md:w-9">
-                <span className="text-base font-bold text-white md:text-lg">S</span>
-              </div>
-              <div className="hidden sm:block">
-                <h1 className="text-base font-bold text-foreground leading-none md:text-lg">STB</h1>
-                <p className="text-[9px] font-medium text-muted-foreground leading-none mt-0.5 md:text-[10px]">TECHNOLOGIES</p>
-              </div>
+            <Link href="/" className="flex shrink-0 items-center">
+              <Image
+                src="/logo.png"
+                alt="Smart Tech Bazaar"
+                width={120}
+                height={40}
+                className="h-8 w-auto object-contain md:h-10"
+                priority
+              />
             </Link>
 
             {/* Desktop search */}

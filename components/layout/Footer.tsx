@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   Mail,
   Phone,
@@ -86,19 +87,19 @@ export default function Footer() {
               <span className="text-xs font-medium">Subscribed!</span>
             </div>
           ) : (
-            <form onSubmit={handleSubscribe} className="flex w-full max-w-sm gap-2">
+            <form onSubmit={handleSubscribe} className="flex w-full max-w-sm flex-col gap-2 sm:flex-row">
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email"
                 required
-                className="h-9 flex-1 rounded border border-white/10 bg-white/5 px-3 text-xs text-white placeholder:text-white/40 focus:border-primary focus:outline-none"
+                className="h-9 min-w-0 flex-1 rounded border border-white/10 bg-white/5 px-3 text-xs text-white placeholder:text-white/40 focus:border-primary focus:outline-none"
               />
               <button
                 type="submit"
                 disabled={subscribeStatus === "loading"}
-                className="flex h-9 items-center gap-1.5 rounded bg-primary px-4 text-xs font-medium text-white transition-colors hover:bg-stb-red-dark disabled:opacity-70"
+                className="flex h-9 shrink-0 items-center justify-center gap-1.5 rounded bg-primary px-4 text-xs font-medium text-white transition-colors hover:bg-stb-red-dark disabled:opacity-70"
               >
                 {subscribeStatus === "loading" ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -118,14 +119,8 @@ export default function Footer() {
       <div className="md:hidden">
         {/* Brand */}
         <div className="border-b border-white/10 px-4 py-4">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded bg-primary">
-              <span className="text-sm font-bold text-white">S</span>
-            </div>
-            <div>
-              <h3 className="text-sm font-semibold">STB Technologies</h3>
-              <p className="text-[10px] text-white/50">Your Tech Partner</p>
-            </div>
+          <div className="flex items-center">
+            <Image src="/logo.png" alt="Smart Tech Bazaar" width={110} height={36} className="h-9 w-auto object-contain brightness-0 invert" />
           </div>
           <div className="mt-3 space-y-1.5 text-[11px] text-white/60">
             <div className="flex items-center gap-2">
@@ -134,7 +129,7 @@ export default function Footer() {
             </div>
             <div className="flex items-center gap-2">
               <Mail className="h-3 w-3 shrink-0 text-primary" />
-              <a href="mailto:sales@sabkatechbazar.com">sales@sabkatechbazar.com</a>
+              <a href="mailto:sales@smarttechbazaar.com">sales@smarttechbazaar.com</a>
             </div>
           </div>
         </div>
@@ -178,14 +173,8 @@ export default function Footer() {
           <div className="grid gap-8 lg:grid-cols-5">
             {/* Brand Info */}
             <div className="lg:col-span-2">
-              <div className="flex items-center gap-2.5">
-                <div className="flex h-9 w-9 items-center justify-center rounded bg-primary">
-                  <span className="text-base font-bold text-white">S</span>
-                </div>
-                <div>
-                  <h3 className="text-base font-semibold">STB Technologies</h3>
-                  <p className="text-[10px] text-white/50">Your Trusted Tech Partner</p>
-                </div>
+              <div className="flex items-center">
+                <Image src="/logo.png" alt="Smart Tech Bazaar" width={130} height={42} className="h-10 w-auto object-contain brightness-0 invert" />
               </div>
               <p className="mt-4 max-w-sm text-xs leading-relaxed text-white/60">
                 Your trusted partner for computer accessories, CCTV cameras, printers,
@@ -203,7 +192,7 @@ export default function Footer() {
                 </div>
                 <div className="flex items-center gap-2 text-xs text-white/60">
                   <Mail className="h-3.5 w-3.5 shrink-0 text-primary" />
-                  <a href="mailto:sales@sabkatechbazar.com" className="hover:text-white">sales@sabkatechbazar.com</a>
+                  <a href="mailto:sales@smarttechbazaar.com" className="hover:text-white">sales@smarttechbazaar.com</a>
                 </div>
               </div>
             </div>
@@ -269,7 +258,7 @@ export default function Footer() {
       <div className="border-t border-white/10">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 md:py-4">
           <p className="text-[10px] text-white/40 md:text-xs">
-            &copy; 2025 STB Technologies. All Rights Reserved.
+            &copy; 2025 Smart Tech Bazaar. All Rights Reserved.
           </p>
           <button
             onClick={scrollToTop}

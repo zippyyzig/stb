@@ -140,15 +140,15 @@ export default function CategoryFilters({ subcategories, brands, onClose }: Cate
                   placeholder="Min"
                   value={priceRange[0] || ""}
                   onChange={(e) => setPriceRange([Number(e.target.value), priceRange[1]])}
-                  className="w-full rounded-lg border border-border bg-background px-2 py-1.5 text-[11px] focus:border-primary focus:outline-none"
+                  className="min-w-0 w-full rounded-lg border border-border bg-background px-2 py-1.5 text-[11px] focus:border-primary focus:outline-none"
                 />
-                <span className="text-[10px] text-muted-foreground">–</span>
+                <span className="shrink-0 text-[10px] text-muted-foreground">–</span>
                 <input
                   type="number"
                   placeholder="Max"
                   value={priceRange[1] || ""}
                   onChange={(e) => setPriceRange([priceRange[0], Number(e.target.value)])}
-                  className="w-full rounded-lg border border-border bg-background px-2 py-1.5 text-[11px] focus:border-primary focus:outline-none"
+                  className="min-w-0 w-full rounded-lg border border-border bg-background px-2 py-1.5 text-[11px] focus:border-primary focus:outline-none"
                 />
               </div>
             </div>

@@ -40,7 +40,7 @@ export default function CategoryPageClient({ products, subcategories, brands }: 
   return (
     <div className="mx-auto max-w-7xl px-3 py-3 md:px-4 md:py-5">
       {/* ── Sticky sort/filter bar ──────────────────────────────────── */}
-      <div className="sticky top-0 z-30 mb-3 flex items-center justify-between gap-2 rounded-xl border border-border bg-white px-3 py-2 shadow-sm md:mb-4 md:rounded-lg">
+      <div className="sticky top-0 z-30 mb-3 flex items-center justify-between gap-2 overflow-hidden rounded-xl border border-border bg-white px-3 py-2 shadow-sm md:mb-4 md:rounded-lg">
         {/* Mobile: Filter trigger */}
         <button
           onClick={() => setFilterOpen(true)}
@@ -81,7 +81,7 @@ export default function CategoryPageClient({ products, subcategories, brands }: 
           <select
             value={sort}
             onChange={(e) => setSort(e.target.value)}
-            className="rounded-lg border border-border bg-white px-2 py-1.5 text-[11px] font-medium text-foreground focus:border-primary focus:outline-none md:text-xs"
+            className="max-w-[130px] truncate rounded-lg border border-border bg-white px-2 py-1.5 text-[11px] font-medium text-foreground focus:border-primary focus:outline-none md:max-w-none md:text-xs"
           >
             {SORT_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>{o.label}</option>
