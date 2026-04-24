@@ -19,6 +19,7 @@ import {
   Bell,
   Activity,
   Home,
+  Globe,
 } from "lucide-react";
 
 interface AdminSidebarProps {
@@ -108,6 +109,12 @@ const menuItems = [
     title: "Reports",
     href: "/admin/reports",
     icon: BarChart3,
+    roles: ["admin", "super_admin"],
+  },
+  {
+    title: "SEO",
+    href: "/admin/seo",
+    icon: Globe,
     roles: ["admin", "super_admin"],
   },
   {

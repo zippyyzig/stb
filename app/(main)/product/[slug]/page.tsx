@@ -1,6 +1,4 @@
 import { Metadata } from "next";
-import Image from "next/image";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
@@ -8,10 +6,12 @@ import ProductGallery from "@/components/products/ProductGallery";
 import ProductInfo from "@/components/products/ProductInfo";
 import RelatedProducts from "@/components/products/RelatedProducts";
 import ProductReviews from "@/components/products/ProductReviews";
+import Breadcrumbs from "@/components/seo/Breadcrumbs";
+import JsonLd from "@/components/seo/JsonLd";
 import dbConnect from "@/lib/mongodb";
 import Product from "@/models/Product";
-import Category from "@/models/Category";
-import { ChevronRight } from "lucide-react";
+import { siteConfig, getCanonicalUrl } from "@/lib/site-config";
+import { generateProductSchema, generateOrganizationSchema } from "@/lib/schema";
 
 interface ProductPageProps {
   params: Promise<{ slug: string }>;
@@ -59,19 +59,33 @@ export async function generateMetadata({
     };
   }
 
+  const title = data.product.metaTitle || data.product.name;
+  const description = data.product.metaDescription ||
+    data.product.shortDescription ||
+    data.product.description?.replace(/<[^>]*>/g, "").slice(0, 160) ||
+    `Buy ${data.product.name} at ${siteConfig.name}. Best prices on ${data.product.brand || "quality"} products.`;
+
   return {
-    title: data.product.metaTitle || data.product.name,
-    description:
-      data.product.metaDescription ||
-      data.product.shortDescription ||
-      data.product.description?.slice(0, 160),
+    title,
+    description,
+    alternates: {
+      canonical: getCanonicalUrl(`/product/${slug}`),
+    },
     openGraph: {
-      images: data.product.images?.[0] ? [data.product.images[0]] : [],
+      title: `${title} | ${siteConfig.name}`,
+      description,
+      url: getCanonicalUrl(`/product/${slug}`),
+      images: data.product.images?.[0] ? [data.product.images[0]] : undefined,
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${title} | ${siteConfig.name}`,
+      description,
+      images: data.product.images?.[0] ? [data.product.images[0]] : undefined,
     },
   };
 }
-
-
 
 export default async function ProductPage({ params }: ProductPageProps) {
   const { slug } = await params;
@@ -85,27 +99,39 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const product = data.product;
   const relatedProducts = data.relatedProducts || [];
 
+  // Schema markup
+  const schemas = [
+    generateOrganizationSchema(),
+    generateProductSchema({
+      name: product.name,
+      slug: product.slug,
+      description: product.description || "",
+      images: product.images || [],
+      priceB2C: product.priceB2C,
+      mrp: product.mrp,
+      stock: product.stock,
+      sku: product.sku,
+      brand: product.brand,
+      category: product.category,
+      specifications: product.specifications,
+    }),
+  ];
+
+  // Breadcrumb items
+  const breadcrumbItems = [
+    ...(product.category ? [{ label: product.category.name, href: `/category/${product.category.slug}` }] : []),
+    { label: product.name },
+  ];
+
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
       <main className="flex-1 bg-[#F7F8FA] pb-32 md:pb-0">
+        {/* Schema */}
+        <JsonLd data={schemas} />
+
         {/* Breadcrumb */}
-        <div className="border-b border-border bg-white">
-          <div className="mx-auto flex max-w-7xl items-center gap-1.5 px-3 py-2.5 md:px-4">
-            <Link href="/" className="text-[11px] text-muted-foreground hover:text-primary">
-              Home
-            </Link>
-            <ChevronRight className="h-3 w-3 text-muted-foreground" />
-            <Link
-              href={`/category/${product.category?.slug || "products"}`}
-              className="text-[11px] text-muted-foreground hover:text-primary"
-            >
-              {product.category?.name || "Products"}
-            </Link>
-            <ChevronRight className="h-3 w-3 text-muted-foreground" />
-            <span className="line-clamp-1 text-[11px] font-medium text-foreground">{product.name}</span>
-          </div>
-        </div>
+        <Breadcrumbs items={breadcrumbItems} />
 
         {/* Product Section */}
         <section className="mx-auto max-w-7xl px-3 py-4 md:px-4 md:py-8">

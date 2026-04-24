@@ -1,13 +1,14 @@
 import { Metadata } from "next";
-import Link from "next/link";
-import { notFound } from "next/navigation";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import CategoryPageClient from "@/components/products/CategoryPageClient";
+import Breadcrumbs from "@/components/seo/Breadcrumbs";
+import JsonLd from "@/components/seo/JsonLd";
 import dbConnect from "@/lib/mongodb";
 import Category from "@/models/Category";
 import Product from "@/models/Product";
-import { ChevronRight } from "lucide-react";
+import { siteConfig, getCanonicalUrl } from "@/lib/site-config";
+import { generateCollectionPageSchema, generateOrganizationSchema } from "@/lib/schema";
 
 interface CategoryPageProps {
   params: Promise<{ slug: string }>;
@@ -38,10 +39,26 @@ async function getCategoryData(slug: string) {
 export async function generateMetadata({ params }: CategoryPageProps): Promise<Metadata> {
   const { slug } = await params;
   const data = await getCategoryData(slug);
-  if (!data) return { title: "Category Not Found" };
+  
+  if (!data) {
+    return { title: "Category Not Found" };
+  }
+  
+  const title = data.category.name;
+  const description = data.category.description || `Browse ${data.category.name} products at ${siteConfig.name}. Find the best deals on quality ${data.category.name.toLowerCase()} items.`;
+  
   return {
-    title: data.category.name,
-    description: data.category.description || `Browse ${data.category.name} products at Sabka Tech Bazar`,
+    title,
+    description,
+    alternates: {
+      canonical: getCanonicalUrl(`/category/${slug}`),
+    },
+    openGraph: {
+      title: `${title} | ${siteConfig.name}`,
+      description,
+      url: getCanonicalUrl(`/category/${slug}`),
+      images: data.category.image ? [data.category.image] : undefined,
+    },
   };
 }
 
@@ -67,20 +84,33 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
   const subcategories = data?.subcategories || [];
   const brands = [...new Set(displayProducts.map((p: { brand?: string }) => p.brand).filter(Boolean))] as string[];
 
+  // Schema markup
+  const schemas = [
+    generateOrganizationSchema(),
+    generateCollectionPageSchema(
+      {
+        name: categoryName,
+        slug: slug,
+        description: categoryDescription,
+        image: data?.category?.image,
+        productCount: displayProducts.length,
+      },
+      "category",
+      displayProducts.slice(0, 10)
+    ),
+  ];
+
   return (
     <div className="flex min-h-screen flex-col bg-[#F7F8FA]">
       <Header />
       <main className="flex-1">
-        {/* ── Breadcrumb ──────────────────────────────────────────────── */}
-        <div className="border-b border-border bg-white">
-          <div className="mx-auto flex max-w-7xl items-center gap-1.5 px-3 py-2.5 md:px-4">
-            <Link href="/" className="text-[11px] text-muted-foreground hover:text-primary">Home</Link>
-            <ChevronRight className="h-3 w-3 text-muted-foreground" />
-            <span className="text-[11px] font-medium text-foreground">{categoryName}</span>
-          </div>
-        </div>
+        {/* Schema */}
+        <JsonLd data={schemas} />
 
-        {/* ── Category header ─────────────────────────────────────────── */}
+        {/* Breadcrumb */}
+        <Breadcrumbs items={[{ label: categoryName }]} />
+
+        {/* Category header */}
         <div className="border-b border-border bg-white px-3 py-4 md:px-4 md:py-6">
           <div className="mx-auto max-w-7xl">
             <h1 className="text-lg font-extrabold text-foreground md:text-2xl">{categoryName}</h1>
@@ -91,7 +121,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
           </div>
         </div>
 
-        {/* ── Client interactive section ──────────────────────────────── */}
+        {/* Client interactive section */}
         <CategoryPageClient
           products={displayProducts}
           subcategories={subcategories}

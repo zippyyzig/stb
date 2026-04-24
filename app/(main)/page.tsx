@@ -6,11 +6,17 @@ import ProductSection from "@/components/sections/ProductSection";
 import BrandsSection from "@/components/sections/BrandsSection";
 import PromoBanner from "@/components/sections/PromoBanner";
 import FeaturesSection from "@/components/sections/FeaturesSection";
+import JsonLd from "@/components/seo/JsonLd";
 import dbConnect from "@/lib/mongodb";
 import Settings from "@/models/Settings";
 import Product from "@/models/Product";
 import Category from "@/models/Category";
 import Brand from "@/models/Brand";
+import { 
+  generateOrganizationSchema, 
+  generateWebSiteSchema, 
+  generateLocalBusinessSchema 
+} from "@/lib/schema";
 
 interface HomepageSection {
   categoryId: string;
@@ -318,10 +324,20 @@ export default async function HomePage() {
     getBrands(),
   ]);
 
+  // Schema markup for homepage
+  const schemas = [
+    generateOrganizationSchema(),
+    generateWebSiteSchema(),
+    generateLocalBusinessSchema(),
+  ];
+
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <Header />
       <main className="flex-1">
+        {/* Schema markup */}
+        <JsonLd data={schemas} />
+
         {/* Hero Slider with Side Banners */}
         <HeroBanner />
 

@@ -1,7 +1,12 @@
+import { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import Breadcrumbs from "@/components/seo/Breadcrumbs";
+import JsonLd from "@/components/seo/JsonLd";
+import { siteConfig, getCanonicalUrl } from "@/lib/site-config";
+import { generateWebPageSchema, generateOrganizationSchema } from "@/lib/schema";
 import {
   Shield,
   Users,
@@ -86,10 +91,39 @@ const milestones = [
   { year: "2025", event: "Serving 5,000+ customers with 10,000+ SKUs and same-day dispatch." },
 ];
 
+export const metadata: Metadata = {
+  title: "About Us",
+  description: `Learn about ${siteConfig.name} - your trusted IT solutions partner since 2010. Over 15 years of experience providing quality computer accessories, CCTV, networking equipment, and IT solutions.`,
+  alternates: {
+    canonical: getCanonicalUrl("/about"),
+  },
+  openGraph: {
+    title: `About Us | ${siteConfig.name}`,
+    description: `Learn about ${siteConfig.name} - your trusted IT solutions partner since 2010.`,
+    url: getCanonicalUrl("/about"),
+  },
+};
+
 export default function AboutPage() {
+  // Schema markup
+  const schemas = [
+    generateOrganizationSchema(),
+    generateWebPageSchema(
+      "About Us",
+      `Learn about ${siteConfig.name} - your trusted IT solutions partner since 2010.`,
+      "/about",
+      "AboutPage"
+    ),
+  ];
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <Header />
+
+      {/* Schema markup */}
+      <JsonLd data={schemas} />
+
+      {/* Breadcrumb */}
+      <Breadcrumbs items={[{ label: "About Us" }]} />
 
       {/* Hero */}
       <section className="relative h-[480px] overflow-hidden bg-stb-dark">
