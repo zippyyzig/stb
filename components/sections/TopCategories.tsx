@@ -2,13 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "@/components/ui/carousel";
+import { ChevronRight } from "lucide-react";
 
 interface Category {
   id: string;
@@ -29,63 +23,83 @@ const defaultCategories: Category[] = [
   { id: "display", name: "Display", image: "https://images.unsplash.com/photo-1572476359541-2a41ec8405e5?w=200&h=200&fit=crop", slug: "display", productCount: 0 },
   { id: "peripherals", name: "Peripherals", image: "https://images.unsplash.com/photo-1662758392656-0e5d4b0f53fb?w=200&h=200&fit=crop", slug: "peripherals", productCount: 0 },
   { id: "networking", name: "Networking", image: "https://images.unsplash.com/photo-1544985562-128e7b377a21?w=200&h=200&fit=crop", slug: "networking", productCount: 0 },
+  { id: "printers", name: "Printers", image: "https://images.unsplash.com/photo-1612815154858-60aa4c59eaa6?w=200&h=200&fit=crop", slug: "printers", productCount: 0 },
+  { id: "security", name: "Security", image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=200&h=200&fit=crop", slug: "security", productCount: 0 },
 ];
 
 export default function TopCategories({ categories }: TopCategoriesProps) {
   const displayCategories = categories.length > 0 ? categories : defaultCategories;
 
   return (
-    <section className="mx-auto max-w-7xl px-3 py-4 md:px-4 md:py-6">
-      {/* Section Header */}
-      <div className="mb-3 flex items-center justify-between md:mb-4">
-        <div className="flex items-center gap-2.5">
-          <div className="h-5 w-1 rounded-full bg-primary md:h-6" />
-          <h2 className="text-base font-bold text-foreground md:text-lg">Shop By Category</h2>
+    <section className="bg-white">
+      <div className="mx-auto max-w-7xl px-3 py-4 md:px-4 md:py-6">
+        {/* Section Header */}
+        <div className="mb-3 flex items-center justify-between md:mb-4">
+          <div className="flex items-center gap-2">
+            <div className="h-4 w-0.5 rounded-full bg-primary md:h-5" />
+            <h2 className="text-sm font-semibold text-foreground md:text-base">Shop by Category</h2>
+          </div>
+          <Link
+            href="/categories"
+            className="flex items-center gap-0.5 text-[11px] font-medium text-primary transition-colors hover:text-stb-red-dark md:text-xs"
+          >
+            View All <ChevronRight className="h-3 w-3" />
+          </Link>
         </div>
-        <Link
-          href="/categories"
-          className="text-xs font-medium text-primary transition-colors hover:text-stb-red-dark"
-        >
-          View All
-        </Link>
-      </div>
 
-      {/* Category Carousel */}
-      <Carousel opts={{ align: "start", loop: false }} className="w-full">
-        <CarouselContent className="-ml-2 md:-ml-3">
-          {displayCategories.map((category) => (
-            <CarouselItem
+        {/* Mobile: Horizontal scroll */}
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide md:hidden">
+          {displayCategories.slice(0, 8).map((category) => (
+            <Link
               key={category.id}
-              className="basis-1/4 pl-2 sm:basis-1/5 md:basis-1/6 md:pl-3 lg:basis-[12.5%]"
+              href={`/category/${category.slug}`}
+              className="group flex shrink-0 flex-col items-center gap-1.5"
             >
-              <Link
-                href={`/category/${category.slug}`}
-                className="group flex flex-col items-center gap-2 rounded-xl border border-border bg-white p-2.5 transition-all hover:border-primary hover:shadow-md md:p-3"
-              >
-                <div className="relative h-14 w-14 overflow-hidden rounded-xl bg-secondary transition-transform group-hover:scale-105 md:h-16 md:w-16">
-                  <Image
-                    src={category.image}
-                    alt={category.name}
-                    fill
-                    className="object-cover"
-                    unoptimized
-                  />
-                </div>
-                <span className="line-clamp-1 text-center text-[11px] font-medium text-foreground transition-colors group-hover:text-primary md:text-xs">
-                  {category.name}
-                </span>
-                {category.productCount > 0 && (
-                  <span className="hidden text-[10px] text-muted-foreground md:block">
-                    {category.productCount}
-                  </span>
-                )}
-              </Link>
-            </CarouselItem>
+              <div className="relative h-14 w-14 overflow-hidden rounded-lg bg-muted transition-transform group-active:scale-95">
+                <Image
+                  src={category.image}
+                  alt={category.name}
+                  fill
+                  className="object-cover"
+                  unoptimized
+                />
+              </div>
+              <span className="w-14 truncate text-center text-[10px] font-medium text-foreground">
+                {category.name}
+              </span>
+            </Link>
           ))}
-        </CarouselContent>
-        <CarouselPrevious className="-left-3 hidden h-8 w-8 border border-border bg-white shadow-sm hover:border-primary hover:bg-primary hover:text-white md:flex" />
-        <CarouselNext className="-right-3 hidden h-8 w-8 border border-border bg-white shadow-sm hover:border-primary hover:bg-primary hover:text-white md:flex" />
-      </Carousel>
+        </div>
+
+        {/* Desktop: Grid */}
+        <div className="hidden grid-cols-4 gap-3 md:grid lg:grid-cols-8">
+          {displayCategories.slice(0, 8).map((category) => (
+            <Link
+              key={category.id}
+              href={`/category/${category.slug}`}
+              className="group flex flex-col items-center gap-2 rounded-lg border border-border bg-white p-3 transition-all hover:border-primary/30 hover:shadow-sm"
+            >
+              <div className="relative h-12 w-12 overflow-hidden rounded bg-muted transition-transform group-hover:scale-105 lg:h-14 lg:w-14">
+                <Image
+                  src={category.image}
+                  alt={category.name}
+                  fill
+                  className="object-cover"
+                  unoptimized
+                />
+              </div>
+              <span className="text-center text-[11px] font-medium text-foreground transition-colors group-hover:text-primary">
+                {category.name}
+              </span>
+              {category.productCount > 0 && (
+                <span className="text-[9px] text-muted-foreground">
+                  {category.productCount} items
+                </span>
+              )}
+            </Link>
+          ))}
+        </div>
+      </div>
     </section>
   );
 }

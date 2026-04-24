@@ -2,28 +2,24 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Separator } from "@/components/ui/separator";
 import {
   Mail,
   Phone,
   MapPin,
   ArrowUp,
-  Globe,
-  MessageCircle,
   Send,
-  Play,
   CheckCircle2,
   Loader2,
   ChevronRight,
+  ChevronDown,
 } from "lucide-react";
 
 const infoLinks = [
   { name: "About Us", href: "/about" },
-  { name: "Shipping Information", href: "/shipping" },
+  { name: "Shipping Info", href: "/shipping" },
   { name: "Privacy Policy", href: "/privacy" },
   { name: "Terms & Conditions", href: "/terms" },
   { name: "Dealer Registration", href: "/auth/register?type=dealer" },
-  { name: "Customer Registration", href: "/auth/register" },
 ];
 
 const categoryLinks = [
@@ -39,12 +35,12 @@ const contactDetails = [
   { department: "Sales", number: "9353919299" },
   { department: "Billing", number: "9353919299" },
   { department: "Support", number: "9353919299" },
-  { department: "CCTV Sales", number: "9353919299" },
 ];
 
 export default function Footer() {
   const [email, setEmail] = useState("");
   const [subscribeStatus, setSubscribeStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [openSection, setOpenSection] = useState<string | null>(null);
 
   const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
@@ -71,19 +67,23 @@ export default function Footer() {
     }
   };
 
+  const toggleSection = (section: string) => {
+    setOpenSection(openSection === section ? null : section);
+  };
+
   return (
     <footer className="bg-stb-dark text-white">
       {/* Newsletter */}
-      <div className="border-b border-white/10 bg-stb-darker">
-        <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-4 px-4 py-6 md:flex-row md:items-center">
+      <div className="border-b border-white/10">
+        <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-3 px-4 py-5 md:flex-row md:items-center md:py-6">
           <div>
-            <h3 className="text-sm font-bold text-white md:text-base">Subscribe to Our Newsletter</h3>
-            <p className="mt-0.5 text-xs text-white/50">Get updates on new products and exclusive deals</p>
+            <h3 className="text-sm font-semibold text-white">Subscribe to Our Newsletter</h3>
+            <p className="mt-0.5 text-[11px] text-white/50">Get updates on new products and exclusive deals</p>
           </div>
           {subscribeStatus === "success" ? (
-            <div className="flex items-center gap-2 rounded-xl bg-stb-success/20 px-4 py-2.5 text-stb-success">
-              <CheckCircle2 className="h-4 w-4 shrink-0" />
-              <span className="text-xs font-medium">{"You're subscribed!"}</span>
+            <div className="flex items-center gap-2 rounded-lg bg-stb-success/20 px-4 py-2 text-stb-success">
+              <CheckCircle2 className="h-4 w-4" />
+              <span className="text-xs font-medium">Subscribed!</span>
             </div>
           ) : (
             <form onSubmit={handleSubscribe} className="flex w-full max-w-sm gap-2">
@@ -93,137 +93,192 @@ export default function Footer() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email"
                 required
-                className="h-9 flex-1 rounded-lg bg-white/10 px-3 text-xs text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-primary"
+                className="h-9 flex-1 rounded border border-white/10 bg-white/5 px-3 text-xs text-white placeholder:text-white/40 focus:border-primary focus:outline-none"
               />
               <button
                 type="submit"
                 disabled={subscribeStatus === "loading"}
-                className="h-9 rounded-lg bg-primary px-4 text-xs font-semibold text-white transition-colors hover:bg-stb-red-dark disabled:opacity-70"
+                className="flex h-9 items-center gap-1.5 rounded bg-primary px-4 text-xs font-medium text-white transition-colors hover:bg-stb-red-dark disabled:opacity-70"
               >
-                {subscribeStatus === "loading" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Subscribe"}
+                {subscribeStatus === "loading" ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <>
+                    <Send className="h-3 w-3" />
+                    Subscribe
+                  </>
+                )}
               </button>
             </form>
           )}
         </div>
       </div>
 
-      {/* Main Footer */}
-      <div className="mx-auto max-w-7xl px-4 py-8 md:py-12">
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-5">
-          {/* Brand Info */}
-          <div className="lg:col-span-2">
-            <div className="mb-4 flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary">
-                <span className="font-heading text-xl font-bold text-white">S</span>
-              </div>
-              <div>
-                <h3 className="font-heading text-lg font-bold tracking-wide">STB</h3>
-                <p className="text-[10px] font-semibold text-primary">TECHNOLOGIES</p>
-              </div>
+      {/* Mobile Accordion Footer */}
+      <div className="md:hidden">
+        {/* Brand */}
+        <div className="border-b border-white/10 px-4 py-4">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded bg-primary">
+              <span className="text-sm font-bold text-white">S</span>
             </div>
-            <p className="mb-4 max-w-sm text-xs leading-relaxed text-white/60">
-              Your trusted partner for computer accessories, CCTV cameras, printers,
-              networking equipment, and all your technology needs. Serving businesses with
-              quality products since 2010.
-            </p>
-            <div className="flex flex-col gap-2.5">
-              <div className="flex items-start gap-2 text-white/60">
-                <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
-                <span className="text-xs">2nd Floor, No. 94/1, Behind Sharda Theater, SP Road, Bangalore - 560002</span>
-              </div>
-              <div className="flex items-center gap-2 text-white/60">
-                <Phone className="h-3.5 w-3.5 shrink-0 text-primary" />
-                <a href="tel:+919353919299" className="text-xs hover:text-white">+91 93539 19299</a>
-              </div>
-              <div className="flex items-center gap-2 text-white/60">
-                <Mail className="h-3.5 w-3.5 shrink-0 text-primary" />
-                <a href="mailto:sales@sabkatechbazar.com" className="text-xs hover:text-white">sales@sabkatechbazar.com</a>
-              </div>
-            </div>
-            {/* Social */}
-            <div className="mt-5 flex gap-2">
-              {[{ icon: Globe, label: "Website" }, { icon: MessageCircle, label: "WhatsApp" }, { icon: Send, label: "Telegram" }, { icon: Play, label: "YouTube" }].map(({ icon: Icon, label }) => (
-                <a
-                  key={label}
-                  href="#"
-                  aria-label={label}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 text-white/70 transition-colors hover:bg-primary hover:text-white"
-                >
-                  <Icon className="h-3.5 w-3.5" />
-                </a>
-              ))}
+            <div>
+              <h3 className="text-sm font-semibold">STB Technologies</h3>
+              <p className="text-[10px] text-white/50">Your Tech Partner</p>
             </div>
           </div>
-
-          {/* Quick Links */}
-          <div>
-            <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-white">Quick Links</h3>
-            <nav className="flex flex-col gap-2">
-              {infoLinks.map((link) => (
-                <Link
-                  key={link.name}
-                  href={link.href}
-                  className="flex items-center gap-1 text-xs text-white/50 transition-colors hover:text-primary"
-                >
-                  <ChevronRight className="h-3 w-3 shrink-0" />
-                  {link.name}
-                </Link>
-              ))}
-            </nav>
+          <div className="mt-3 space-y-1.5 text-[11px] text-white/60">
+            <div className="flex items-center gap-2">
+              <Phone className="h-3 w-3 shrink-0 text-primary" />
+              <a href="tel:+919353919299">+91 93539 19299</a>
+            </div>
+            <div className="flex items-center gap-2">
+              <Mail className="h-3 w-3 shrink-0 text-primary" />
+              <a href="mailto:sales@sabkatechbazar.com">sales@sabkatechbazar.com</a>
+            </div>
           </div>
+        </div>
 
-          {/* Categories */}
-          <div>
-            <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-white">Categories</h3>
-            <nav className="flex flex-col gap-2">
-              {categoryLinks.map((link) => (
-                <Link
-                  key={link.name}
-                  href={link.href}
-                  className="flex items-center gap-1 text-xs text-white/50 transition-colors hover:text-primary"
-                >
-                  <ChevronRight className="h-3 w-3 shrink-0" />
-                  {link.name}
-                </Link>
-              ))}
-            </nav>
+        {/* Accordion sections */}
+        {[
+          { title: "Quick Links", links: infoLinks },
+          { title: "Categories", links: categoryLinks },
+        ].map((section) => (
+          <div key={section.title} className="border-b border-white/10">
+            <button
+              onClick={() => toggleSection(section.title)}
+              className="flex w-full items-center justify-between px-4 py-3 text-left"
+            >
+              <span className="text-xs font-medium text-white">{section.title}</span>
+              <ChevronDown
+                className={`h-4 w-4 text-white/50 transition-transform ${openSection === section.title ? "rotate-180" : ""}`}
+              />
+            </button>
+            {openSection === section.title && (
+              <div className="px-4 pb-3">
+                {section.links.map((link) => (
+                  <Link
+                    key={link.name}
+                    href={link.href}
+                    className="flex items-center gap-1 py-1.5 text-[11px] text-white/50 hover:text-primary"
+                  >
+                    <ChevronRight className="h-2.5 w-2.5" />
+                    {link.name}
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
+        ))}
+      </div>
 
-          {/* Contact */}
-          <div>
-            <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-white">Contact Us</h3>
-            <div className="flex flex-col gap-2.5">
-              {contactDetails.map((contact) => (
-                <div key={contact.department} className="flex items-center justify-between">
-                  <span className="text-xs text-white/50">{contact.department}</span>
-                  <a href={`tel:${contact.number}`} className="flex items-center gap-1 text-xs text-white/70 hover:text-primary">
-                    <Phone className="h-3 w-3 text-primary" />
-                    {contact.number}
-                  </a>
+      {/* Desktop Footer */}
+      <div className="hidden md:block">
+        <div className="mx-auto max-w-7xl px-4 py-10">
+          <div className="grid gap-8 lg:grid-cols-5">
+            {/* Brand Info */}
+            <div className="lg:col-span-2">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-9 w-9 items-center justify-center rounded bg-primary">
+                  <span className="text-base font-bold text-white">S</span>
                 </div>
-              ))}
+                <div>
+                  <h3 className="text-base font-semibold">STB Technologies</h3>
+                  <p className="text-[10px] text-white/50">Your Trusted Tech Partner</p>
+                </div>
+              </div>
+              <p className="mt-4 max-w-sm text-xs leading-relaxed text-white/60">
+                Your trusted partner for computer accessories, CCTV cameras, printers,
+                networking equipment, and all your technology needs. Serving businesses with
+                quality products since 2010.
+              </p>
+              <div className="mt-4 space-y-2">
+                <div className="flex items-start gap-2 text-xs text-white/60">
+                  <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+                  <span>2nd Floor, No. 94/1, Behind Sharda Theater, SP Road, Bangalore - 560002</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-white/60">
+                  <Phone className="h-3.5 w-3.5 shrink-0 text-primary" />
+                  <a href="tel:+919353919299" className="hover:text-white">+91 93539 19299</a>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-white/60">
+                  <Mail className="h-3.5 w-3.5 shrink-0 text-primary" />
+                  <a href="mailto:sales@sabkatechbazar.com" className="hover:text-white">sales@sabkatechbazar.com</a>
+                </div>
+              </div>
             </div>
-            <div className="mt-5 rounded-xl border border-white/10 bg-white/5 p-3">
-              <p className="text-[9px] font-semibold uppercase tracking-wider text-white/40">GSTIN</p>
-              <p className="mt-1 font-mono text-xs text-white/70">29AABCU9603R1ZM</p>
+
+            {/* Quick Links */}
+            <div>
+              <h4 className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-white">Quick Links</h4>
+              <nav className="flex flex-col gap-2">
+                {infoLinks.map((link) => (
+                  <Link
+                    key={link.name}
+                    href={link.href}
+                    className="flex items-center gap-1 text-xs text-white/50 transition-colors hover:text-primary"
+                  >
+                    <ChevronRight className="h-3 w-3" />
+                    {link.name}
+                  </Link>
+                ))}
+              </nav>
+            </div>
+
+            {/* Categories */}
+            <div>
+              <h4 className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-white">Categories</h4>
+              <nav className="flex flex-col gap-2">
+                {categoryLinks.map((link) => (
+                  <Link
+                    key={link.name}
+                    href={link.href}
+                    className="flex items-center gap-1 text-xs text-white/50 transition-colors hover:text-primary"
+                  >
+                    <ChevronRight className="h-3 w-3" />
+                    {link.name}
+                  </Link>
+                ))}
+              </nav>
+            </div>
+
+            {/* Contact */}
+            <div>
+              <h4 className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-white">Contact</h4>
+              <div className="space-y-2">
+                {contactDetails.map((contact) => (
+                  <div key={contact.department} className="flex items-center justify-between text-xs">
+                    <span className="text-white/50">{contact.department}</span>
+                    <a href={`tel:${contact.number}`} className="flex items-center gap-1 text-white/70 hover:text-primary">
+                      <Phone className="h-3 w-3 text-primary" />
+                      {contact.number}
+                    </a>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-4 rounded border border-white/10 bg-white/5 p-3">
+                <p className="text-[9px] font-medium uppercase tracking-wider text-white/40">GSTIN</p>
+                <p className="mt-1 font-mono text-xs text-white/70">29AABCU9603R1ZM</p>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <Separator className="bg-white/10" />
-
       {/* Copyright */}
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4">
-        <p className="text-xs text-white/40">
-          Copyright 2025, STB Technologies. All Rights Reserved.
-        </p>
-        <button
-          onClick={scrollToTop}
-          className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 text-white/70 transition-colors hover:bg-primary hover:text-white"
-        >
-          <ArrowUp className="h-4 w-4" />
-        </button>
+      <div className="border-t border-white/10">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 md:py-4">
+          <p className="text-[10px] text-white/40 md:text-xs">
+            &copy; 2025 STB Technologies. All Rights Reserved.
+          </p>
+          <button
+            onClick={scrollToTop}
+            className="flex h-7 w-7 items-center justify-center rounded bg-white/10 text-white/70 transition-colors hover:bg-primary hover:text-white md:h-8 md:w-8"
+            aria-label="Scroll to top"
+          >
+            <ArrowUp className="h-3.5 w-3.5 md:h-4 md:w-4" />
+          </button>
+        </div>
       </div>
     </footer>
   );

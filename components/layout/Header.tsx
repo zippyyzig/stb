@@ -18,7 +18,8 @@ import {
   ChevronDown,
   Home,
   Grid3X3,
-  Bell,
+  Phone,
+  MapPin,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,6 +28,7 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
+  SheetClose,
 } from "@/components/ui/sheet";
 
 const navCategories = [
@@ -44,7 +46,7 @@ const navCategories = [
 
 const mobileNavItems = [
   { name: "Home", href: "/", icon: Home },
-  { name: "Categories", href: "/products", icon: Grid3X3 },
+  { name: "Shop", href: "/products", icon: Grid3X3 },
   { name: "Wishlist", href: "/wishlist", icon: Heart },
   { name: "Cart", href: "/cart", icon: ShoppingCart },
   { name: "Account", href: "/dashboard", icon: User },
@@ -58,7 +60,8 @@ export default function Header() {
   const { wishlistCount } = useWishlist();
   const [searchQuery, setSearchQuery] = useState("");
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
   const isAdmin = session?.user?.role === "admin" || session?.user?.role === "super_admin";
 
@@ -74,76 +77,91 @@ export default function Header() {
     }
   }, [status, session, router]);
 
+  // Close menus when clicking outside
+  useEffect(() => {
+    const handleClick = () => setShowUserMenu(false);
+    if (showUserMenu) {
+      document.addEventListener("click", handleClick);
+      return () => document.removeEventListener("click", handleClick);
+    }
+  }, [showUserMenu]);
+
   return (
     <>
-      <header className="sticky top-0 z-50 w-full bg-white shadow-sm border-b border-border">
-        {/* Top info bar - visible on desktop only */}
-        <div className="hidden bg-stb-dark text-white md:block">
+      <header className="sticky top-0 z-50 w-full bg-white">
+        {/* Top utility bar - Desktop */}
+        <div className="hidden border-b border-border bg-muted/50 md:block">
           <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-1.5">
-            <p className="text-xs text-white/70">
-              Free shipping on orders above ₹5,000 &nbsp;|&nbsp; GST verified B2B pricing available
-            </p>
-            <div className="flex items-center gap-4">
-              {status === "loading" ? null : session ? (
+            <div className="flex items-center gap-4 text-[11px] text-muted-foreground">
+              <span className="flex items-center gap-1">
+                <Phone className="h-3 w-3" />
+                +91 93539 19299
+              </span>
+              <span className="flex items-center gap-1">
+                <MapPin className="h-3 w-3" />
+                Bangalore
+              </span>
+            </div>
+            <div className="flex items-center gap-3 text-[11px]">
+              <span className="text-muted-foreground">Free shipping on orders above ₹5,000</span>
+              <span className="text-muted-foreground">|</span>
+              {status === "loading" ? (
+                <span className="text-muted-foreground">Loading...</span>
+              ) : session ? (
                 <div className="relative">
                   <button
-                    onClick={() => setShowUserMenu(!showUserMenu)}
-                    className="flex items-center gap-1.5 text-xs text-white/80 transition-colors hover:text-white"
+                    onClick={(e) => { e.stopPropagation(); setShowUserMenu(!showUserMenu); }}
+                    className="flex items-center gap-1.5 font-medium text-foreground transition-colors hover:text-primary"
                   >
-                    <div className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white">
+                    <div className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-white">
                       {session.user?.name?.[0]?.toUpperCase()}
                     </div>
                     {session.user?.name?.split(" ")[0]}
                     <ChevronDown className="h-3 w-3" />
                   </button>
                   {showUserMenu && (
-                    <>
-                      <div className="fixed inset-0 z-40" onClick={() => setShowUserMenu(false)} />
-                      <div className="absolute right-0 top-full z-50 mt-2 w-48 rounded-xl bg-white py-1.5 shadow-xl border border-border">
+                    <div className="absolute right-0 top-full z-50 mt-2 w-44 rounded-lg bg-white py-1 shadow-lg ring-1 ring-border animate-fade-in">
+                      <Link
+                        href="/dashboard"
+                        className="flex items-center gap-2 px-3 py-2 text-xs text-foreground hover:bg-muted"
+                      >
+                        <User className="h-3.5 w-3.5 text-muted-foreground" />
+                        My Account
+                      </Link>
+                      <Link
+                        href="/dashboard/orders"
+                        className="flex items-center gap-2 px-3 py-2 text-xs text-foreground hover:bg-muted"
+                      >
+                        <Package className="h-3.5 w-3.5 text-muted-foreground" />
+                        Orders
+                      </Link>
+                      {isAdmin && (
                         <Link
-                          href="/dashboard"
-                          className="flex items-center gap-2 px-4 py-2 text-sm text-foreground hover:bg-secondary"
-                          onClick={() => setShowUserMenu(false)}
+                          href="/admin"
+                          className="flex items-center gap-2 px-3 py-2 text-xs text-foreground hover:bg-muted"
                         >
-                          <User className="h-4 w-4 text-primary" />
-                          My Account
+                          <Settings className="h-3.5 w-3.5 text-muted-foreground" />
+                          Admin
                         </Link>
-                        <Link
-                          href="/dashboard/orders"
-                          className="flex items-center gap-2 px-4 py-2 text-sm text-foreground hover:bg-secondary"
-                          onClick={() => setShowUserMenu(false)}
-                        >
-                          <Package className="h-4 w-4 text-primary" />
-                          My Orders
-                        </Link>
-                        {isAdmin && (
-                          <Link
-                            href="/admin"
-                            className="flex items-center gap-2 px-4 py-2 text-sm text-foreground hover:bg-secondary"
-                            onClick={() => setShowUserMenu(false)}
-                          >
-                            <Settings className="h-4 w-4 text-primary" />
-                            Admin Panel
-                          </Link>
-                        )}
-                        <hr className="my-1 border-border" />
-                        <button
-                          onClick={() => { setShowUserMenu(false); signOut({ callbackUrl: "/" }); }}
-                          className="flex w-full items-center gap-2 px-4 py-2 text-sm text-destructive hover:bg-secondary"
-                        >
-                          <LogOut className="h-4 w-4" />
-                          Logout
-                        </button>
-                      </div>
-                    </>
+                      )}
+                      <hr className="my-1 border-border" />
+                      <button
+                        onClick={() => signOut({ callbackUrl: "/" })}
+                        className="flex w-full items-center gap-2 px-3 py-2 text-xs text-destructive hover:bg-muted"
+                      >
+                        <LogOut className="h-3.5 w-3.5" />
+                        Sign Out
+                      </button>
+                    </div>
                   )}
                 </div>
               ) : (
-                <div className="flex items-center gap-3">
-                  <Link href="/auth/login" className="text-xs text-white/70 hover:text-white transition-colors">
-                    Login
+                <div className="flex items-center gap-2">
+                  <Link href="/auth/login" className="text-foreground hover:text-primary transition-colors">
+                    Sign In
                   </Link>
-                  <Link href="/auth/register" className="rounded-md bg-primary px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-stb-red-dark">
+                  <span className="text-border">|</span>
+                  <Link href="/auth/register" className="font-medium text-primary hover:text-stb-red-dark transition-colors">
                     Register
                   </Link>
                 </div>
@@ -152,180 +170,191 @@ export default function Header() {
           </div>
         </div>
 
-        {/* Main Header */}
-        <div className="mx-auto flex max-w-7xl items-center gap-3 px-3 py-2.5 md:px-4 md:py-3 md:gap-6">
-          {/* Mobile Menu Drawer */}
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 rounded-lg md:hidden">
-                <Menu className="h-5 w-5" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-72 p-0">
-              <SheetHeader className="border-b border-border bg-stb-dark p-4">
-                <SheetTitle className="flex items-center gap-3 text-white">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
-                    <span className="font-heading text-lg font-bold text-white">S</span>
-                  </div>
-                  <div>
-                    <div className="text-base font-bold tracking-wide">STB</div>
-                    <div className="text-[10px] text-primary font-semibold">TECHNOLOGIES</div>
-                  </div>
-                </SheetTitle>
-              </SheetHeader>
-
-              {/* Auth state in drawer */}
-              {session ? (
-                <div className="border-b border-border bg-secondary/50 px-4 py-3">
-                  <div className="flex items-center gap-2.5">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-sm font-bold text-white">
-                      {session.user?.name?.[0]?.toUpperCase()}
+        {/* Main header */}
+        <div className="border-b border-border">
+          <div className="mx-auto flex max-w-7xl items-center gap-3 px-3 py-2 md:gap-6 md:px-4 md:py-3">
+            {/* Mobile menu */}
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 md:hidden">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-[280px] p-0">
+                <SheetHeader className="border-b border-border p-4">
+                  <SheetTitle className="flex items-center gap-2.5 text-left">
+                    <div className="flex h-8 w-8 items-center justify-center rounded bg-primary">
+                      <span className="text-sm font-bold text-white">S</span>
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-foreground">{session.user?.name}</p>
-                      <p className="text-[11px] text-muted-foreground">{session.user?.email}</p>
+                      <div className="text-sm font-bold">STB Technologies</div>
+                      <div className="text-[10px] text-muted-foreground">Your Tech Partner</div>
+                    </div>
+                  </SheetTitle>
+                </SheetHeader>
+
+                {/* User info in drawer */}
+                {session ? (
+                  <div className="border-b border-border bg-muted/30 px-4 py-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-semibold text-white">
+                        {session.user?.name?.[0]?.toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium text-foreground">{session.user?.name}</p>
+                        <p className="text-[10px] text-muted-foreground">{session.user?.email}</p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ) : (
-                <div className="border-b border-border px-4 py-3 flex gap-2">
-                  <Link href="/auth/login" className="flex-1 rounded-lg border border-border py-2 text-center text-sm font-medium text-foreground hover:bg-secondary">
-                    Login
-                  </Link>
-                  <Link href="/auth/register" className="flex-1 rounded-lg bg-primary py-2 text-center text-sm font-medium text-white hover:bg-stb-red-dark">
-                    Register
-                  </Link>
-                </div>
-              )}
-
-              <nav className="flex flex-col p-2 overflow-y-auto">
-                <p className="px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Categories</p>
-                {navCategories.map((cat) => (
-                  <Link
-                    key={cat.slug}
-                    href={`/category/${cat.slug}`}
-                    className="rounded-lg px-3 py-2.5 text-sm text-foreground transition-colors hover:bg-secondary hover:text-primary"
-                  >
-                    {cat.name}
-                  </Link>
-                ))}
-                {session && (
-                  <>
-                    <p className="mt-3 px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Account</p>
-                    <Link href="/dashboard" className="rounded-lg px-3 py-2.5 text-sm text-foreground hover:bg-secondary">My Account</Link>
-                    <Link href="/dashboard/orders" className="rounded-lg px-3 py-2.5 text-sm text-foreground hover:bg-secondary">My Orders</Link>
-                    {isAdmin && (
-                      <Link href="/admin" className="rounded-lg px-3 py-2.5 text-sm text-foreground hover:bg-secondary">Admin Panel</Link>
-                    )}
-                    <button
-                      onClick={() => signOut({ callbackUrl: "/" })}
-                      className="rounded-lg px-3 py-2.5 text-left text-sm text-destructive hover:bg-secondary"
-                    >
-                      Logout
-                    </button>
-                  </>
+                ) : (
+                  <div className="border-b border-border px-4 py-3">
+                    <div className="flex gap-2">
+                      <SheetClose asChild>
+                        <Link href="/auth/login" className="flex-1 rounded border border-border bg-white py-2 text-center text-xs font-medium text-foreground">
+                          Sign In
+                        </Link>
+                      </SheetClose>
+                      <SheetClose asChild>
+                        <Link href="/auth/register" className="flex-1 rounded bg-primary py-2 text-center text-xs font-medium text-white">
+                          Register
+                        </Link>
+                      </SheetClose>
+                    </div>
+                  </div>
                 )}
-              </nav>
-            </SheetContent>
-          </Sheet>
 
-          {/* Logo */}
-          <Link href="/" className="flex shrink-0 items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary shadow-sm md:h-10 md:w-10">
-              <span className="font-heading text-lg font-bold text-white md:text-xl">S</span>
-            </div>
-            <div className="hidden sm:block">
-              <h1 className="font-heading text-xl font-bold tracking-tight text-foreground leading-none">STB</h1>
-              <p className="text-[10px] font-semibold text-primary tracking-wider leading-none mt-0.5">TECHNOLOGIES</p>
-            </div>
-          </Link>
+                <nav className="flex flex-col p-3">
+                  <p className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Shop by Category</p>
+                  {navCategories.map((cat) => (
+                    <SheetClose asChild key={cat.slug}>
+                      <Link
+                        href={`/category/${cat.slug}`}
+                        className="rounded px-3 py-2 text-xs text-foreground transition-colors hover:bg-muted hover:text-primary"
+                      >
+                        {cat.name}
+                      </Link>
+                    </SheetClose>
+                  ))}
+                  {session && (
+                    <>
+                      <p className="mb-2 mt-4 px-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Account</p>
+                      <SheetClose asChild>
+                        <Link href="/dashboard" className="rounded px-3 py-2 text-xs text-foreground hover:bg-muted">My Account</Link>
+                      </SheetClose>
+                      <SheetClose asChild>
+                        <Link href="/dashboard/orders" className="rounded px-3 py-2 text-xs text-foreground hover:bg-muted">Orders</Link>
+                      </SheetClose>
+                      {isAdmin && (
+                        <SheetClose asChild>
+                          <Link href="/admin" className="rounded px-3 py-2 text-xs text-foreground hover:bg-muted">Admin Panel</Link>
+                        </SheetClose>
+                      )}
+                      <button
+                        onClick={() => signOut({ callbackUrl: "/" })}
+                        className="mt-1 rounded px-3 py-2 text-left text-xs text-destructive hover:bg-muted"
+                      >
+                        Sign Out
+                      </button>
+                    </>
+                  )}
+                </nav>
+              </SheetContent>
+            </Sheet>
 
-          {/* Search - Desktop */}
-          <form action="/search" method="GET" className="relative hidden flex-1 items-center md:flex">
-            <div className="relative w-full">
-              <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <input
-                type="text"
-                name="q"
-                placeholder="Search products, brands and more..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="h-10 w-full rounded-xl border border-border bg-secondary pl-10 pr-4 text-sm placeholder:text-muted-foreground focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-              />
-            </div>
-          </form>
+            {/* Logo */}
+            <Link href="/" className="flex shrink-0 items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded bg-primary md:h-9 md:w-9">
+                <span className="text-base font-bold text-white md:text-lg">S</span>
+              </div>
+              <div className="hidden sm:block">
+                <h1 className="text-base font-bold text-foreground leading-none md:text-lg">STB</h1>
+                <p className="text-[9px] font-medium text-muted-foreground leading-none mt-0.5 md:text-[10px]">TECHNOLOGIES</p>
+              </div>
+            </Link>
 
-          {/* Mobile Search Toggle */}
-          <button
-            onClick={() => setSearchOpen(!searchOpen)}
-            className="flex h-9 w-9 items-center justify-center rounded-lg bg-secondary text-muted-foreground transition-colors hover:bg-primary hover:text-white md:hidden"
-          >
-            {searchOpen ? <X className="h-4 w-4" /> : <Search className="h-4 w-4" />}
-          </button>
+            {/* Desktop search */}
+            <form action="/search" method="GET" className="relative hidden flex-1 md:flex">
+              <div className={`relative w-full transition-all ${searchFocused ? "ring-2 ring-primary/20 rounded-lg" : ""}`}>
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  type="text"
+                  name="q"
+                  placeholder="Search products, brands..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={() => setSearchFocused(true)}
+                  onBlur={() => setSearchFocused(false)}
+                  className="h-9 w-full rounded-lg border border-border bg-muted/50 pl-9 pr-4 text-xs placeholder:text-muted-foreground focus:border-primary focus:bg-white focus:outline-none transition-all"
+                />
+              </div>
+            </form>
 
-          {/* Action Icons */}
-          <div className="flex items-center gap-1 md:gap-2">
-            {/* Wishlist - desktop only */}
-            <Link href="/wishlist" className="hidden md:block">
-              <Button variant="ghost" size="icon" className="relative h-9 w-9 rounded-lg text-muted-foreground hover:bg-stb-red-light hover:text-primary">
-                <Heart className="h-4.5 w-4.5" />
+            {/* Mobile search toggle */}
+            <button
+              onClick={() => setMobileSearchOpen(!mobileSearchOpen)}
+              className="flex h-8 w-8 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground md:hidden"
+            >
+              {mobileSearchOpen ? <X className="h-4 w-4" /> : <Search className="h-4 w-4" />}
+            </button>
+
+            {/* Actions */}
+            <div className="flex items-center gap-1">
+              {/* Wishlist - desktop */}
+              <Link href="/wishlist" className="relative hidden md:flex h-8 w-8 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+                <Heart className="h-4 w-4" />
                 {wishlistCount > 0 && (
-                  <span className="absolute -right-0.5 -top-0.5 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white">
-                    {wishlistCount > 99 ? "99+" : wishlistCount}
+                  <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-semibold text-white">
+                    {wishlistCount > 9 ? "9+" : wishlistCount}
                   </span>
                 )}
-              </Button>
-            </Link>
+              </Link>
 
-            {/* Cart */}
-            <Link href="/cart">
-              <Button variant="ghost" size="icon" className="relative h-9 w-9 rounded-lg text-muted-foreground hover:bg-stb-red-light hover:text-primary">
-                <ShoppingCart className="h-4.5 w-4.5" />
+              {/* Cart */}
+              <Link href="/cart" className="relative flex h-8 w-8 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+                <ShoppingCart className="h-4 w-4" />
                 {cartCount > 0 && (
-                  <span className="absolute -right-0.5 -top-0.5 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white">
-                    {cartCount > 99 ? "99+" : cartCount}
+                  <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-semibold text-white">
+                    {cartCount > 9 ? "9+" : cartCount}
                   </span>
                 )}
-              </Button>
-            </Link>
+              </Link>
 
-            {/* User avatar - desktop only */}
-            {session && (
-              <div className="relative hidden md:block">
+              {/* Desktop user */}
+              {session && (
                 <button
-                  onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-sm font-bold text-white transition-colors hover:bg-stb-red-dark"
+                  onClick={(e) => { e.stopPropagation(); setShowUserMenu(!showUserMenu); }}
+                  className="hidden md:flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-semibold text-white transition-colors hover:bg-stb-red-dark"
                 >
                   {session.user?.name?.[0]?.toUpperCase()}
                 </button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Mobile Expandable Search */}
-        {searchOpen && (
-          <div className="border-t border-border bg-white px-3 py-2 md:hidden">
+        {/* Mobile search bar */}
+        {mobileSearchOpen && (
+          <div className="border-b border-border bg-muted/30 px-3 py-2 md:hidden">
             <form action="/search" method="GET" className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
               <input
                 type="text"
                 name="q"
                 placeholder="Search products..."
                 autoFocus
-                className="h-9 w-full rounded-lg border border-border bg-secondary pl-9 pr-4 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                className="h-8 w-full rounded border border-border bg-white pl-8 pr-3 text-xs placeholder:text-muted-foreground focus:border-primary focus:outline-none"
               />
             </form>
           </div>
         )}
 
-        {/* Desktop Category Nav */}
-        <div className="hidden border-t border-border bg-white md:block">
-          <div className="mx-auto max-w-7xl overflow-x-auto px-4">
-            <nav className="flex items-center gap-0.5 py-1.5">
+        {/* Desktop category nav */}
+        <div className="hidden border-b border-border md:block">
+          <div className="mx-auto max-w-7xl px-4">
+            <nav className="flex items-center gap-0.5 overflow-x-auto scrollbar-hide">
               <Link
                 href="/products"
-                className="shrink-0 rounded-lg bg-primary px-4 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-stb-red-dark"
+                className="shrink-0 px-3 py-2.5 text-[11px] font-semibold text-primary transition-colors hover:bg-stb-red-light"
               >
                 All Products
               </Link>
@@ -333,7 +362,7 @@ export default function Header() {
                 <Link
                   key={cat.slug}
                   href={`/category/${cat.slug}`}
-                  className="shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                  className="shrink-0 px-3 py-2.5 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                 >
                   {cat.name}
                 </Link>
@@ -343,7 +372,7 @@ export default function Header() {
         </div>
       </header>
 
-      {/* Mobile Bottom Navigation */}
+      {/* Mobile bottom navigation */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-white pb-safe md:hidden">
         <div className="grid grid-cols-5">
           {mobileNavItems.map((item) => {
@@ -357,18 +386,18 @@ export default function Header() {
                 key={item.href}
                 href={item.href}
                 className={`flex flex-col items-center justify-center gap-0.5 py-2 transition-colors ${
-                  isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                  isActive ? "text-primary" : "text-muted-foreground"
                 }`}
               >
                 <div className="relative">
-                  <item.icon className={`h-5 w-5 ${isActive ? "stroke-[2.5px]" : "stroke-[1.75px]"}`} />
+                  <item.icon className={`h-[18px] w-[18px] ${isActive ? "stroke-[2.5px]" : "stroke-[1.5px]"}`} />
                   {count > 0 && (
-                    <span className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-white">
+                    <span className="absolute -right-1.5 -top-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-primary px-0.5 text-[8px] font-semibold text-white">
                       {count > 9 ? "9+" : count}
                     </span>
                   )}
                 </div>
-                <span className={`text-[10px] font-medium ${isActive ? "text-primary" : ""}`}>
+                <span className={`text-[9px] font-medium ${isActive ? "text-primary" : ""}`}>
                   {item.name}
                 </span>
               </Link>

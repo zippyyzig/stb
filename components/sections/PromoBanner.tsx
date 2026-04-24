@@ -1,61 +1,104 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Clock, Percent } from "lucide-react";
+import { ChevronRight } from "lucide-react";
+
+// Ads banner - Desktop: 1500x300, Mobile: 350x150
+const promoBanners = [
+  {
+    desktop: "https://images.unsplash.com/photo-1563770660941-20978e870e26?w=1500&h=300&fit=crop",
+    mobile: "https://images.unsplash.com/photo-1563770660941-20978e870e26?w=350&h=150&fit=crop",
+    alt: "Deal of the Day",
+    label: "Limited Time",
+    title: "Up to 50% Off Networking",
+    subtitle: "Enterprise routers & switches",
+    cta: "Shop Deals",
+    link: "/deals",
+    theme: "dark", // dark or light
+  },
+  {
+    desktop: "https://images.unsplash.com/photo-1593640408182-31c70c8268f5?w=1500&h=300&fit=crop",
+    mobile: "https://images.unsplash.com/photo-1593640408182-31c70c8268f5?w=350&h=150&fit=crop",
+    alt: "B2B Special",
+    label: "B2B Special",
+    title: "Bulk Order Discounts",
+    subtitle: "Register as dealer for wholesale prices",
+    cta: "Register Now",
+    link: "/auth/register?type=dealer",
+    theme: "primary",
+  },
+];
 
 export default function PromoBanner() {
   return (
-    <section className="mx-auto max-w-7xl px-3 py-4 md:px-4 md:py-5">
-      <div className="grid gap-3 sm:grid-cols-2">
-        {/* Deal of the Day */}
-        <Link
-          href="/deals"
-          className="group relative flex flex-col justify-between overflow-hidden rounded-2xl bg-stb-dark p-5 md:p-7"
-        >
-          <div className="relative z-10">
-            <div className="mb-2 flex items-center gap-2">
-              <Clock className="h-4 w-4 text-primary" />
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-primary">Deal of the Day</span>
-            </div>
-            <h3 className="text-lg font-bold text-white leading-snug md:text-xl">
-              Up to 50% Off on<br />Networking Equipment
-            </h3>
-            <p className="mt-1.5 text-xs text-white/60 md:text-sm">
-              Enterprise-grade routers and switches at unbeatable prices.
-            </p>
-          </div>
-          <div className="relative z-10 mt-4 flex items-center gap-1.5 text-sm font-semibold text-white transition-all group-hover:gap-2.5">
-            Shop Deals <ArrowRight className="h-4 w-4" />
-          </div>
-          {/* Decorative */}
-          <div className="absolute -bottom-8 -right-8 h-36 w-36 rounded-full bg-white/5" />
-          <div className="absolute -top-6 right-16 h-20 w-20 rounded-full bg-primary/10" />
-        </Link>
+    <section className="bg-white">
+      <div className="mx-auto max-w-7xl px-3 py-4 md:px-4 md:py-6">
+        <div className="grid gap-3 md:grid-cols-2 md:gap-4">
+          {promoBanners.map((banner, index) => (
+            <Link
+              key={index}
+              href={banner.link}
+              className="group relative block overflow-hidden rounded-lg md:rounded-xl"
+            >
+              {/* Desktop Image - 1500x300 ratio = 5:1 */}
+              <div className="relative hidden md:block" style={{ aspectRatio: "1500/300" }}>
+                <Image
+                  src={banner.desktop}
+                  alt={banner.alt}
+                  fill
+                  className="object-cover transition-transform duration-500 group-hover:scale-105"
+                  unoptimized
+                />
+                <div className={`absolute inset-0 ${
+                  banner.theme === "dark"
+                    ? "bg-gradient-to-r from-stb-dark/90 via-stb-dark/60 to-transparent"
+                    : "bg-gradient-to-r from-primary/90 via-primary/60 to-transparent"
+                }`} />
+                <div className="absolute bottom-0 left-0 top-0 flex flex-col justify-center p-6 lg:p-8">
+                  <span className={`mb-1.5 inline-block w-fit rounded px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider ${
+                    banner.theme === "dark" ? "bg-primary text-white" : "bg-white/20 text-white"
+                  }`}>
+                    {banner.label}
+                  </span>
+                  <h3 className="text-lg font-bold text-white lg:text-xl">{banner.title}</h3>
+                  <p className="mt-0.5 text-xs text-white/80">{banner.subtitle}</p>
+                  <span className="mt-3 inline-flex w-fit items-center gap-1 rounded bg-white px-3 py-1.5 text-[11px] font-semibold text-foreground transition-colors group-hover:bg-primary group-hover:text-white">
+                    {banner.cta} <ChevronRight className="h-3 w-3" />
+                  </span>
+                </div>
+              </div>
 
-        {/* B2B Special */}
-        <Link
-          href="/auth/register?type=dealer"
-          className="group relative flex flex-col justify-between overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-stb-red-dark p-5 md:p-7"
-        >
-          <div className="relative z-10">
-            <div className="mb-2 flex items-center gap-2">
-              <Percent className="h-4 w-4 text-white" />
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-white/90">B2B Special</span>
-            </div>
-            <h3 className="text-lg font-bold text-white leading-snug md:text-xl">
-              Bulk Order Discounts<br />Available
-            </h3>
-            <p className="mt-1.5 text-xs text-white/70 md:text-sm">
-              Register as a dealer and get exclusive wholesale prices.
-            </p>
-          </div>
-          <div className="relative z-10 mt-4 flex items-center gap-1.5 text-sm font-semibold text-white transition-all group-hover:gap-2.5">
-            Register as Dealer <ArrowRight className="h-4 w-4" />
-          </div>
-          {/* Decorative */}
-          <div className="absolute -bottom-8 -right-8 h-36 w-36 rounded-full bg-white/10" />
-          <div className="absolute -top-6 right-16 h-20 w-20 rounded-full bg-white/5" />
-        </Link>
+              {/* Mobile Image - 350x150 ratio = 2.33:1 */}
+              <div className="relative md:hidden" style={{ aspectRatio: "350/150" }}>
+                <Image
+                  src={banner.mobile}
+                  alt={banner.alt}
+                  fill
+                  className="object-cover"
+                  unoptimized
+                />
+                <div className={`absolute inset-0 ${
+                  banner.theme === "dark"
+                    ? "bg-gradient-to-r from-stb-dark/90 via-stb-dark/50 to-transparent"
+                    : "bg-gradient-to-r from-primary/90 via-primary/50 to-transparent"
+                }`} />
+                <div className="absolute bottom-0 left-0 top-0 flex flex-col justify-center p-3">
+                  <span className={`mb-1 inline-block w-fit rounded px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wider ${
+                    banner.theme === "dark" ? "bg-primary text-white" : "bg-white/20 text-white"
+                  }`}>
+                    {banner.label}
+                  </span>
+                  <h3 className="text-sm font-bold text-white leading-tight">{banner.title}</h3>
+                  <p className="mt-0.5 text-[10px] text-white/70">{banner.subtitle}</p>
+                  <span className="mt-2 inline-flex items-center gap-0.5 text-[10px] font-semibold text-white">
+                    {banner.cta} <ChevronRight className="h-2.5 w-2.5" />
+                  </span>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
       </div>
     </section>
   );
