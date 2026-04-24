@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
@@ -41,14 +42,15 @@ export default function DashboardSidebar() {
       {/* ── Desktop sidebar ────────────────────────────────────────────── */}
       <aside className="sticky top-0 hidden h-screen w-56 shrink-0 flex-col border-r border-[#262626] bg-[#1A1A1A] md:flex xl:w-60">
         {/* Logo */}
-        <div className="flex h-14 items-center gap-2 border-b border-[#262626] px-4">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary">
-            <span className="text-xs font-extrabold text-white">S</span>
-          </div>
-          <div>
-            <p className="text-sm font-extrabold text-white">STB</p>
-            <p className="text-[9px] leading-none text-[#737373]">My Account</p>
-          </div>
+        <div className="flex h-14 items-center gap-3 border-b border-[#262626] px-4">
+          <Image
+            src="/logo.png"
+            alt="Smart Tech Bazaar"
+            width={96}
+            height={32}
+            className="h-7 w-auto object-contain brightness-0 invert"
+          />
+          <span className="text-[10px] font-medium text-[#737373]">My Account</span>
         </div>
 
         {/* Nav links */}
@@ -87,25 +89,27 @@ export default function DashboardSidebar() {
         </div>
       </aside>
 
-      {/* ── Mobile top nav strip (shows current section) ─────────────── */}
-      <div className="sticky top-0 z-30 flex items-center gap-1 overflow-x-auto border-b border-border bg-white px-3 py-2 scrollbar-hide md:hidden">
-        {menuItems.map((item) => {
-          const active = isActive(item);
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex shrink-0 items-center gap-1 rounded-full px-3 py-1 text-[10px] font-semibold transition-all ${
-                active
-                  ? "bg-primary text-white"
-                  : "bg-muted text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <item.icon className="h-3 w-3" />
-              {item.title}
-            </Link>
-          );
-        })}
+      {/* ── Mobile top nav strip ──────────────────────────────────────── */}
+      <div className="sticky top-0 z-30 border-b border-border bg-white md:hidden">
+        <div className="flex items-center gap-1.5 overflow-x-auto px-3 py-2.5 scrollbar-hide">
+          {menuItems.map((item) => {
+            const active = isActive(item);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[10px] font-semibold leading-none transition-all ${
+                  active
+                    ? "bg-primary text-white shadow-sm"
+                    : "bg-[#F1F3F5] text-[#6B7280] hover:bg-[#E5E7EB] hover:text-foreground"
+                }`}
+              >
+                <item.icon className="h-3 w-3 shrink-0" />
+                <span>{item.title}</span>
+              </Link>
+            );
+          })}
+        </div>
       </div>
     </>
   );
