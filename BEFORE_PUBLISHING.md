@@ -347,6 +347,56 @@ document.body.classList.add('native-app');
 ### 6i. iOS-Specific Configuration
 
 - **Bundle identifier:** `com.smarttechbazaar.app` (must match `apple-app-site-association`)
+
+### 6j. Social Login (Google Sign-In) — CRITICAL
+
+**This step is required to fix the "stuck on firebaseapp.com" issue during Google Sign-In.**
+
+The app uses Median.co's native Social Login plugin instead of Firebase's web-based OAuth
+popup. This ensures Google Sign-In works correctly inside the native app without opening
+an external browser that can't redirect back to the app.
+
+#### Android Setup
+
+1. In the Median.co dashboard, go to **Native Plugins > Social Login**.
+2. Enable **Google Sign-In**.
+3. Go to [Google Cloud Console](https://console.cloud.google.com) and open your Firebase project.
+4. Navigate to **APIs & Services > Credentials**.
+5. Create an **OAuth 2.0 Client ID** of type **Android**.
+6. Enter your package name: `com.smarttechbazaar.app`
+7. Enter your **SHA-1 signing certificate fingerprint** (get this from Play Console > Setup > App signing).
+8. Copy the generated **Client ID** and paste it in the Median.co Social Login configuration.
+
+#### iOS Setup
+
+1. In the Median.co dashboard under **Social Login**, enable **Google Sign-In** for iOS.
+2. In Google Cloud Console, create another **OAuth 2.0 Client ID** of type **iOS**.
+3. Enter your Bundle ID: `com.smarttechbazaar.app`
+4. Copy the generated **Client ID** and paste it in Median.co.
+5. Copy the **iOS URL scheme** (reversed client ID, looks like `com.googleusercontent.apps.xxxx`).
+6. In Median.co under **URL Schemes**, add this reversed client ID so the app can receive the OAuth callback.
+
+#### Sign in with Apple (iOS only, recommended)
+
+Apple requires apps with third-party social login to also offer "Sign in with Apple" as an option.
+
+1. In Median.co, enable **Sign in with Apple** under Social Login.
+2. In your Apple Developer account, enable "Sign in with Apple" for your App ID.
+3. Configure a Service ID in Apple Developer for web-based Sign in with Apple if needed.
+4. The app code already supports native Apple Sign-In when the plugin is enabled.
+
+#### How the Code Works
+
+The login and register pages in the app automatically detect if they are running inside
+a Median.co native app. When detected:
+
+- **Native app:** Uses `median.socialLogin.google.login()` which triggers the native Google SDK.
+  This shows Google's native sign-in UI, handles authentication, and returns the user data
+  directly to JavaScript without leaving the app.
+
+- **Web browser:** Falls back to Firebase `signInWithPopup()` which works correctly in browsers.
+
+No code changes are needed — just configure the Social Login plugin in Median.co and it will work.
 - **Minimum iOS version:** 16.0 or higher
 - Enable **Push Notifications** capability in the iOS configuration.
 - Enable **Associated Domains** capability and add `applinks:YOUR-DOMAIN.com`.

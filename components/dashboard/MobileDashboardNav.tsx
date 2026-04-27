@@ -3,7 +3,8 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useSession, signOut } from "next-auth/react";
+import { useSession } from "next-auth/react";
+import { signOutWithNativeCleanup } from "@/lib/auth-helpers";
 import { useCart, useWishlist } from "@/components/providers/CartWishlistProvider";
 import {
   LayoutDashboard,
@@ -273,7 +274,7 @@ export default function MobileDashboardNav() {
         {/* Sign out footer */}
         <div className="border-t border-border px-4 py-4" style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom, 1rem))" }}>
           <button
-            onClick={() => signOut({ callbackUrl: "/" })}
+            onClick={() => signOutWithNativeCleanup({ callbackUrl: "/" })}
             className="flex w-full items-center gap-3.5 rounded-xl px-3 py-3 text-sm font-semibold text-destructive hover:bg-red-50 press-active"
           >
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-50">

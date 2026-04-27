@@ -1,7 +1,8 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { signOut, useSession } from "next-auth/react";
+import { useSession } from "next-auth/react";
+import { signOutWithNativeCleanup } from "@/lib/auth-helpers";
 import { LogOut, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -73,7 +74,7 @@ export default function DashboardHeader() {
         <Button
           variant="outline"
           size="sm"
-          onClick={() => signOut({ callbackUrl: "/" })}
+          onClick={() => signOutWithNativeCleanup({ callbackUrl: "/" })}
           className="gap-2"
         >
           <LogOut className="h-4 w-4" />

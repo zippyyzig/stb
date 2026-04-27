@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useSession, signOut } from "next-auth/react";
+import { useSession } from "next-auth/react";
+import { signOutWithNativeCleanup } from "@/lib/auth-helpers";
 import { useCart, useWishlist } from "@/components/providers/CartWishlistProvider";
 import { useRouter, usePathname } from "next/navigation";
 import {
@@ -151,7 +152,7 @@ export default function Header() {
                       )}
                       <hr className="my-1 border-border" />
                       <button
-                        onClick={() => signOut({ callbackUrl: "/" })}
+                        onClick={() => signOutWithNativeCleanup({ callbackUrl: "/" })}
                         className="flex w-full items-center gap-2 px-3 py-2 text-xs text-destructive hover:bg-muted"
                       >
                         <LogOut className="h-3.5 w-3.5" />
@@ -261,7 +262,7 @@ export default function Header() {
                           </SheetClose>
                         )}
                         <button
-                          onClick={() => signOut({ callbackUrl: "/" })}
+                          onClick={() => signOutWithNativeCleanup({ callbackUrl: "/" })}
                           className="mt-1 flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-xs font-medium text-destructive hover:bg-red-50 press-active"
                         >
                           <LogOut className="h-3.5 w-3.5" />

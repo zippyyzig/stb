@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { signOut } from "next-auth/react";
+import { signOutWithNativeCleanup } from "@/lib/auth-helpers";
 import { Search, User, LogOut, Settings, ChevronDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import NotificationsDropdown from "./NotificationsDropdown";
@@ -87,7 +87,7 @@ export default function AdminHeader({ user }: AdminHeaderProps) {
                 <button
                   onClick={() => {
                     setShowMenu(false);
-                    signOut({ callbackUrl: "/" });
+                    signOutWithNativeCleanup({ callbackUrl: "/" });
                   }}
                   className="flex w-full items-center gap-2 px-4 py-2 text-sm text-destructive hover:bg-muted"
                 >
