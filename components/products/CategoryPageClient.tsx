@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import ProductCard from "@/components/products/ProductCard";
 import ProductFilterSidebar, { FilterState } from "@/components/products/ProductFilterSidebar";
-import { SlidersHorizontal, Grid3X3, LayoutList, ChevronRight } from "lucide-react";
+import { SlidersHorizontal, Grid3X3, LayoutList, ChevronRight, Package } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -71,6 +71,61 @@ const SORT_OPTIONS = [
   { value: "name-desc", label: "Name: Z to A" },
 ];
 
+function sortProducts(products: Product[], sortBy: string): Product[] {
+  const result = [...products];
+  switch (sortBy) {
+    case "price-asc":
+      return result.sort((a, b) => a.priceB2C - b.priceB2C);
+    case "price-desc":
+      return result.sort((a, b) => b.priceB2C - a.priceB2C);
+    case "bestselling":
+      return result.sort((a, b) => (b.isBestSeller ? 1 : 0) - (a.isBestSeller ? 1 : 0));
+    case "name-asc":
+      return result.sort((a, b) => a.name.localeCompare(b.name));
+    case "name-desc":
+      return result.sort((a, b) => b.name.localeCompare(a.name));
+    default:
+      // relevance / newest: featured first
+      return result.sort((a, b) => (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0));
+  }
+}
+
+// ─── Empty state for a section ──────────────────────────────────────────────
+function EmptySection({ message }: { message: string }) {
+  return (
+    <div className="flex items-center justify-center rounded-xl border border-dashed border-border bg-white py-10 text-center">
+      <div className="flex flex-col items-center gap-2">
+        <Package className="h-8 w-8 text-muted-foreground/40" />
+        <p className="text-xs text-muted-foreground">{message}</p>
+      </div>
+    </div>
+  );
+}
+
+// ─── Product grid for a section ─────────────────────────────────────────────
+function ProductGrid({
+  products,
+  gridCols,
+}: {
+  products: Product[];
+  gridCols: 2 | 3;
+}) {
+  return (
+    <div
+      className={`grid gap-2.5 md:gap-3 ${
+        gridCols === 3
+          ? "grid-cols-3 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+          : "grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+      }`}
+    >
+      {products.map((product) => (
+        <ProductCard key={product._id} product={product} />
+      ))}
+    </div>
+  );
+}
+
+// ─── Main component content ──────────────────────────────────────────────────
 function CategoryPageContent({
   products,
   subcategories,
@@ -85,11 +140,6 @@ function CategoryPageContent({
   const [filterOpen, setFilterOpen] = useState(false);
   const [gridCols, setGridCols] = useState<2 | 3>(2);
   const [sortBy, setSortBy] = useState(searchParams.get("sortBy") || "relevance");
-  
-  // Track selected subcategory for "view all" vs specific subcategory
-  const [activeSubcategory, setActiveSubcategory] = useState<string | null>(
-    searchParams.get("subcategory") || null
-  );
 
   // Initialize filters from URL
   const [filters, setFilters] = useState<FilterState>(() => ({
@@ -107,131 +157,87 @@ function CategoryPageContent({
     sortBy: searchParams.get("sortBy") || "relevance",
   }));
 
-  // Handle filter change from sidebar
   const handleFilterChange = useCallback((newFilters: FilterState) => {
     setFilters(newFilters);
     setSortBy(newFilters.sortBy);
-    // If subcategory filter is applied, update activeSubcategory
-    if (newFilters.subcategories.length === 1) {
-      setActiveSubcategory(newFilters.subcategories[0]);
-    } else if (newFilters.subcategories.length === 0) {
-      setActiveSubcategory(null);
-    }
   }, []);
 
-  // Handle sort change from dropdown
   const handleSortChange = useCallback((value: string) => {
     setSortBy(value);
     setFilters((prev) => ({ ...prev, sortBy: value }));
   }, []);
 
-  // Handle subcategory tab click
-  const handleSubcategoryClick = useCallback((subcategoryId: string | null) => {
-    setActiveSubcategory(subcategoryId);
-    if (subcategoryId) {
-      setFilters((prev) => ({ ...prev, subcategories: [subcategoryId] }));
-    } else {
-      setFilters((prev) => ({ ...prev, subcategories: [] }));
-    }
-  }, []);
+  // Apply all filters to a given product list
+  const applyFilters = useCallback(
+    (list: Product[]): Product[] => {
+      let result = [...list];
 
-  // Filter and sort products
-  const filteredProducts = useMemo(() => {
-    let result = [...products];
+      if (filters.search) {
+        const q = filters.search.toLowerCase();
+        result = result.filter(
+          (p) =>
+            p.name.toLowerCase().includes(q) ||
+            p.brand?.toLowerCase().includes(q) ||
+            p.tags?.some((t) => t.toLowerCase().includes(q))
+        );
+      }
+      if (filters.brands.length > 0) {
+        result = result.filter((p) => p.brand && filters.brands.includes(p.brand));
+      }
+      if (filters.priceMin > 0 || filters.priceMax < maxPrice) {
+        result = result.filter(
+          (p) => p.priceB2C >= filters.priceMin && p.priceB2C <= filters.priceMax
+        );
+      }
+      if (filters.inStock) result = result.filter((p) => p.stock > 0);
+      if (filters.onSale) result = result.filter((p) => p.mrp > p.priceB2C);
+      if (filters.featured) result = result.filter((p) => p.isFeatured);
+      if (filters.newArrivals) result = result.filter((p) => p.isNewArrival);
+      if (filters.bestSeller) result = result.filter((p) => p.isBestSeller);
+      if (filters.tags.length > 0) {
+        result = result.filter((p) => p.tags?.some((t) => filters.tags.includes(t)));
+      }
 
-    // Search filter
-    if (filters.search) {
-      const searchLower = filters.search.toLowerCase();
-      result = result.filter(
-        (p) =>
-          p.name.toLowerCase().includes(searchLower) ||
-          p.brand?.toLowerCase().includes(searchLower) ||
-          p.tags?.some((t) => t.toLowerCase().includes(searchLower))
-      );
-    }
+      return sortProducts(result, sortBy);
+    },
+    [filters, sortBy, maxPrice]
+  );
 
-    // Brand filter
-    if (filters.brands.length > 0) {
-      result = result.filter((p) => p.brand && filters.brands.includes(p.brand));
-    }
-
-    // Subcategory filter - filter by category._id
+  // ── For MAIN category: build sections ─────────────────────────────────────
+  // "All" = filtered products, not further restricted by subcategory
+  // Per subcategory = products whose category._id matches that subcategory
+  const allFilteredProducts = useMemo(() => {
+    // When subcategory filter is active, respect it; otherwise use everything
+    let base = [...products];
     if (filters.subcategories.length > 0) {
-      result = result.filter((p) => 
-        p.category && filters.subcategories.includes(p.category._id)
+      base = base.filter(
+        (p) => p.category && filters.subcategories.includes(p.category._id)
       );
     }
+    return applyFilters(base);
+  }, [products, filters.subcategories, applyFilters]);
 
-    // Price filter
-    if (filters.priceMin > 0 || filters.priceMax < maxPrice) {
-      result = result.filter(
-        (p) => p.priceB2C >= filters.priceMin && p.priceB2C <= filters.priceMax
+  // Products per subcategory (respects all filters EXCEPT the subcategory filter itself)
+  const subcategorySections = useMemo(() => {
+    // Determine which subcategories to show
+    const visibleSubcats =
+      filters.subcategories.length > 0
+        ? subcategories.filter((s) => filters.subcategories.includes(s._id))
+        : subcategories;
+
+    return visibleSubcats.map((sub) => {
+      const subProducts = products.filter(
+        (p) => p.category && p.category._id === sub._id
       );
-    }
-
-    // Stock filter
-    if (filters.inStock) {
-      result = result.filter((p) => p.stock > 0);
-    }
-
-    // On sale filter (MRP > priceB2C)
-    if (filters.onSale) {
-      result = result.filter((p) => p.mrp > p.priceB2C);
-    }
-
-    // Featured filter
-    if (filters.featured) {
-      result = result.filter((p) => p.isFeatured);
-    }
-
-    // New arrivals filter
-    if (filters.newArrivals) {
-      result = result.filter((p) => p.isNewArrival);
-    }
-
-    // Best seller filter
-    if (filters.bestSeller) {
-      result = result.filter((p) => p.isBestSeller);
-    }
-
-    // Tags filter
-    if (filters.tags.length > 0) {
-      result = result.filter((p) =>
-        p.tags?.some((t) => filters.tags.includes(t))
-      );
-    }
-
-    // Sort
-    switch (sortBy) {
-      case "price-asc":
-        result.sort((a, b) => a.priceB2C - b.priceB2C);
-        break;
-      case "price-desc":
-        result.sort((a, b) => b.priceB2C - a.priceB2C);
-        break;
-      case "newest":
-        // Already sorted by newest from server
-        break;
-      case "bestselling":
-        result.sort((a, b) => (b.isBestSeller ? 1 : 0) - (a.isBestSeller ? 1 : 0));
-        break;
-      case "name-asc":
-        result.sort((a, b) => a.name.localeCompare(b.name));
-        break;
-      case "name-desc":
-        result.sort((a, b) => b.name.localeCompare(a.name));
-        break;
-      default:
-        // Relevance: featured first, then by date
-        result.sort((a, b) => (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0));
-    }
-
-    return result;
-  }, [products, filters, sortBy, maxPrice]);
+      const filtered = applyFilters(subProducts);
+      return { sub, products: filtered, total: subProducts.length };
+    });
+  }, [subcategories, products, applyFilters, filters.subcategories]);
 
   // Count active filters
   const activeFiltersCount =
     filters.brands.length +
+    filters.subcategories.length +
     filters.tags.length +
     (filters.inStock ? 1 : 0) +
     (filters.onSale ? 1 : 0) +
@@ -241,83 +247,24 @@ function CategoryPageContent({
     (filters.priceMin > 0 || filters.priceMax < maxPrice ? 1 : 0) +
     (filters.search ? 1 : 0);
 
+  // Products that appear in subcategory-less products (for main category "orphan" products)
+  const orphanProducts = useMemo(() => {
+    if (isSubcategory || subcategories.length === 0) return [];
+    const subcatIds = new Set(subcategories.map((s) => s._id));
+    const base = products.filter(
+      (p) => !p.category || !subcatIds.has(p.category._id)
+    );
+    return applyFilters(base);
+  }, [products, subcategories, isSubcategory, applyFilters]);
+
   return (
     <div className="mx-auto max-w-7xl px-3 py-3 md:px-4 md:py-5">
-      {/* Subcategory tabs - only show for main categories with subcategories */}
-      {!isSubcategory && subcategories.length > 0 && (
-        <div className="mb-4 overflow-x-auto">
-          <div className="flex gap-2 pb-2">
-            {/* All products tab */}
-            <button
-              onClick={() => handleSubcategoryClick(null)}
-              className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${
-                activeSubcategory === null
-                  ? "border-primary bg-primary text-white"
-                  : "border-border bg-white text-foreground hover:border-primary hover:text-primary"
-              }`}
-            >
-              All {categoryName}
-              <span className="rounded-full bg-white/20 px-1.5 py-0.5 text-[10px]">
-                {products.length}
-              </span>
-            </button>
-            
-            {/* Individual subcategory tabs */}
-            {subcategories.map((sub) => (
-              <button
-                key={sub._id}
-                onClick={() => handleSubcategoryClick(sub._id)}
-                className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${
-                  activeSubcategory === sub._id
-                    ? "border-primary bg-primary text-white"
-                    : "border-border bg-white text-foreground hover:border-primary hover:text-primary"
-                }`}
-              >
-                {sub.name}
-                {sub.productCount !== undefined && sub.productCount > 0 && (
-                  <span className={`rounded-full px-1.5 py-0.5 text-[10px] ${
-                    activeSubcategory === sub._id ? "bg-white/20" : "bg-muted"
-                  }`}>
-                    {sub.productCount}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Subcategory quick links grid - only show when viewing "All" */}
-      {!isSubcategory && subcategories.length > 0 && activeSubcategory === null && (
-        <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-          {subcategories.map((sub) => (
-            <Link
-              key={sub._id}
-              href={`/category/${sub.slug}`}
-              className="group flex items-center justify-between rounded-lg border border-border bg-white p-3 transition-all hover:border-primary hover:shadow-sm"
-            >
-              <div>
-                <p className="text-xs font-semibold text-foreground group-hover:text-primary">
-                  {sub.name}
-                </p>
-                {sub.productCount !== undefined && (
-                  <p className="text-[10px] text-muted-foreground">
-                    {sub.productCount} products
-                  </p>
-                )}
-              </div>
-              <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary" />
-            </Link>
-          ))}
-        </div>
-      )}
-
-      {/* Sticky sort/filter bar */}
-      <div className="sticky top-0 z-30 mb-3 flex items-center justify-between gap-2 overflow-hidden rounded-xl border border-border bg-white px-3 py-2 shadow-sm md:mb-4 md:rounded-lg">
+      {/* ── Sticky sort/filter bar ─────────────────────────────────────────── */}
+      <div className="sticky top-0 z-30 mb-4 flex items-center justify-between gap-2 overflow-hidden rounded-xl border border-border bg-white px-3 py-2 shadow-sm">
         {/* Mobile: Filter trigger */}
         <button
           onClick={() => setFilterOpen(true)}
-          className="flex items-center gap-1.5 rounded-lg border border-border bg-white px-2.5 py-1.5 text-[11px] font-semibold text-foreground transition-colors hover:border-primary hover:text-primary md:hidden"
+          className="flex items-center gap-1.5 rounded-lg border border-border bg-white px-2.5 py-1.5 text-[11px] font-semibold text-foreground transition-colors hover:border-primary hover:text-primary lg:hidden"
         >
           <SlidersHorizontal className="h-3 w-3" />
           Filters
@@ -328,30 +275,33 @@ function CategoryPageContent({
           )}
         </button>
 
-        {/* Product count */}
+        {/* Total count */}
         <span className="text-[11px] text-muted-foreground">
-          {filteredProducts.length} of {products.length} products
+          {allFilteredProducts.length} of {products.length} products
+          {activeFiltersCount > 0 && (
+            <span className="ml-1 font-semibold text-primary">
+              (filtered)
+            </span>
+          )}
         </span>
 
         <div className="flex items-center gap-2">
-          {/* Grid toggle - mobile only */}
-          <div className="flex overflow-hidden rounded-lg border border-border md:hidden">
+          {/* Grid toggle */}
+          <div className="flex overflow-hidden rounded-lg border border-border">
             <button
               onClick={() => setGridCols(2)}
+              aria-label="2-column grid"
               className={`flex h-7 w-7 items-center justify-center transition-colors ${
-                gridCols === 2
-                  ? "bg-primary text-white"
-                  : "bg-white text-muted-foreground"
+                gridCols === 2 ? "bg-primary text-white" : "bg-white text-muted-foreground"
               }`}
             >
               <Grid3X3 className="h-3.5 w-3.5" />
             </button>
             <button
               onClick={() => setGridCols(3)}
+              aria-label="3-column grid"
               className={`flex h-7 w-7 items-center justify-center transition-colors ${
-                gridCols === 3
-                  ? "bg-primary text-white"
-                  : "bg-white text-muted-foreground"
+                gridCols === 3 ? "bg-primary text-white" : "bg-white text-muted-foreground"
               }`}
             >
               <LayoutList className="h-3.5 w-3.5" />
@@ -374,8 +324,9 @@ function CategoryPageContent({
         </div>
       </div>
 
+      {/* ── Main layout: sidebar + content ────────────────────────────────── */}
       <div className="flex gap-4">
-        {/* Desktop sidebar filter */}
+        {/* Desktop sidebar */}
         <aside className="hidden w-56 shrink-0 lg:block xl:w-60">
           <div className="sticky top-16 overflow-hidden rounded-xl border border-border bg-white shadow-sm">
             <ProductFilterSidebar
@@ -390,52 +341,134 @@ function CategoryPageContent({
           </div>
         </aside>
 
-        {/* Product grid */}
-        <div className="flex-1">
-          {filteredProducts.length === 0 ? (
-            <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-white py-16 text-center">
-              <div className="mb-3 text-4xl">📦</div>
-              <h3 className="text-sm font-bold text-foreground">No products found</h3>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {products.length === 0 
-                  ? "No products have been added to this category yet."
-                  : "Try adjusting your filters or check back later"}
-              </p>
-              {activeSubcategory && (
-                <button
-                  onClick={() => handleSubcategoryClick(null)}
-                  className="mt-3 text-xs font-semibold text-primary hover:underline"
-                >
-                  View all products
-                </button>
+        {/* ── Content area ──────────────────────────────────────────────────── */}
+        <div className="min-w-0 flex-1 space-y-8">
+
+          {/* ── SUBCATEGORY PAGE (flat list) ──────────────────────────────── */}
+          {isSubcategory && (
+            <>
+              {allFilteredProducts.length === 0 ? (
+                <EmptySection
+                  message={
+                    products.length === 0
+                      ? "No products have been added to this category yet."
+                      : "No products match your current filters."
+                  }
+                />
+              ) : (
+                <ProductGrid products={allFilteredProducts} gridCols={gridCols} />
               )}
-            </div>
-          ) : (
-            <div
-              className={`grid gap-2.5 md:gap-3 ${
-                gridCols === 3
-                  ? "grid-cols-3 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4"
-                  : "grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4"
-              }`}
-            >
-              {filteredProducts.map((product) => (
-                <ProductCard key={product._id} product={product} />
+            </>
+          )}
+
+          {/* ── MAIN CATEGORY PAGE (sectioned) ───────────────────────────── */}
+          {!isSubcategory && (
+            <>
+              {/* All products section */}
+              <section>
+                <div className="mb-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-sm font-extrabold text-foreground md:text-base">
+                      All {categoryName}
+                    </h2>
+                    <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
+                      {allFilteredProducts.length}
+                    </span>
+                  </div>
+                </div>
+
+                {allFilteredProducts.length === 0 ? (
+                  <EmptySection
+                    message={
+                      products.length === 0
+                        ? "No products have been added to this category yet."
+                        : "No products match your current filters."
+                    }
+                  />
+                ) : (
+                  <ProductGrid products={allFilteredProducts} gridCols={gridCols} />
+                )}
+              </section>
+
+              {/* Per-subcategory sections */}
+              {subcategorySections.map(({ sub, products: subProds, total }) => (
+                <section key={sub._id} id={`subcategory-${sub._id}`}>
+                  {/* Section header */}
+                  <div className="mb-3 flex items-center justify-between border-b border-border pb-2">
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-sm font-extrabold text-foreground md:text-base">
+                        {sub.name}
+                      </h2>
+                      <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
+                        {subProds.length}
+                        {subProds.length !== total && (
+                          <span className="font-normal text-muted-foreground">
+                            {" "}/ {total}
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                    <Link
+                      href={`/category/${sub.slug}`}
+                      className="flex items-center gap-0.5 text-[11px] font-semibold text-primary hover:underline"
+                    >
+                      View all
+                      <ChevronRight className="h-3.5 w-3.5" />
+                    </Link>
+                  </div>
+
+                  {subProds.length === 0 ? (
+                    <EmptySection
+                      message={
+                        total === 0
+                          ? `No products added to ${sub.name} yet.`
+                          : `No ${sub.name} products match your filters.`
+                      }
+                    />
+                  ) : (
+                    <ProductGrid products={subProds} gridCols={gridCols} />
+                  )}
+                </section>
               ))}
-            </div>
+
+              {/* Orphan products (belong to main category but no subcategory) */}
+              {orphanProducts.length > 0 && (
+                <section>
+                  <div className="mb-3 flex items-center gap-2 border-b border-border pb-2">
+                    <h2 className="text-sm font-extrabold text-foreground md:text-base">
+                      Other {categoryName}
+                    </h2>
+                    <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
+                      {orphanProducts.length}
+                    </span>
+                  </div>
+                  <ProductGrid products={orphanProducts} gridCols={gridCols} />
+                </section>
+              )}
+
+              {/* Completely empty state */}
+              {subcategorySections.length === 0 && allFilteredProducts.length === 0 && (
+                <EmptySection
+                  message={
+                    products.length === 0
+                      ? "No products have been added to this category yet."
+                      : "No products match your current filters."
+                  }
+                />
+              )}
+            </>
           )}
         </div>
       </div>
 
-      {/* Mobile filter bottom sheet */}
+      {/* ── Mobile filter bottom sheet ────────────────────────────────────── */}
       {filterOpen && (
         <>
-          {/* Backdrop */}
           <div
-            className="fixed inset-0 z-40 bg-black/40 md:hidden"
+            className="fixed inset-0 z-40 bg-black/40 lg:hidden"
             onClick={() => setFilterOpen(false)}
           />
-          {/* Sheet */}
-          <div className="animate-slide-up fixed bottom-0 left-0 right-0 z-50 max-h-[85vh] overflow-hidden rounded-t-2xl bg-white shadow-2xl md:hidden">
+          <div className="animate-slide-up fixed bottom-0 left-0 right-0 z-50 max-h-[85vh] overflow-hidden rounded-t-2xl bg-white shadow-2xl lg:hidden">
             <div className="mx-auto mt-2 h-1 w-10 rounded-full bg-border" />
             <ProductFilterSidebar
               brands={brands}
