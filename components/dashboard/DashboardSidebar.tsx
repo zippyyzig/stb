@@ -26,9 +26,6 @@ const menuItems = [
   { title: "Security", href: "/dashboard/security", icon: Shield, exact: false },
 ];
 
-// Items shown in the mobile bottom tab bar (max 5 incl. "More")
-const mobileTabItems = menuItems.slice(0, 4);
-
 export default function DashboardSidebar() {
   const pathname = usePathname();
 
@@ -89,28 +86,7 @@ export default function DashboardSidebar() {
         </div>
       </aside>
 
-      {/* ── Mobile top nav strip ──────────────────────────────────────── */}
-      <div className="sticky top-0 z-30 border-b border-border bg-white shadow-sm md:hidden">
-        <div className="flex items-center gap-1.5 overflow-x-auto px-3 py-2.5 scrollbar-hide">
-          {menuItems.map((item) => {
-            const active = isActive(item);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex shrink-0 items-center gap-2 rounded-xl px-4 py-2.5 text-[11px] font-semibold leading-none transition-all press-active ${
-                  active
-                    ? "bg-primary text-white shadow-sm"
-                    : "bg-[#F1F3F5] text-[#6B7280] hover:bg-[#E5E7EB] hover:text-foreground"
-                }`}
-              >
-                <item.icon className={`h-3.5 w-3.5 shrink-0 ${active ? "stroke-[2.5]" : "stroke-[1.5]"}`} />
-                <span>{item.title}</span>
-              </Link>
-            );
-          })}
-        </div>
-      </div>
+      {/* Mobile navigation is handled by MobileDashboardNav and MobileDashboardHeader */}
     </>
   );
 }

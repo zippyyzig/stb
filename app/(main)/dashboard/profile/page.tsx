@@ -90,9 +90,9 @@ export default function ProfilePage() {
   if (!profile) return null;
 
   return (
-    <div className="space-y-5 max-w-xl">
+    <div className="space-y-4 max-w-2xl">
       {/* Account Info Card */}
-      <div className="bg-card rounded-xl border border-border p-5">
+      <div className="bg-card rounded-2xl border border-border p-5">
         <h3 className="font-heading font-semibold text-foreground mb-3">Account Information</h3>
         <div className="space-y-2 text-sm">
           <div className="flex justify-between py-2 border-b border-border">
@@ -118,7 +118,7 @@ export default function ProfilePage() {
       </div>
 
       {/* Edit Profile Form */}
-      <form onSubmit={handleSubmit} className="bg-card rounded-xl border border-border p-5 space-y-4">
+      <form onSubmit={handleSubmit} className="bg-card rounded-2xl border border-border p-5 space-y-4">
         <h3 className="font-heading font-semibold text-foreground">Edit Profile</h3>
 
         {error && <p className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-lg">{error}</p>}

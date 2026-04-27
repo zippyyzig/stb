@@ -73,7 +73,7 @@ export default function OrdersPage() {
   return (
     <div className="space-y-5">
       {/* Filters & Search */}
-      <div className="bg-card rounded-xl border border-border p-4 space-y-3">
+      <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -83,12 +83,12 @@ export default function OrdersPage() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide -mx-1 px-1">
           {filters.map((f) => (
             <button
               key={f}
               onClick={() => setActiveFilter(f)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-colors ${
+              className={`shrink-0 px-3 py-2 rounded-xl text-xs font-semibold capitalize transition-colors press-active ${
                 activeFilter === f
                   ? "bg-primary text-white"
                   : "bg-muted text-muted-foreground hover:text-foreground"
@@ -121,7 +121,7 @@ export default function OrdersPage() {
             <Link
               key={order._id}
               href={`/dashboard/orders/${order._id}`}
-              className="bg-card rounded-xl border border-border hover:shadow-md hover:border-primary/20 transition-all block"
+              className="bg-card rounded-2xl border border-border hover:shadow-md hover:border-primary/20 transition-all block press-active"
             >
               {/* Order Header */}
               <div className="flex items-center justify-between px-5 py-3.5 border-b border-border">

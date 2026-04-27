@@ -93,7 +93,7 @@ export default function Header() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 w-full bg-white">
+      <header className={`sticky top-0 z-50 w-full bg-white ${pathname.startsWith("/dashboard") ? "hidden md:block" : ""}`}>
         {/* Top utility bar - Desktop */}
         <div className="hidden border-b border-border bg-muted/50 md:block">
           <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-1.5">
@@ -386,9 +386,11 @@ export default function Header() {
         </div>
       </header>
 
-      {/* Mobile bottom navigation */}
+      {/* Mobile bottom navigation — hidden on /dashboard/** (dashboard has its own nav) */}
       <nav
-        className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-white md:hidden"
+        className={`fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-white md:hidden ${
+          pathname.startsWith("/dashboard") ? "hidden" : ""
+        }`}
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
         <div className="grid h-16 grid-cols-5">
@@ -435,8 +437,8 @@ export default function Header() {
         </div>
       </nav>
 
-      {/* Spacer for mobile bottom nav */}
-      <div className="h-16 md:hidden" />
+      {/* Spacer for mobile bottom nav — hidden on dashboard (dashboard has its own nav) */}
+      <div className={`h-16 md:hidden ${pathname.startsWith("/dashboard") ? "hidden" : ""}`} />
     </>
   );
 }

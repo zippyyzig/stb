@@ -69,9 +69,9 @@ export default function SecurityPage() {
   const strengthColor = ["", "bg-red-500", "bg-orange-400", "bg-yellow-400", "bg-green-400", "bg-green-600"][strength] || "bg-border";
 
   return (
-    <div className="space-y-5 max-w-md">
+    <div className="space-y-4 max-w-md">
       {/* Security overview */}
-      <div className="bg-card rounded-xl border border-border p-5">
+      <div className="bg-card rounded-2xl border border-border p-5">
         <div className="flex items-center gap-3 mb-3">
           <div className="h-10 w-10 rounded-xl bg-green-50 flex items-center justify-center">
             <ShieldCheck className="h-5 w-5 text-green-500" />
@@ -94,7 +94,7 @@ export default function SecurityPage() {
       </div>
 
       {/* Change Password */}
-      <form onSubmit={handleSubmit} className="bg-card rounded-xl border border-border p-5 space-y-4">
+      <form onSubmit={handleSubmit} className="bg-card rounded-2xl border border-border p-5 space-y-4">
         <div className="flex items-center gap-2">
           <Lock className="h-4 w-4 text-muted-foreground" />
           <h3 className="font-heading font-semibold text-foreground">Change Password</h3>

@@ -3,6 +3,8 @@ import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
+import MobileDashboardHeader from "@/components/dashboard/MobileDashboardHeader";
+import MobileDashboardNav from "@/components/dashboard/MobileDashboardNav";
 
 export default async function DashboardLayout({
   children,
@@ -26,16 +28,22 @@ export default async function DashboardLayout({
 
       {/* Main content column */}
       <div className="flex min-w-0 flex-1 flex-col">
+        {/* Mobile top header (sticky, shows back + title + bell) */}
+        <MobileDashboardHeader />
+
         {/* Desktop header */}
         <div className="hidden md:block">
           <DashboardHeader />
         </div>
 
-        {/* Page content — compact padding on mobile */}
-        <main className="flex-1 overflow-y-auto p-3 pb-20 md:p-6 md:pb-6">
+        {/* Page content — extra bottom padding on mobile for the fixed bottom nav */}
+        <main className="flex-1 overflow-y-auto p-3 pb-24 md:p-6 md:pb-6">
           {children}
         </main>
       </div>
+
+      {/* Mobile bottom navigation (dashboard-specific) */}
+      <MobileDashboardNav />
     </div>
   );
 }
