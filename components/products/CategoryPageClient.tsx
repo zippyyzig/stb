@@ -260,67 +260,70 @@ function CategoryPageContent({
   return (
     <div className="mx-auto max-w-7xl px-3 py-3 md:px-4 md:py-5">
       {/* ── Sticky sort/filter bar ─────────────────────────────────────────── */}
-      <div className="sticky top-0 z-30 mb-4 flex items-center justify-between gap-2 overflow-hidden rounded-xl border border-border bg-white px-3 py-2 shadow-sm">
-        {/* Mobile: Filter trigger */}
-        <button
-          onClick={() => setFilterOpen(true)}
-          className="flex items-center gap-1.5 rounded-lg border border-border bg-white px-2.5 py-1.5 text-[11px] font-semibold text-foreground transition-colors hover:border-primary hover:text-primary lg:hidden"
-        >
-          <SlidersHorizontal className="h-3 w-3" />
-          Filters
-          {activeFiltersCount > 0 && (
-            <Badge className="h-4 min-w-4 justify-center rounded-full px-1 text-[9px]">
-              {activeFiltersCount}
-            </Badge>
-          )}
-        </button>
+      <div className="sticky top-0 z-30 mb-4 overflow-hidden rounded-xl border border-border bg-white shadow-sm">
+        {/* Row 1 — filter trigger + count + grid/sort controls */}
+        <div className="flex min-w-0 items-center justify-between gap-2 px-3 py-2">
+          {/* Mobile: Filter trigger */}
+          <button
+            onClick={() => setFilterOpen(true)}
+            className="flex shrink-0 items-center gap-1.5 rounded-lg border border-border bg-white px-2.5 py-1.5 text-[11px] font-semibold text-foreground transition-colors hover:border-primary hover:text-primary lg:hidden"
+          >
+            <SlidersHorizontal className="h-3 w-3" />
+            Filters
+            {activeFiltersCount > 0 && (
+              <Badge className="h-4 min-w-4 justify-center rounded-full px-1 text-[9px]">
+                {activeFiltersCount}
+              </Badge>
+            )}
+          </button>
 
-        {/* Total count */}
-        <span className="text-[11px] text-muted-foreground">
-          {allFilteredProducts.length} of {products.length} products
-          {activeFiltersCount > 0 && (
-            <span className="ml-1 font-semibold text-primary">
-              (filtered)
-            </span>
-          )}
-        </span>
+          {/* Total count — truncates before overflowing */}
+          <span className="min-w-0 truncate text-[11px] text-muted-foreground">
+            <span className="font-medium text-foreground">{allFilteredProducts.length}</span>
+            <span className="hidden sm:inline"> of {products.length}</span>
+            {" "}products
+            {activeFiltersCount > 0 && (
+              <span className="ml-1 font-semibold text-primary">(filtered)</span>
+            )}
+          </span>
 
-        <div className="flex items-center gap-2">
-          {/* Grid toggle */}
-          <div className="flex overflow-hidden rounded-lg border border-border">
-            <button
-              onClick={() => setGridCols(2)}
-              aria-label="2-column grid"
-              className={`flex h-7 w-7 items-center justify-center transition-colors ${
-                gridCols === 2 ? "bg-primary text-white" : "bg-white text-muted-foreground"
-              }`}
-            >
-              <Grid3X3 className="h-3.5 w-3.5" />
-            </button>
-            <button
-              onClick={() => setGridCols(3)}
-              aria-label="3-column grid"
-              className={`flex h-7 w-7 items-center justify-center transition-colors ${
-                gridCols === 3 ? "bg-primary text-white" : "bg-white text-muted-foreground"
-              }`}
-            >
-              <LayoutList className="h-3.5 w-3.5" />
-            </button>
+          <div className="flex shrink-0 items-center gap-1.5">
+            {/* Grid toggle */}
+            <div className="flex overflow-hidden rounded-lg border border-border">
+              <button
+                onClick={() => setGridCols(2)}
+                aria-label="2-column grid"
+                className={`flex h-7 w-7 items-center justify-center transition-colors ${
+                  gridCols === 2 ? "bg-primary text-white" : "bg-white text-muted-foreground"
+                }`}
+              >
+                <Grid3X3 className="h-3.5 w-3.5" />
+              </button>
+              <button
+                onClick={() => setGridCols(3)}
+                aria-label="3-column grid"
+                className={`flex h-7 w-7 items-center justify-center transition-colors ${
+                  gridCols === 3 ? "bg-primary text-white" : "bg-white text-muted-foreground"
+                }`}
+              >
+                <LayoutList className="h-3.5 w-3.5" />
+              </button>
+            </div>
+
+            {/* Sort */}
+            <Select value={sortBy} onValueChange={handleSortChange}>
+              <SelectTrigger className="h-8 w-[110px] text-[11px] md:w-[160px] md:text-xs">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                {SORT_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value} className="text-xs">
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-
-          {/* Sort */}
-          <Select value={sortBy} onValueChange={handleSortChange}>
-            <SelectTrigger className="h-8 w-[140px] text-[11px] md:w-[160px] md:text-xs">
-              <SelectValue placeholder="Sort by" />
-            </SelectTrigger>
-            <SelectContent>
-              {SORT_OPTIONS.map((option) => (
-                <SelectItem key={option.value} value={option.value} className="text-xs">
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
         </div>
       </div>
 

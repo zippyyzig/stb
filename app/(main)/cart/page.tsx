@@ -148,45 +148,42 @@ export default function CartPage() {
                               </button>
                             </div>
 
-                            {/* Price + qty row */}
-                            <div className="flex items-end justify-between gap-2 mt-auto">
-                              <div>
-                                <div className="flex items-baseline gap-1">
-                                  <span className="text-sm font-extrabold text-foreground md:text-base">
-                                    ₹{item.price.toLocaleString("en-IN")}
-                                  </span>
-                                  {discount > 0 && (
+                            {/* Price + qty row — two stacked sub-rows on mobile */}
+                            <div className="mt-auto flex min-w-0 flex-col gap-1.5">
+                              {/* Unit price row */}
+                              <div className="flex items-baseline gap-1.5">
+                                <span className="text-sm font-extrabold text-foreground md:text-base">
+                                  ₹{item.price.toLocaleString("en-IN")}
+                                </span>
+                                {discount > 0 && (
+                                  <>
                                     <span className="text-[9px] text-muted-foreground line-through md:text-[10px]">
                                       ₹{item.product.mrp.toLocaleString("en-IN")}
                                     </span>
-                                  )}
-                                </div>
-                                {discount > 0 && (
-                                  <span className="text-[9px] font-medium text-stb-success">{discount}% off</span>
+                                    <span className="text-[9px] font-semibold text-stb-success">{discount}% off</span>
+                                  </>
                                 )}
                               </div>
-
-                              <div className="flex items-center gap-2">
-                                {/* Qty control */}
+                              {/* Qty + line total row */}
+                              <div className="flex items-center justify-between gap-2">
                                 <div className="flex items-center overflow-hidden rounded-xl border border-border">
                                   <button
                                     onClick={() => updateQuantity(item.product._id, item.quantity - 1)}
                                     disabled={item.quantity <= 1 || busy}
-                                    className="flex h-8 w-8 items-center justify-center text-muted-foreground hover:bg-muted disabled:opacity-40 press-active md:h-7 md:w-7"
+                                    className="flex h-7 w-7 items-center justify-center text-muted-foreground hover:bg-muted disabled:opacity-40 press-active"
                                   >
                                     <Minus className="h-3 w-3" />
                                   </button>
-                                  <span className="w-8 text-center text-xs font-bold md:text-xs">{item.quantity}</span>
+                                  <span className="w-7 text-center text-xs font-bold">{item.quantity}</span>
                                   <button
                                     onClick={() => updateQuantity(item.product._id, item.quantity + 1)}
                                     disabled={item.quantity >= item.product.stock || busy}
-                                    className="flex h-8 w-8 items-center justify-center text-muted-foreground hover:bg-muted disabled:opacity-40 press-active md:h-7 md:w-7"
+                                    className="flex h-7 w-7 items-center justify-center text-muted-foreground hover:bg-muted disabled:opacity-40 press-active"
                                   >
                                     <Plus className="h-3 w-3" />
                                   </button>
                                 </div>
-                                {/* Line total */}
-                                <span className="text-xs font-bold text-foreground md:text-sm">
+                                <span className="text-xs font-extrabold text-foreground md:text-sm">
                                   ₹{item.total.toLocaleString("en-IN")}
                                 </span>
                               </div>
