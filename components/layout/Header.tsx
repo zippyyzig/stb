@@ -389,9 +389,8 @@ export default function Header() {
 
       {/* Mobile bottom navigation — hidden on /dashboard/** (dashboard has its own nav) */}
       <nav
-        className={`fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-white md:hidden ${
-          pathname.startsWith("/dashboard") ? "hidden" : ""
-        }`}
+        className={`fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-white md:hidden ${pathname.startsWith("/dashboard") ? "hidden" : ""
+          }`}
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
         <div className="grid h-16 grid-cols-5">
@@ -413,11 +412,10 @@ export default function Header() {
                 )}
                 <div className="relative z-10 flex h-6 w-6 items-center justify-center">
                   <item.icon
-                    className={`h-[22px] w-[22px] transition-all duration-200 ${
-                      isActive
+                    className={`h-[22px] w-[22px] transition-all duration-200 ${isActive
                         ? "text-primary stroke-[2.5]"
                         : "text-[#9CA3AF] stroke-[1.5]"
-                    }`}
+                      }`}
                   />
                   {count > 0 && (
                     <span className="absolute -right-1.5 -top-1 flex h-[15px] min-w-[15px] items-center justify-center rounded-full bg-primary px-0.5 text-[8px] font-bold leading-none text-white ring-2 ring-white">
@@ -426,9 +424,8 @@ export default function Header() {
                   )}
                 </div>
                 <span
-                  className={`relative z-10 text-[10px] font-semibold leading-none transition-colors ${
-                    isActive ? "text-primary" : "text-[#9CA3AF]"
-                  }`}
+                  className={`relative z-10 text-[10px] font-semibold leading-none transition-colors ${isActive ? "text-primary" : "text-[#9CA3AF]"
+                    }`}
                 >
                   {item.name}
                 </span>
@@ -437,9 +434,6 @@ export default function Header() {
           })}
         </div>
       </nav>
-
-      {/* Spacer for mobile bottom nav — hidden on dashboard (dashboard has its own nav) */}
-      <div className={`h-16 md:hidden ${pathname.startsWith("/dashboard") ? "hidden" : ""}`} />
     </>
   );
 }
