@@ -1,203 +1,288 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { signOut } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
+import { useCart, useWishlist } from "@/components/providers/CartWishlistProvider";
 import {
   LayoutDashboard,
   ShoppingBag,
   Heart,
   Bell,
-  MoreHorizontal,
+  Menu,
   MapPin,
   LifeBuoy,
   User,
   Shield,
   Store,
   LogOut,
+  ShoppingCart,
+  ChevronRight,
   X,
+  Package,
+  Headphones,
 } from "lucide-react";
 import { useState } from "react";
 
 const primaryTabs = [
-  { title: "Home", href: "/dashboard", icon: LayoutDashboard, exact: true },
-  { title: "Orders", href: "/dashboard/orders", icon: ShoppingBag, exact: false },
-  { title: "Wishlist", href: "/dashboard/wishlist", icon: Heart, exact: false },
-  { title: "Alerts", href: "/dashboard/notifications", icon: Bell, exact: false },
-  { title: "More", href: "#more", icon: MoreHorizontal, exact: false },
+  { title: "Home",    href: "/dashboard",               icon: LayoutDashboard, exact: true },
+  { title: "Orders",  href: "/dashboard/orders",         icon: ShoppingBag,     exact: false },
+  { title: "Wishlist",href: "/dashboard/wishlist",       icon: Heart,           exact: false },
+  { title: "Alerts",  href: "/dashboard/notifications",  icon: Bell,            exact: false },
 ];
 
-const moreItems = [
-  { title: "Profile", href: "/dashboard/profile", icon: User, color: "bg-blue-50 text-blue-600" },
-  { title: "Addresses", href: "/dashboard/addresses", icon: MapPin, color: "bg-purple-50 text-purple-600" },
-  { title: "Security", href: "/dashboard/security", icon: Shield, color: "bg-green-50 text-green-600" },
-  { title: "Support", href: "/dashboard/support", icon: LifeBuoy, color: "bg-amber-50 text-amber-600" },
-];
+type DrawerSection = {
+  title: string;
+  items: { title: string; href: string; icon: React.ComponentType<{ className?: string }>; color: string; badge?: number }[];
+};
 
 export default function MobileDashboardNav() {
-  const pathname = usePathname();
-  const [moreOpen, setMoreOpen] = useState(false);
+  const pathname  = usePathname();
+  const { data: session } = useSession();
+  const { cartCount }     = useCart();
+  const { wishlistCount } = useWishlist();
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const isActive = (href: string, exact: boolean) =>
-    exact
-      ? pathname === href
-      : pathname === href || pathname.startsWith(href + "/");
+    exact ? pathname === href : pathname === href || pathname.startsWith(href + "/");
 
-  const isMoreActive = moreItems.some(
-    (item) => pathname === item.href || pathname.startsWith(item.href + "/")
-  );
+  const initials = session?.user?.name
+    ? session.user.name.split(" ").slice(0, 2).map((n: string) => n[0]).join("").toUpperCase()
+    : "U";
+
+  const drawerSections: DrawerSection[] = [
+    {
+      title: "My Account",
+      items: [
+        { title: "Overview",      href: "/dashboard",               icon: LayoutDashboard, color: "bg-stb-red-light text-primary" },
+        { title: "My Orders",     href: "/dashboard/orders",        icon: Package,         color: "bg-blue-50 text-blue-600" },
+        { title: "Wishlist",      href: "/dashboard/wishlist",      icon: Heart,           color: "bg-pink-50 text-pink-600",   badge: wishlistCount },
+        { title: "Notifications", href: "/dashboard/notifications", icon: Bell,            color: "bg-amber-50 text-amber-600" },
+      ],
+    },
+    {
+      title: "Settings",
+      items: [
+        { title: "Profile",    href: "/dashboard/profile",    icon: User,      color: "bg-indigo-50 text-indigo-600" },
+        { title: "Addresses",  href: "/dashboard/addresses",  icon: MapPin,    color: "bg-purple-50 text-purple-600" },
+        { title: "Security",   href: "/dashboard/security",   icon: Shield,    color: "bg-green-50 text-green-600" },
+        { title: "Support",    href: "/dashboard/support",    icon: Headphones, color: "bg-orange-50 text-orange-600" },
+      ],
+    },
+    {
+      title: "Shopping",
+      items: [
+        { title: "Cart",       href: "/cart",      icon: ShoppingCart, color: "bg-emerald-50 text-emerald-600", badge: cartCount },
+        { title: "Browse",     href: "/",          icon: Store,        color: "bg-slate-100 text-slate-600" },
+        { title: "Help",       href: "/dashboard/support", icon: LifeBuoy, color: "bg-cyan-50 text-cyan-600" },
+      ],
+    },
+  ];
 
   return (
     <>
-      {/* Bottom tab bar */}
+      {/* ── Fixed bottom tab bar ─────────────────────────────────────── */}
       <nav
         className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-white md:hidden"
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
         <div className="grid h-16 grid-cols-5">
           {primaryTabs.map((tab) => {
-            const isMore = tab.href === "#more";
-            const active = isMore ? isMoreActive || moreOpen : isActive(tab.href, tab.exact);
+            const active = isActive(tab.href, tab.exact);
+            const isBell = tab.href === "/dashboard/notifications";
 
             return (
-              <button
-                key={tab.title}
-                onClick={() => {
-                  if (isMore) {
-                    setMoreOpen((v) => !v);
-                  } else {
-                    setMoreOpen(false);
-                  }
-                }}
+              <Link
+                key={tab.href}
+                href={tab.href}
+                onClick={() => setDrawerOpen(false)}
                 className="relative flex flex-col items-center justify-center gap-1 press-active"
                 aria-label={tab.title}
               >
                 {active && (
                   <span className="absolute top-2 h-8 w-12 rounded-full bg-stb-red-light" />
                 )}
-                {isMore ? (
-                  <Link
-                    href="#"
-                    onClick={(e) => { e.preventDefault(); setMoreOpen((v) => !v); }}
-                    className="relative z-10 flex flex-col items-center gap-1"
-                  >
-                    <tab.icon
-                      className={`relative z-10 h-[22px] w-[22px] transition-all duration-200 ${
-                        active ? "text-primary stroke-[2.5]" : "text-[#9CA3AF] stroke-[1.5]"
-                      }`}
-                    />
-                    <span
-                      className={`relative z-10 text-[10px] font-semibold leading-none ${
-                        active ? "text-primary" : "text-[#9CA3AF]"
-                      }`}
-                    >
-                      {tab.title}
+                <div className="relative z-10">
+                  <tab.icon
+                    className={`h-[22px] w-[22px] transition-all duration-200 ${
+                      active ? "text-primary stroke-[2.5]" : "text-[#9CA3AF] stroke-[1.5]"
+                    }`}
+                  />
+                  {/* Wishlist badge */}
+                  {tab.href === "/dashboard/wishlist" && wishlistCount > 0 && (
+                    <span className="absolute -right-1.5 -top-1 flex h-[14px] min-w-[14px] items-center justify-center rounded-full bg-primary px-0.5 text-[8px] font-bold leading-none text-white ring-1 ring-white">
+                      {wishlistCount > 9 ? "9+" : wishlistCount}
                     </span>
-                  </Link>
-                ) : (
-                  <Link
-                    href={tab.href}
-                    className="relative z-10 flex flex-col items-center gap-1"
-                    onClick={() => setMoreOpen(false)}
-                  >
-                    <tab.icon
-                      className={`h-[22px] w-[22px] transition-all duration-200 ${
-                        active ? "text-primary stroke-[2.5]" : "text-[#9CA3AF] stroke-[1.5]"
-                      }`}
-                    />
-                    <span
-                      className={`text-[10px] font-semibold leading-none ${
-                        active ? "text-primary" : "text-[#9CA3AF]"
-                      }`}
-                    >
-                      {tab.title}
-                    </span>
-                  </Link>
-                )}
-              </button>
+                  )}
+                  {/* Bell badge — no number, just a dot */}
+                  {isBell && (
+                    <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full border-2 border-white bg-primary" />
+                  )}
+                </div>
+                <span
+                  className={`relative z-10 text-[10px] font-semibold leading-none ${
+                    active ? "text-primary" : "text-[#9CA3AF]"
+                  }`}
+                >
+                  {tab.title}
+                </span>
+              </Link>
             );
           })}
+
+          {/* Menu / drawer toggle */}
+          <button
+            onClick={() => setDrawerOpen((v) => !v)}
+            className="relative flex flex-col items-center justify-center gap-1 press-active"
+            aria-label="Open menu"
+          >
+            {drawerOpen && (
+              <span className="absolute top-2 h-8 w-12 rounded-full bg-stb-red-light" />
+            )}
+            <div className="relative z-10 flex h-[22px] w-[22px] items-center justify-center">
+              {drawerOpen ? (
+                <X className={`h-5 w-5 transition-all text-primary stroke-[2.5]`} />
+              ) : (
+                <Menu className={`h-5 w-5 text-[#9CA3AF] stroke-[1.5]`} />
+              )}
+            </div>
+            <span
+              className={`relative z-10 text-[10px] font-semibold leading-none ${
+                drawerOpen ? "text-primary" : "text-[#9CA3AF]"
+              }`}
+            >
+              Menu
+            </span>
+          </button>
         </div>
       </nav>
 
-      {/* "More" slide-up sheet */}
-      {moreOpen && (
-        <>
-          {/* Backdrop */}
-          <div
-            className="fixed inset-0 z-40 bg-black/40 md:hidden"
-            onClick={() => setMoreOpen(false)}
-          />
+      {/* ── Backdrop ─────────────────────────────────────────────────── */}
+      {drawerOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-[2px] md:hidden"
+          onClick={() => setDrawerOpen(false)}
+        />
+      )}
 
-          {/* Sheet */}
-          <div
-            className="fixed bottom-16 left-0 right-0 z-50 rounded-t-3xl bg-white px-4 pb-4 pt-3 shadow-2xl animate-slide-up md:hidden"
-            style={{ paddingBottom: "calc(1rem + env(safe-area-inset-bottom, 0px))" }}
-          >
-            {/* Handle */}
-            <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-border" />
-
-            {/* Close */}
-            <div className="mb-4 flex items-center justify-between">
-              <span className="text-sm font-bold text-foreground">More Options</span>
-              <button
-                onClick={() => setMoreOpen(false)}
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-muted-foreground press-active"
-              >
-                <X className="h-4 w-4" />
-              </button>
+      {/* ── Left Slide-in Drawer ─────────────────────────────────────── */}
+      <aside
+        className={`fixed bottom-0 left-0 top-0 z-50 flex w-[300px] flex-col bg-white shadow-2xl transition-transform duration-300 ease-in-out md:hidden ${
+          drawerOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        {/* Drawer header — user identity */}
+        <div className="flex items-center gap-3 border-b border-border bg-primary px-5 py-5">
+          {session?.user?.image ? (
+            <Image
+              src={session.user.image}
+              alt={session.user.name ?? ""}
+              width={44}
+              height={44}
+              className="h-11 w-11 rounded-full object-cover ring-2 ring-white/40"
+              unoptimized
+            />
+          ) : (
+            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white/20 text-sm font-bold text-white ring-2 ring-white/30">
+              {initials}
             </div>
+          )}
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-bold text-white">
+              {session?.user?.name ?? "Guest"}
+            </p>
+            <p className="truncate text-[11px] text-white/70">
+              {session?.user?.email ?? ""}
+            </p>
+          </div>
+          <button
+            onClick={() => setDrawerOpen(false)}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10 text-white/80 hover:bg-white/20 press-active"
+            aria-label="Close menu"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
 
-            {/* 2x2 grid of secondary nav items */}
-            <div className="grid grid-cols-2 gap-3 mb-4">
-              {moreItems.map((item) => {
+        {/* Cart quick-access banner */}
+        {cartCount > 0 && (
+          <Link
+            href="/cart"
+            onClick={() => setDrawerOpen(false)}
+            className="flex items-center justify-between bg-stb-red-light px-5 py-3 press-active"
+          >
+            <div className="flex items-center gap-2.5">
+              <ShoppingCart className="h-4 w-4 text-primary" />
+              <span className="text-sm font-semibold text-primary">
+                {cartCount} item{cartCount !== 1 ? "s" : ""} in cart
+              </span>
+            </div>
+            <span className="flex items-center gap-1 text-xs font-bold text-primary">
+              View <ChevronRight className="h-3.5 w-3.5" />
+            </span>
+          </Link>
+        )}
+
+        {/* Scrollable nav sections */}
+        <nav className="flex-1 overflow-y-auto py-2">
+          {drawerSections.map((section) => (
+            <div key={section.title} className="mb-1">
+              <p className="px-5 pb-1.5 pt-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">
+                {section.title}
+              </p>
+              {section.items.map((item) => {
                 const active = pathname === item.href || pathname.startsWith(item.href + "/");
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
-                    onClick={() => setMoreOpen(false)}
-                    className={`flex items-center gap-3 rounded-2xl border p-3.5 transition-all press-active ${
+                    onClick={() => setDrawerOpen(false)}
+                    className={`flex items-center gap-3.5 px-4 py-3 transition-colors press-active ${
                       active
-                        ? "border-primary/30 bg-stb-red-light"
-                        : "border-border bg-muted/30 hover:border-border"
+                        ? "bg-stb-red-light"
+                        : "hover:bg-muted/60"
                     }`}
                   >
-                    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${item.color}`}>
-                      <item.icon className="h-5 w-5" />
+                    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${item.color} ${active ? "ring-1 ring-primary/20" : ""}`}>
+                      <item.icon className="h-4.5 w-4.5" />
                     </div>
-                    <span className={`text-sm font-semibold ${active ? "text-primary" : "text-foreground"}`}>
+                    <span
+                      className={`flex-1 text-sm font-semibold ${
+                        active ? "text-primary" : "text-foreground"
+                      }`}
+                    >
                       {item.title}
                     </span>
+                    {/* Badge */}
+                    {item.badge !== undefined && item.badge > 0 && (
+                      <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[10px] font-bold text-white">
+                        {item.badge > 99 ? "99+" : item.badge}
+                      </span>
+                    )}
+                    {active && (
+                      <ChevronRight className="h-4 w-4 text-primary/50" />
+                    )}
                   </Link>
                 );
               })}
             </div>
+          ))}
+        </nav>
 
-            {/* Divider */}
-            <div className="mb-3 border-t border-border" />
-
-            {/* Back to store + Sign out */}
-            <div className="flex flex-col gap-2">
-              <Link
-                href="/"
-                onClick={() => setMoreOpen(false)}
-                className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted press-active"
-              >
-                <Store className="h-4.5 w-4.5" />
-                Back to Store
-              </Link>
-              <button
-                onClick={() => signOut({ callbackUrl: "/" })}
-                className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-destructive hover:bg-red-50 press-active"
-              >
-                <LogOut className="h-4.5 w-4.5" />
-                Sign Out
-              </button>
+        {/* Sign out footer */}
+        <div className="border-t border-border px-4 py-4" style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom, 1rem))" }}>
+          <button
+            onClick={() => signOut({ callbackUrl: "/" })}
+            className="flex w-full items-center gap-3.5 rounded-xl px-3 py-3 text-sm font-semibold text-destructive hover:bg-red-50 press-active"
+          >
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-50">
+              <LogOut className="h-4 w-4 text-destructive" />
             </div>
-          </div>
-        </>
-      )}
+            Sign Out
+          </button>
+        </div>
+      </aside>
     </>
   );
 }
