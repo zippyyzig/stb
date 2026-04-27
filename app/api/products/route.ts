@@ -18,6 +18,8 @@ export async function GET(request: NextRequest) {
     const onSale = searchParams.get("onSale") === "true";
     const featured = searchParams.get("featured") === "true";
     const newArrivals = searchParams.get("newArrivals") === "true";
+    const bestSeller = searchParams.get("bestSeller") === "true";
+    const tags = searchParams.get("tags")?.split(",").filter(Boolean) || [];
     const sortBy = searchParams.get("sortBy") || "relevance";
     const page = Math.max(1, Number(searchParams.get("page")) || 1);
     const limit = Math.min(50, Math.max(1, Number(searchParams.get("limit")) || 20));
@@ -41,13 +43,22 @@ export async function GET(request: NextRequest) {
     }
 
     // Brand filter (brand is stored as a string in Product model)
+    // Supports both brand IDs and brand names
     if (brands.length > 0) {
-      // First fetch brand names by IDs
-      const Brand = (await import("@/models/Brand")).default;
-      const brandDocs = await Brand.find({ _id: { $in: brands } }).lean();
-      const brandNames = brandDocs.map((b) => b.name);
-      if (brandNames.length > 0) {
-        query.brand = { $in: brandNames };
+      // Check if brands are IDs (ObjectId format) or names
+      const isObjectId = /^[0-9a-fA-F]{24}$/.test(brands[0]);
+      
+      if (isObjectId) {
+        // Fetch brand names by IDs
+        const Brand = (await import("@/models/Brand")).default;
+        const brandDocs = await Brand.find({ _id: { $in: brands } }).lean();
+        const brandNames = brandDocs.map((b) => b.name);
+        if (brandNames.length > 0) {
+          query.brand = { $in: brandNames };
+        }
+      } else {
+        // Brands are already names
+        query.brand = { $in: brands };
       }
     }
 
@@ -74,6 +85,16 @@ export async function GET(request: NextRequest) {
     // New arrivals filter
     if (newArrivals) {
       query.isNewArrival = true;
+    }
+
+    // Best seller filter
+    if (bestSeller) {
+      query.isBestSeller = true;
+    }
+
+    // Tags filter
+    if (tags.length > 0) {
+      query.tags = { $in: tags };
     }
 
     // Build sort
