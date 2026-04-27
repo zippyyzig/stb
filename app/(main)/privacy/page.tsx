@@ -111,6 +111,24 @@ const sections = [
     ],
   },
   {
+    id: "third-party-services",
+    title: "Third-Party Services",
+    content: [
+      {
+        subtitle: "Payment Processing",
+        body: "We use Razorpay as our payment gateway to process transactions securely. When you make a purchase, Razorpay collects and processes your payment information in accordance with their privacy policy. We do not store your full card details on our servers. For more information, please review Razorpay's Privacy Policy at https://razorpay.com/privacy/.",
+      },
+      {
+        subtitle: "Push Notifications",
+        body: "We use OneSignal to send push notifications to your device when you opt in. OneSignal may collect device identifiers and notification interaction data. You can opt out of push notifications at any time through your device settings or the app's notification preferences. For more information, please review OneSignal's Privacy Policy at https://onesignal.com/privacy_policy.",
+      },
+      {
+        subtitle: "Analytics & Performance",
+        body: "We may use analytics services to understand how users interact with our app and website. These services collect anonymised usage data to help us improve our services. This data does not include personally identifiable information.",
+      },
+    ],
+  },
+  {
     id: "third-party",
     title: "Third-Party Links",
     content: [
@@ -185,7 +203,7 @@ export default function PrivacyPage() {
                     <a
                       key={s.id}
                       href={`#${s.id}`}
-                      className="rounded px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-stb-red-light hover:text-primary"
+                      className="rounded px-2 py-1.5 text-[11px] text-muted-foreground transition-colors hover:bg-stb-red-light hover:text-primary"
                     >
                       {s.title}
                     </a>
