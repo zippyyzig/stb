@@ -78,12 +78,12 @@ export default function ProductGallery({ images, name }: ProductGalleryProps) {
 
       {/* Thumbnails */}
       {displayImages.length > 1 && (
-        <div className="flex gap-2 overflow-x-auto pb-2">
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
           {displayImages.map((image, index) => (
             <button
               key={index}
               onClick={() => setActiveIndex(index)}
-              className={`relative h-20 w-20 shrink-0 overflow-hidden rounded-lg border-2 transition-colors ${
+              className={`relative h-14 w-14 shrink-0 overflow-hidden rounded-lg border-2 transition-colors md:h-20 md:w-20 ${
                 activeIndex === index
                   ? "border-primary"
                   : "border-transparent hover:border-border"

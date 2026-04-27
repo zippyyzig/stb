@@ -469,38 +469,38 @@ export default function CheckoutPage() {
       />
       
       <Header />
-      <main className="flex-1 bg-background">
+      <main className="flex-1 bg-background pb-32 md:pb-0">
         {/* Breadcrumb */}
         <div className="border-b border-border bg-card">
-          <div className="mx-auto flex max-w-7xl items-center gap-2 px-4 py-3 text-sm">
+          <div className="mx-auto flex max-w-7xl items-center gap-1.5 px-3 py-2.5 text-xs md:gap-2 md:px-4 md:py-3 md:text-sm">
             <Link href="/" className="text-muted-foreground hover:text-primary">
               Home
             </Link>
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground md:h-4 md:w-4" />
             <Link
               href="/cart"
               className="text-muted-foreground hover:text-primary"
             >
               Cart
             </Link>
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground md:h-4 md:w-4" />
             <span className="text-foreground">Checkout</span>
           </div>
         </div>
 
-        <div className="mx-auto max-w-7xl px-4 py-8">
-          <h1 className="heading-xl mb-8">Checkout</h1>
+        <div className="mx-auto max-w-7xl px-3 py-4 md:px-4 md:py-8">
+          <h1 className="heading-xl mb-4 md:mb-8">Checkout</h1>
 
           {/* Error Alert */}
           {orderError && (
-            <div className="mb-6 flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-red-800">
-              <AlertCircle className="h-5 w-5 shrink-0" />
-              <p>{orderError}</p>
-              <button 
+            <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-red-200 bg-red-50 p-3 text-red-800 md:mb-6 md:gap-3 md:p-4">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 md:h-5 md:w-5" />
+              <p className="text-xs md:text-sm">{orderError}</p>
+              <button
                 onClick={() => setOrderError(null)}
-                className="ml-auto text-red-600 hover:text-red-800"
+                className="ml-auto shrink-0 text-red-600 hover:text-red-800"
               >
-                Dismiss
+                <span className="text-xs">Dismiss</span>
               </button>
             </div>
           )}
@@ -509,7 +509,7 @@ export default function CheckoutPage() {
             {/* Checkout Form */}
             <div className="flex flex-col gap-6 lg:col-span-2">
               {/* Delivery Address */}
-              <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+              <div className="rounded-xl border border-border bg-card p-4 shadow-sm md:p-6">
                 <div className="mb-4 flex items-center gap-3">
                   <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-white">
                     <MapPin className="h-4 w-4" />
@@ -523,7 +523,7 @@ export default function CheckoutPage() {
                     {savedAddresses.map((addr) => (
                       <label
                         key={addr._id}
-                        className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-colors ${
+                        className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors md:p-4 ${
                           selectedAddress?._id === addr._id
                             ? "border-primary bg-primary/5"
                             : "border-border hover:bg-muted/50"
@@ -534,19 +534,19 @@ export default function CheckoutPage() {
                           name="address"
                           checked={selectedAddress?._id === addr._id}
                           onChange={() => setSelectedAddress(addr)}
-                          className="mt-0.5 h-4 w-4 text-primary"
+                          className="mt-0.5 h-4 w-4 shrink-0 text-primary"
                         />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <p className="font-medium text-sm">{addr.name}</p>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <p className="text-sm font-medium">{addr.name}</p>
                             {addr.isDefault && (
-                              <span className="text-[10px] font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded">
+                              <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
                                 Primary
                               </span>
                             )}
                           </div>
                           <p className="body-sm text-muted-foreground">{addr.phone}</p>
-                          <p className="body-sm text-muted-foreground mt-0.5">
+                          <p className="body-sm mt-0.5 break-words text-muted-foreground">
                             {addr.address}, {addr.city}, {addr.state} - {addr.pincode}
                           </p>
                         </div>
@@ -643,7 +643,7 @@ export default function CheckoutPage() {
               </div>
 
               {/* Payment Method */}
-              <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+              <div className="rounded-xl border border-border bg-card p-4 shadow-sm md:p-6">
                 <div className="mb-4 flex items-center gap-3">
                   <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-white">
                     <CreditCard className="h-4 w-4" />
@@ -872,6 +872,40 @@ export default function CheckoutPage() {
           </div>
         </div>
       </main>
+
+      {/* ── Sticky mobile place-order bar ──────────────────────────────────── */}
+      <div
+        className="fixed left-0 right-0 z-40 flex items-center justify-between gap-3 border-t border-border bg-white px-4 py-3 shadow-xl md:hidden"
+        style={{ bottom: "env(safe-area-inset-bottom, 0px)" }}
+      >
+        <div className="min-w-0">
+          <p className="text-[10px] text-muted-foreground">
+            {isCalculatingTax ? "Calculating..." : `${items.length} item${items.length !== 1 ? "s" : ""}`}
+          </p>
+          <p className="text-base font-extrabold text-foreground">
+            ₹{grandTotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+          </p>
+        </div>
+        <Button
+          onClick={handlePlaceOrder}
+          disabled={!selectedAddress || isPlacingOrder || isCalculatingTax}
+          className="shrink-0 gap-2 press-active"
+          size="default"
+        >
+          {isPlacingOrder ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              {paymentMethod === "razorpay" ? "Processing..." : "Placing..."}
+            </>
+          ) : (
+            <>
+              {paymentMethod === "razorpay" ? "Pay Now" : "Place Order"}
+              <ChevronRight className="h-4 w-4" />
+            </>
+          )}
+        </Button>
+      </div>
+
       <Footer />
     </div>
   );

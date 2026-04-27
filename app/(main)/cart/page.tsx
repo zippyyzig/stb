@@ -53,7 +53,7 @@ export default function CartPage() {
   return (
     <div className="flex min-h-screen flex-col bg-[#F7F8FA]">
       <Header />
-      <main className="flex-1 pb-32 md:pb-0">
+      <main className="flex-1 pb-36 md:pb-0">
         {/* Breadcrumb */}
         <div className="border-b border-border bg-white">
           <div className="mx-auto flex max-w-7xl items-center gap-1.5 px-3 py-2.5 md:px-4">
@@ -142,51 +142,48 @@ export default function CartPage() {
                               <button
                                 onClick={() => removeItem(item.product._id)}
                                 disabled={busy}
-                                className="shrink-0 flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground hover:bg-red-50 hover:text-destructive disabled:opacity-50"
+                                className="shrink-0 flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:bg-red-50 hover:text-destructive disabled:opacity-50 press-active"
                               >
-                                {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+                                {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
                               </button>
                             </div>
 
-                            {/* Price + qty row */}
-                            <div className="flex items-end justify-between gap-2 mt-auto">
-                              <div>
-                                <div className="flex items-baseline gap-1">
-                                  <span className="text-sm font-extrabold text-foreground md:text-base">
-                                    ₹{item.price.toLocaleString("en-IN")}
-                                  </span>
-                                  {discount > 0 && (
+                            {/* Price + qty row — two stacked sub-rows on mobile */}
+                            <div className="mt-auto flex min-w-0 flex-col gap-1.5">
+                              {/* Unit price row */}
+                              <div className="flex items-baseline gap-1.5">
+                                <span className="text-sm font-extrabold text-foreground md:text-base">
+                                  ₹{item.price.toLocaleString("en-IN")}
+                                </span>
+                                {discount > 0 && (
+                                  <>
                                     <span className="text-[9px] text-muted-foreground line-through md:text-[10px]">
                                       ₹{item.product.mrp.toLocaleString("en-IN")}
                                     </span>
-                                  )}
-                                </div>
-                                {discount > 0 && (
-                                  <span className="text-[9px] font-medium text-stb-success">{discount}% off</span>
+                                    <span className="text-[9px] font-semibold text-stb-success">{discount}% off</span>
+                                  </>
                                 )}
                               </div>
-
-                              <div className="flex items-center gap-2">
-                                {/* Qty control */}
-                                <div className="flex items-center overflow-hidden rounded-lg border border-border">
+                              {/* Qty + line total row */}
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="flex items-center overflow-hidden rounded-xl border border-border">
                                   <button
                                     onClick={() => updateQuantity(item.product._id, item.quantity - 1)}
                                     disabled={item.quantity <= 1 || busy}
-                                    className="flex h-6 w-6 items-center justify-center text-muted-foreground hover:bg-muted disabled:opacity-40 md:h-7 md:w-7"
+                                    className="flex h-7 w-7 items-center justify-center text-muted-foreground hover:bg-muted disabled:opacity-40 press-active"
                                   >
-                                    <Minus className="h-2.5 w-2.5 md:h-3 md:w-3" />
+                                    <Minus className="h-3 w-3" />
                                   </button>
-                                  <span className="w-7 text-center text-[11px] font-bold md:text-xs">{item.quantity}</span>
+                                  <span className="w-7 text-center text-xs font-bold">{item.quantity}</span>
                                   <button
                                     onClick={() => updateQuantity(item.product._id, item.quantity + 1)}
                                     disabled={item.quantity >= item.product.stock || busy}
-                                    className="flex h-6 w-6 items-center justify-center text-muted-foreground hover:bg-muted disabled:opacity-40 md:h-7 md:w-7"
+                                    className="flex h-7 w-7 items-center justify-center text-muted-foreground hover:bg-muted disabled:opacity-40 press-active"
                                   >
-                                    <Plus className="h-2.5 w-2.5 md:h-3 md:w-3" />
+                                    <Plus className="h-3 w-3" />
                                   </button>
                                 </div>
-                                {/* Line total */}
-                                <span className="text-xs font-bold text-foreground md:text-sm">
+                                <span className="text-xs font-extrabold text-foreground md:text-sm">
                                   ₹{item.total.toLocaleString("en-IN")}
                                 </span>
                               </div>
@@ -246,16 +243,19 @@ export default function CartPage() {
 
       {/* ── Sticky mobile checkout bar ──────────────────────────────── */}
       {items.length > 0 && (
-        <div className="fixed bottom-14 left-0 right-0 z-40 flex items-center justify-between gap-3 border-t border-border bg-white px-4 py-3 shadow-lg md:hidden">
+        <div
+          className="fixed left-0 right-0 z-40 flex items-center justify-between gap-3 border-t border-border bg-white px-4 py-3 shadow-xl animate-slide-up md:hidden"
+          style={{ bottom: "calc(64px + env(safe-area-inset-bottom, 0px))" }}
+        >
           <div>
-            <p className="text-[10px] text-muted-foreground">{items.length} items</p>
-            <p className="text-sm font-extrabold text-foreground">₹{total.toLocaleString("en-IN")}</p>
+            <p className="text-[10px] text-muted-foreground">{items.length} item{items.length !== 1 ? "s" : ""}</p>
+            <p className="text-base font-extrabold text-foreground">₹{total.toLocaleString("en-IN")}</p>
           </div>
           <Link
             href="/checkout"
-            className="flex items-center gap-1.5 rounded-xl bg-primary px-5 py-2.5 text-xs font-bold text-white hover:bg-stb-red-dark"
+            className="flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-white hover:bg-stb-red-dark press-active"
           >
-            Checkout <ArrowRight className="h-3.5 w-3.5" />
+            Checkout <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
       )}

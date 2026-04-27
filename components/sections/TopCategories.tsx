@@ -54,25 +54,25 @@ export default function TopCategories({ categories }: TopCategoriesProps) {
         </div>
 
         {/* ── Mobile: horizontal pill-scroll ─────────────────────────────── */}
-        <div className="flex gap-2.5 overflow-x-auto pb-1 scrollbar-hide md:hidden">
+        <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide md:hidden">
           {displayCategories.map((cat) => (
             <Link
               key={cat.id}
               href={`/category/${cat.slug}`}
-              className="group flex shrink-0 flex-col items-center gap-1.5 transition-transform active:scale-95"
+              className="group flex shrink-0 flex-col items-center gap-2 press-active"
             >
               {/* Circle image */}
-              <div className="relative h-[60px] w-[60px] overflow-hidden rounded-full border-2 border-border bg-muted transition-all group-active:border-primary">
+              <div className="relative h-[72px] w-[72px] overflow-hidden rounded-full border-2 border-border bg-muted shadow-sm transition-all group-active:border-primary group-active:shadow-md">
                 <Image
                   src={cat.image}
                   alt={cat.name}
                   fill
-                  sizes="60px"
+                  sizes="72px"
                   className="object-cover transition-transform duration-300 group-hover:scale-110"
                   unoptimized
                 />
               </div>
-              <span className="w-[60px] truncate text-center text-[10px] font-medium text-foreground">
+              <span className="w-[72px] truncate text-center text-[11px] font-semibold text-foreground">
                 {cat.name}
               </span>
             </Link>
@@ -80,12 +80,12 @@ export default function TopCategories({ categories }: TopCategoriesProps) {
           {/* "More" pill */}
           <Link
             href="/categories"
-            className="group flex shrink-0 flex-col items-center gap-1.5"
+            className="group flex shrink-0 flex-col items-center gap-2 press-active"
           >
-            <div className="flex h-[60px] w-[60px] items-center justify-center rounded-full border-2 border-dashed border-border bg-muted transition-all group-hover:border-primary">
+            <div className="flex h-[72px] w-[72px] items-center justify-center rounded-full border-2 border-dashed border-border bg-muted shadow-sm transition-all group-hover:border-primary">
               <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary" />
             </div>
-            <span className="w-[60px] text-center text-[10px] font-medium text-muted-foreground">More</span>
+            <span className="w-[72px] text-center text-[11px] font-semibold text-muted-foreground">More</span>
           </Link>
         </div>
 

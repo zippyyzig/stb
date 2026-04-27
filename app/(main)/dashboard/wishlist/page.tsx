@@ -80,7 +80,7 @@ export default function WishlistPage() {
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">{items.length} item{items.length !== 1 ? "s" : ""} saved</p>
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {items.map(({ product, addedAt }) => {
           const price = product.price ?? 0;
           const salePrice = product.salePrice ?? 0;
@@ -89,7 +89,7 @@ export default function WishlistPage() {
           const isOutOfStock = product.stock === 0;
 
           return (
-            <div key={product._id} className="bg-card rounded-xl border border-border overflow-hidden hover:shadow-md transition-shadow group">
+            <div key={product._id} className="bg-card rounded-2xl border border-border overflow-hidden hover:shadow-md transition-shadow group press-active">
               {/* Image */}
               <Link href={`/products/${product.slug}`} className="block relative aspect-[4/3] overflow-hidden bg-muted">
                 {product.images?.[0] ? (

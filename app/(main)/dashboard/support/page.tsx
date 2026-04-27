@@ -92,7 +92,7 @@ export default function SupportPage() {
       </div>
 
       {/* Filters */}
-      <div className="bg-card rounded-xl border border-border p-4 space-y-3">
+      <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -102,12 +102,12 @@ export default function SupportPage() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide -mx-1 px-1">
           {filters.map((f) => (
             <button
               key={f}
               onClick={() => setActiveFilter(f)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-colors ${
+              className={`shrink-0 px-3 py-2 rounded-xl text-xs font-semibold capitalize transition-colors press-active ${
                 activeFilter === f
                   ? "bg-primary text-white"
                   : "bg-muted text-muted-foreground hover:text-foreground"
@@ -143,7 +143,7 @@ export default function SupportPage() {
             <Link
               key={ticket._id}
               href={`/dashboard/support/${ticket._id}`}
-              className="bg-card rounded-xl border border-border hover:shadow-md hover:border-primary/20 transition-all block"
+              className="bg-card rounded-2xl border border-border hover:shadow-md hover:border-primary/20 transition-all block press-active"
             >
               <div className="flex items-start justify-between p-5">
                 <div className="flex-1 min-w-0 mr-4">

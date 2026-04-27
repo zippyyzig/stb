@@ -139,10 +139,10 @@ export default function AddressesPage() {
   }
 
   return (
-    <div className="space-y-5 max-w-2xl">
+    <div className="space-y-4 max-w-2xl">
       {/* Feedback */}
       {success && (
-        <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 border border-green-200 px-4 py-2.5 rounded-lg">
+        <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 border border-green-200 px-4 py-2.5 rounded-2xl">
           <Check className="h-4 w-4 shrink-0" />
           {success}
         </div>
@@ -159,7 +159,7 @@ export default function AddressesPage() {
 
       {/* Add / Edit Form */}
       {showForm && (
-        <div className="bg-card rounded-xl border border-primary/30 p-5 shadow-sm">
+        <div className="bg-card rounded-2xl border border-primary/30 p-5 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-heading font-semibold text-foreground">{editingId ? "Edit Address" : "Add New Address"}</h3>
             <button onClick={() => setShowForm(false)} className="text-muted-foreground hover:text-foreground transition-colors">
@@ -284,7 +284,7 @@ export default function AddressesPage() {
           {addresses.map((addr) => (
             <div
               key={addr._id}
-              className={`bg-card rounded-xl border p-4 transition-colors ${
+              className={`bg-card rounded-2xl border p-4 transition-colors ${
                 addr.isDefault ? "border-primary/40 bg-primary/5" : "border-border"
               }`}
             >

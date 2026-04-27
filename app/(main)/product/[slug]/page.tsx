@@ -126,7 +126,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
-      <main className="flex-1 bg-[#F7F8FA] pb-32 md:pb-0">
+      <main className="flex-1 bg-[#F7F8FA] pb-40 md:pb-0">
         {/* Schema */}
         <JsonLd data={schemas} />
 
@@ -146,8 +146,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
         {/* Description & Specs */}
         <section className="border-t border-border bg-card">
-          <div className="mx-auto max-w-7xl px-4 py-8">
-            <div className="grid gap-8 lg:grid-cols-3">
+          <div className="mx-auto max-w-7xl px-3 py-5 md:px-4 md:py-8">
+            <div className="grid gap-6 md:gap-8 lg:grid-cols-3">
               {/* Description */}
               <div className="lg:col-span-2">
                 <h2 className="heading-lg mb-4">Product Description</h2>
@@ -167,14 +167,14 @@ export default async function ProductPage({ params }: ProductPageProps) {
                     (spec: { key: string; value: string }, index: number) => (
                       <div
                         key={spec.key}
-                        className={`flex justify-between px-4 py-3 ${
+                        className={`flex items-start justify-between gap-3 px-3 py-2.5 md:px-4 md:py-3 ${
                           index % 2 === 0 ? "bg-muted/50" : "bg-card"
                         }`}
                       >
-                        <span className="body-sm font-medium text-foreground">
+                        <span className="body-sm shrink-0 font-medium text-foreground">
                           {spec.key}
                         </span>
-                        <span className="body-sm text-muted-foreground">
+                        <span className="body-sm min-w-0 break-words text-right text-muted-foreground">
                           {spec.value}
                         </span>
                       </div>
@@ -194,7 +194,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
         {/* Reviews Section */}
         <section className="border-t border-border">
-          <div className="mx-auto max-w-7xl px-4 py-8">
+          <div className="mx-auto max-w-7xl px-3 py-5 md:px-4 md:py-8">
             <ProductReviews productId={product._id} productName={product.name} />
           </div>
         </section>

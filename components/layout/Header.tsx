@@ -93,7 +93,7 @@ export default function Header() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 w-full bg-white">
+      <header className={`sticky top-0 z-50 w-full bg-white ${pathname.startsWith("/dashboard") ? "hidden md:block" : ""}`}>
         {/* Top utility bar - Desktop */}
         <div className="hidden border-b border-border bg-muted/50 md:block">
           <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-1.5">
@@ -181,7 +181,7 @@ export default function Header() {
             {/* Mobile menu */}
             <Sheet>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 md:hidden">
+                <Button variant="ghost" size="icon" className="h-10 w-10 shrink-0 rounded-xl md:hidden">
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
@@ -222,38 +222,52 @@ export default function Header() {
                   </div>
                 )}
 
-                <nav className="flex flex-col p-3">
-                  <p className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Shop by Category</p>
-                  {navCategories.map((cat) => (
-                    <SheetClose asChild key={cat.slug}>
-                      <Link
-                        href={`/category/${cat.slug}`}
-                        className="rounded px-3 py-2 text-xs text-foreground transition-colors hover:bg-muted hover:text-primary"
-                      >
-                        {cat.name}
-                      </Link>
-                    </SheetClose>
-                  ))}
+                <nav className="flex flex-col overflow-y-auto flex-1 p-4">
+                  <p className="mb-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Shop by Category</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {navCategories.map((cat) => (
+                      <SheetClose asChild key={cat.slug}>
+                        <Link
+                          href={`/category/${cat.slug}`}
+                          className="flex items-center gap-2 rounded-xl border border-border bg-muted/40 px-3 py-2.5 text-xs font-medium text-foreground transition-colors hover:border-primary/30 hover:bg-stb-red-light hover:text-primary press-active"
+                        >
+                          {cat.name}
+                        </Link>
+                      </SheetClose>
+                    ))}
+                  </div>
                   {session && (
                     <>
-                      <p className="mb-2 mt-4 px-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Account</p>
-                      <SheetClose asChild>
-                        <Link href="/dashboard" className="rounded px-3 py-2 text-xs text-foreground hover:bg-muted">My Account</Link>
-                      </SheetClose>
-                      <SheetClose asChild>
-                        <Link href="/dashboard/orders" className="rounded px-3 py-2 text-xs text-foreground hover:bg-muted">Orders</Link>
-                      </SheetClose>
-                      {isAdmin && (
+                      <p className="mb-3 mt-5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Account</p>
+                      <div className="flex flex-col gap-1">
                         <SheetClose asChild>
-                          <Link href="/admin" className="rounded px-3 py-2 text-xs text-foreground hover:bg-muted">Admin Panel</Link>
+                          <Link href="/dashboard" className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-xs font-medium text-foreground hover:bg-muted press-active">
+                            <User className="h-3.5 w-3.5 text-muted-foreground" />
+                            My Account
+                          </Link>
                         </SheetClose>
-                      )}
-                      <button
-                        onClick={() => signOut({ callbackUrl: "/" })}
-                        className="mt-1 rounded px-3 py-2 text-left text-xs text-destructive hover:bg-muted"
-                      >
-                        Sign Out
-                      </button>
+                        <SheetClose asChild>
+                          <Link href="/dashboard/orders" className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-xs font-medium text-foreground hover:bg-muted press-active">
+                            <Package className="h-3.5 w-3.5 text-muted-foreground" />
+                            Orders
+                          </Link>
+                        </SheetClose>
+                        {isAdmin && (
+                          <SheetClose asChild>
+                            <Link href="/admin" className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-xs font-medium text-foreground hover:bg-muted press-active">
+                              <Settings className="h-3.5 w-3.5 text-muted-foreground" />
+                              Admin Panel
+                            </Link>
+                          </SheetClose>
+                        )}
+                        <button
+                          onClick={() => signOut({ callbackUrl: "/" })}
+                          className="mt-1 flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-xs font-medium text-destructive hover:bg-red-50 press-active"
+                        >
+                          <LogOut className="h-3.5 w-3.5" />
+                          Sign Out
+                        </button>
+                      </div>
                     </>
                   )}
                 </nav>
@@ -292,16 +306,16 @@ export default function Header() {
             {/* Mobile search toggle */}
             <button
               onClick={() => setMobileSearchOpen(!mobileSearchOpen)}
-              className="flex h-8 w-8 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground md:hidden"
+              className="flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground md:hidden press-active"
             >
-              {mobileSearchOpen ? <X className="h-4 w-4" /> : <Search className="h-4 w-4" />}
+              {mobileSearchOpen ? <X className="h-5 w-5" /> : <Search className="h-5 w-5" />}
             </button>
 
             {/* Actions */}
             <div className="flex items-center gap-1">
               {/* Wishlist - desktop */}
-              <Link href="/wishlist" className="relative hidden md:flex h-8 w-8 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
-                <Heart className="h-4 w-4" />
+              <Link href="/wishlist" className="relative hidden md:flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+                <Heart className="h-4.5 w-4.5" />
                 {wishlistCount > 0 && (
                   <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-semibold text-white">
                     {wishlistCount > 9 ? "9+" : wishlistCount}
@@ -310,10 +324,10 @@ export default function Header() {
               </Link>
 
               {/* Cart */}
-              <Link href="/cart" className="relative flex h-8 w-8 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
-                <ShoppingCart className="h-4 w-4" />
+              <Link href="/cart" className="relative flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground press-active md:h-9 md:w-9">
+                <ShoppingCart className="h-5 w-5 md:h-4.5 md:w-4.5" />
                 {cartCount > 0 && (
-                  <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-semibold text-white">
+                  <span className="absolute -right-0.5 -top-0.5 flex h-[15px] min-w-[15px] items-center justify-center rounded-full bg-primary px-0.5 text-[8px] font-bold leading-none text-white ring-2 ring-white">
                     {cartCount > 9 ? "9+" : cartCount}
                   </span>
                 )}
@@ -334,15 +348,15 @@ export default function Header() {
 
         {/* Mobile search bar */}
         {mobileSearchOpen && (
-          <div className="border-b border-border bg-muted/30 px-3 py-2 md:hidden">
+          <div className="border-b border-border bg-white px-3 py-2.5 md:hidden animate-slide-down">
             <form action="/search" method="GET" className="relative">
-              <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <input
                 type="text"
                 name="q"
-                placeholder="Search products..."
+                placeholder="Search products, brands..."
                 autoFocus
-                className="h-8 w-full rounded border border-border bg-white pl-8 pr-3 text-xs placeholder:text-muted-foreground focus:border-primary focus:outline-none"
+                className="h-11 w-full rounded-xl border border-border bg-muted/50 pl-10 pr-4 text-sm placeholder:text-muted-foreground focus:border-primary focus:bg-white focus:outline-none transition-all"
               />
             </form>
           </div>
@@ -372,9 +386,14 @@ export default function Header() {
         </div>
       </header>
 
-      {/* Mobile bottom navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-white md:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
-        <div className="grid h-14 grid-cols-5">
+      {/* Mobile bottom navigation — hidden on /dashboard/** (dashboard has its own nav) */}
+      <nav
+        className={`fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-white md:hidden ${
+          pathname.startsWith("/dashboard") ? "hidden" : ""
+        }`}
+        style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+      >
+        <div className="grid h-16 grid-cols-5">
           {mobileNavItems.map((item) => {
             const isActive = pathname === item.href;
             const isCart = item.href === "/cart";
@@ -385,26 +404,28 @@ export default function Header() {
               <Link
                 key={item.href}
                 href={item.href}
-                className="relative flex flex-col items-center justify-center gap-[3px] px-1 transition-colors"
+                className="relative flex flex-col items-center justify-center gap-1 px-1 press-active"
               >
-                {/* Active top indicator */}
+                {/* Active indicator — animated pill behind icon */}
                 {isActive && (
-                  <span className="absolute top-0 left-1/2 h-[2.5px] w-8 -translate-x-1/2 rounded-b-full bg-primary" />
+                  <span className="absolute top-2 h-8 w-12 rounded-full bg-stb-red-light" />
                 )}
-                <div className="relative flex h-5 w-5 items-center justify-center">
+                <div className="relative z-10 flex h-6 w-6 items-center justify-center">
                   <item.icon
-                    className={`h-[19px] w-[19px] transition-colors ${
-                      isActive ? "text-primary stroke-[2.5]" : "text-[#9CA3AF] stroke-[1.5]"
+                    className={`h-[22px] w-[22px] transition-all duration-200 ${
+                      isActive
+                        ? "text-primary stroke-[2.5]"
+                        : "text-[#9CA3AF] stroke-[1.5]"
                     }`}
                   />
                   {count > 0 && (
-                    <span className="absolute -right-1.5 -top-1 flex h-[14px] min-w-[14px] items-center justify-center rounded-full bg-primary px-0.5 text-[8px] font-bold leading-none text-white">
+                    <span className="absolute -right-1.5 -top-1 flex h-[15px] min-w-[15px] items-center justify-center rounded-full bg-primary px-0.5 text-[8px] font-bold leading-none text-white ring-2 ring-white">
                       {count > 9 ? "9+" : count}
                     </span>
                   )}
                 </div>
                 <span
-                  className={`text-[10px] font-medium leading-none transition-colors ${
+                  className={`relative z-10 text-[10px] font-semibold leading-none transition-colors ${
                     isActive ? "text-primary" : "text-[#9CA3AF]"
                   }`}
                 >
@@ -416,8 +437,8 @@ export default function Header() {
         </div>
       </nav>
 
-      {/* Spacer for mobile bottom nav */}
-      <div className="h-14 md:hidden" />
+      {/* Spacer for mobile bottom nav — hidden on dashboard (dashboard has its own nav) */}
+      <div className={`h-16 md:hidden ${pathname.startsWith("/dashboard") ? "hidden" : ""}`} />
     </>
   );
 }

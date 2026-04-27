@@ -146,24 +146,28 @@ export default function NotificationsPage() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="font-heading font-bold text-foreground">Notifications</h2>
+        <div className="flex items-center gap-2">
+          {unreadCount > 0 && (
+            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[10px] font-bold text-white">
+              {unreadCount}
+            </span>
+          )}
           <p className="text-xs text-muted-foreground">
-            {unreadCount > 0 ? `${unreadCount} unread` : "All caught up!"}
+            {unreadCount > 0 ? "unread" : "All caught up!"}
           </p>
         </div>
         {notifications.length > 0 && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             {unreadCount > 0 && (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={markAllAsRead}
                 disabled={markingAll}
-                className="gap-2"
+                className="gap-1.5 h-8 text-xs"
               >
                 {markingAll ? (
                   <Loader2 className="h-3 w-3 animate-spin" />
@@ -178,14 +182,14 @@ export default function NotificationsPage() {
               size="sm"
               onClick={clearReadNotifications}
               disabled={clearing || !notifications.some((n) => n.isRead)}
-              className="gap-2 text-muted-foreground hover:text-destructive"
+              className="gap-1.5 h-8 text-xs text-muted-foreground hover:text-destructive"
             >
               {clearing ? (
                 <Loader2 className="h-3 w-3 animate-spin" />
               ) : (
                 <Trash2 className="h-3 w-3" />
               )}
-              Clear read
+              Clear
             </Button>
           </div>
         )}
@@ -239,7 +243,7 @@ export default function NotificationsPage() {
               </>
             );
 
-            const baseClassName = `bg-card rounded-xl border transition-all flex items-start gap-4 px-4 py-3.5 ${
+            const baseClassName = `bg-card rounded-2xl border transition-all flex items-start gap-3 px-4 py-3.5 press-active ${
               notification.isRead
                 ? "border-border"
                 : "border-primary/30 bg-primary/5"

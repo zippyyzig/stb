@@ -93,27 +93,27 @@ function SectionProductCard({ product }: { product: Product }) {
           onClick={handleWishlist}
           disabled={wishlistLoading}
           aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}
-          className={`absolute right-1.5 top-1.5 z-10 flex h-6 w-6 items-center justify-center rounded-full border transition-all md:right-2 md:top-2 md:h-7 md:w-7 ${
+          className={`absolute right-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-full border transition-all press-active shadow-sm ${
             wishlisted
               ? "border-primary bg-primary text-white"
-              : "border-border bg-white text-muted-foreground shadow-sm hover:border-primary hover:text-primary"
+              : "border-border bg-white text-muted-foreground hover:border-primary hover:text-primary"
           }`}
         >
           {wishlistLoading ? (
-            <Loader2 className="h-2.5 w-2.5 animate-spin md:h-3 md:w-3" />
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
           ) : (
-            <Heart className={`h-2.5 w-2.5 md:h-3 md:w-3 ${wishlisted ? "fill-current" : ""}`} />
+            <Heart className={`h-3.5 w-3.5 ${wishlisted ? "fill-current" : ""}`} />
           )}
         </button>
 
         {/* Image */}
         <Link href={`/product/${product.slug}`} className="block p-3 md:p-4">
-          <div className="relative mx-auto aspect-square w-full max-w-[140px] md:max-w-[180px]">
+          <div className="relative aspect-square w-full">
             <Image
               src={hovered && product.secondImage ? product.secondImage : product.image}
               alt={product.name}
               fill
-              sizes="(max-width: 640px) 140px, 180px"
+              sizes="(max-width: 640px) 50vw, 200px"
               className="object-contain transition-transform duration-300 group-hover:scale-105"
               unoptimized
             />
@@ -129,7 +129,7 @@ function SectionProductCard({ product }: { product: Product }) {
         </span>
         {/* Name */}
         <Link href={`/product/${product.slug}`} className="mt-0.5 block">
-          <h3 className="line-clamp-2 text-[11px] font-medium leading-[1.35] text-foreground hover:text-primary md:text-xs">
+          <h3 className="line-clamp-2 text-xs font-medium leading-snug text-foreground hover:text-primary md:text-[13px]">
             {product.name}
           </h3>
         </Link>
@@ -175,7 +175,7 @@ function SectionProductCard({ product }: { product: Product }) {
         <button
           onClick={handleCart}
           disabled={!product.inStock || addingToCart}
-          className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary py-2 text-[10px] font-bold text-white transition-colors hover:bg-stb-red-dark disabled:cursor-not-allowed disabled:opacity-40 md:py-2.5 md:text-[11px]"
+          className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl bg-primary py-3 text-xs font-bold text-white transition-colors hover:bg-stb-red-dark disabled:cursor-not-allowed disabled:opacity-40 press-active"
         >
           {addingToCart ? (
             <Loader2 className="h-3 w-3 animate-spin" />

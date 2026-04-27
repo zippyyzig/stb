@@ -241,7 +241,10 @@ export default function ProductInfo({ product }: ProductInfoProps) {
       )}
 
       {/* ── Sticky mobile buy bar ──────────────────────────────────── */}
-      <div className="fixed bottom-14 left-0 right-0 z-40 flex gap-2 border-t border-border bg-white px-3 py-2.5 shadow-lg md:hidden">
+      <div
+        className="fixed left-0 right-0 z-40 flex gap-2 border-t border-border bg-white px-3 py-2.5 shadow-lg md:hidden"
+        style={{ bottom: "calc(64px + env(safe-area-inset-bottom, 0px))" }}
+      >
         <button
           onClick={handleAddToCart}
           disabled={!inStock || addingCart}
