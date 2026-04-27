@@ -12,7 +12,6 @@ import {
   CheckCircle2,
   Loader2,
   ChevronRight,
-  ChevronDown,
 } from "lucide-react";
 
 const infoLinks = [
@@ -41,7 +40,6 @@ const contactDetails = [
 export default function Footer() {
   const [email, setEmail] = useState("");
   const [subscribeStatus, setSubscribeStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
-  const [openSection, setOpenSection] = useState<string | null>(null);
 
   const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
@@ -68,45 +66,41 @@ export default function Footer() {
     }
   };
 
-  const toggleSection = (section: string) => {
-    setOpenSection(openSection === section ? null : section);
-  };
-
   return (
     <footer className="bg-stb-dark text-white">
       {/* Newsletter */}
       <div className="border-b border-white/10">
         <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-3 px-4 py-5 md:flex-row md:items-center md:py-6">
           <div>
-            <h3 className="text-sm font-semibold text-white">Subscribe to Our Newsletter</h3>
-            <p className="mt-0.5 text-[11px] text-white/50">Get updates on new products and exclusive deals</p>
+            <h3 className="text-sm font-semibold text-white">Stay in the Loop</h3>
+            <p className="mt-0.5 text-[11px] text-white/50">New products, deals &amp; exclusive offers</p>
           </div>
           {subscribeStatus === "success" ? (
-            <div className="flex items-center gap-2 rounded-lg bg-stb-success/20 px-4 py-2 text-stb-success">
+            <div className="flex items-center gap-2 rounded-xl bg-stb-success/20 px-4 py-2.5 text-stb-success">
               <CheckCircle2 className="h-4 w-4" />
-              <span className="text-xs font-medium">Subscribed!</span>
+              <span className="text-xs font-medium">You&apos;re subscribed!</span>
             </div>
           ) : (
-            <form onSubmit={handleSubscribe} className="flex w-full max-w-sm flex-col gap-2 sm:flex-row">
+            <form onSubmit={handleSubscribe} className="flex w-full max-w-sm overflow-hidden rounded-xl border border-white/15 bg-white/8 md:rounded-xl">
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email"
                 required
-                className="h-9 min-w-0 flex-1 rounded border border-white/10 bg-white/5 px-3 text-xs text-white placeholder:text-white/40 focus:border-primary focus:outline-none"
+                className="h-11 min-w-0 flex-1 bg-transparent px-4 text-sm text-white placeholder:text-white/40 focus:outline-none"
               />
               <button
                 type="submit"
                 disabled={subscribeStatus === "loading"}
-                className="flex h-9 shrink-0 items-center justify-center gap-1.5 rounded bg-primary px-4 text-xs font-medium text-white transition-colors hover:bg-stb-red-dark disabled:opacity-70"
+                className="flex h-11 shrink-0 items-center justify-center gap-1.5 bg-primary px-4 text-xs font-semibold text-white transition-colors hover:bg-stb-red-dark disabled:opacity-70 press-active"
               >
                 {subscribeStatus === "loading" ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 ) : (
                   <>
-                    <Send className="h-3 w-3" />
-                    Subscribe
+                    <Send className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">Subscribe</span>
                   </>
                 )}
               </button>
@@ -115,56 +109,58 @@ export default function Footer() {
         </div>
       </div>
 
-      {/* Mobile Accordion Footer */}
+      {/* Mobile Footer — compact grid layout */}
       <div className="md:hidden">
-        {/* Brand */}
-        <div className="border-b border-white/10 px-4 py-4">
-          <div className="flex items-center">
-            <Image src="/logo.png" alt="Smart Tech Bazaar" width={110} height={36} className="h-9 w-auto object-contain brightness-0 invert" />
-          </div>
-          <div className="mt-3 space-y-1.5 text-[11px] text-white/60">
-            <div className="flex items-center gap-2">
-              <Phone className="h-3 w-3 shrink-0 text-primary" />
-              <a href="tel:+919353919299">+91 93539 19299</a>
-            </div>
-            <div className="flex items-center gap-2">
-              <Mail className="h-3 w-3 shrink-0 text-primary" />
-              <a href="mailto:sales@smarttechbazaar.com">sales@smarttechbazaar.com</a>
-            </div>
+        {/* Brand + contact */}
+        <div className="border-b border-white/10 px-4 py-5">
+          <Image src="/logo.png" alt="Smart Tech Bazaar" width={110} height={36} className="h-8 w-auto object-contain brightness-0 invert" />
+          <div className="mt-3 flex flex-col gap-2.5">
+            <a href="tel:+919353919299" className="flex items-center gap-2.5 text-xs text-white/70 press-active">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/10">
+                <Phone className="h-3.5 w-3.5 text-primary" />
+              </div>
+              +91 93539 19299
+            </a>
+            <a href="mailto:sales@smarttechbazaar.com" className="flex items-center gap-2.5 text-xs text-white/70 press-active">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/10">
+                <Mail className="h-3.5 w-3.5 text-primary" />
+              </div>
+              sales@smarttechbazaar.com
+            </a>
           </div>
         </div>
 
-        {/* Accordion sections */}
-        {[
-          { title: "Quick Links", links: infoLinks },
-          { title: "Categories", links: categoryLinks },
-        ].map((section) => (
-          <div key={section.title} className="border-b border-white/10">
-            <button
-              onClick={() => toggleSection(section.title)}
-              className="flex w-full items-center justify-between px-4 py-3 text-left"
-            >
-              <span className="text-xs font-medium text-white">{section.title}</span>
-              <ChevronDown
-                className={`h-4 w-4 text-white/50 transition-transform ${openSection === section.title ? "rotate-180" : ""}`}
-              />
-            </button>
-            {openSection === section.title && (
-              <div className="px-4 pb-3">
-                {section.links.map((link) => (
-                  <Link
-                    key={link.name}
-                    href={link.href}
-                    className="flex items-center gap-1 py-1.5 text-[11px] text-white/50 hover:text-primary"
-                  >
-                    <ChevronRight className="h-2.5 w-2.5" />
-                    {link.name}
-                  </Link>
-                ))}
-              </div>
-            )}
+        {/* Two-column link grid */}
+        <div className="grid grid-cols-2 gap-0 border-b border-white/10">
+          <div className="border-r border-white/10 px-4 py-4">
+            <p className="mb-3 text-[10px] font-semibold uppercase tracking-wider text-white/40">Quick Links</p>
+            <div className="flex flex-col gap-1">
+              {infoLinks.map((link) => (
+                <Link
+                  key={link.name}
+                  href={link.href}
+                  className="py-2 text-xs text-white/60 hover:text-primary press-active"
+                >
+                  {link.name}
+                </Link>
+              ))}
+            </div>
           </div>
-        ))}
+          <div className="px-4 py-4">
+            <p className="mb-3 text-[10px] font-semibold uppercase tracking-wider text-white/40">Categories</p>
+            <div className="flex flex-col gap-1">
+              {categoryLinks.map((link) => (
+                <Link
+                  key={link.name}
+                  href={link.href}
+                  className="py-2 text-xs text-white/60 hover:text-primary press-active"
+                >
+                  {link.name}
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Desktop Footer */}
