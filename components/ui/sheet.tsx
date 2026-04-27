@@ -31,8 +31,26 @@ function SheetTrigger({ asChild, children, ...props }: SheetTriggerProps) {
   );
 }
 
-function SheetClose({ ...props }: SheetPrimitive.Close.Props) {
-  return <SheetPrimitive.Close data-slot="sheet-close" {...props} />
+interface SheetCloseProps extends SheetPrimitive.Close.Props {
+  asChild?: boolean;
+  children?: React.ReactNode;
+}
+
+function SheetClose({ asChild, children, ...props }: SheetCloseProps) {
+  if (asChild && React.isValidElement(children)) {
+    return (
+      <SheetPrimitive.Close
+        data-slot="sheet-close"
+        render={children}
+        {...props}
+      />
+    );
+  }
+  return (
+    <SheetPrimitive.Close data-slot="sheet-close" {...props}>
+      {children}
+    </SheetPrimitive.Close>
+  );
 }
 
 function SheetPortal({ ...props }: SheetPrimitive.Portal.Props) {

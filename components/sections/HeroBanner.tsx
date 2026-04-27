@@ -16,11 +16,6 @@ import Autoplay from "embla-carousel-autoplay";
 // Real slider images — Desktop 1500×450 · Mobile 450×300
 const SLIDES = [
   {
-    desktop: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/meenu%20banner%20123-xG0okUsAilF6CnWuWWjlROmCj8hCgi.png",
-    alt: "Design in High Definition — Dell Laptops",
-    href: "/category/laptop",
-  },
-  {
     desktop: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Banner%201500x450%20-%201-qzGXrBQjpz7ZwVcspENU7uNYFMmLwZ.png",
     alt: "Premium Finishes — Canon Printers",
     href: "/category/printers",
@@ -112,9 +107,8 @@ export default function HeroBanner() {
               key={i}
               onClick={() => api?.scrollTo(i)}
               aria-label={`Go to slide ${i + 1}`}
-              className={`h-1.5 rounded-full transition-all duration-300 ${
-                i === current ? "w-5 bg-primary" : "w-1.5 bg-white/60 hover:bg-white"
-              }`}
+              className={`h-1.5 rounded-full transition-all duration-300 ${i === current ? "w-5 bg-primary" : "w-1.5 bg-white/60 hover:bg-white"
+                }`}
             />
           ))}
         </div>

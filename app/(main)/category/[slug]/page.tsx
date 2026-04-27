@@ -1,13 +1,16 @@
 import { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import CategoryPageClient from "@/components/products/CategoryPageClient";
+import Breadcrumbs from "@/components/seo/Breadcrumbs";
+import JsonLd from "@/components/seo/JsonLd";
 import dbConnect from "@/lib/mongodb";
 import Category from "@/models/Category";
 import Product from "@/models/Product";
-import { ChevronRight } from "lucide-react";
+import Brand from "@/models/Brand";
+import { siteConfig, getCanonicalUrl } from "@/lib/site-config";
+import { generateCollectionPageSchema, generateOrganizationSchema } from "@/lib/schema";
 
 interface CategoryPageProps {
   params: Promise<{ slug: string }>;
@@ -17,20 +20,97 @@ interface CategoryPageProps {
 async function getCategoryData(slug: string) {
   try {
     await dbConnect();
-    const category = await Category.findOne({ slug, isActive: true }).lean();
-    if (!category) return null;
-    const subcategories = await Category.find({ parent: (category as { _id: unknown })._id, isActive: true })
-      .sort({ sortOrder: 1 })
+    
+    // First check if the slug is for a subcategory
+    const categoryDoc = await Category.findOne({ slug, isActive: true }).lean();
+    if (!categoryDoc) return null;
+
+    const category = JSON.parse(JSON.stringify(categoryDoc));
+    const categoryId = category._id;
+    const isSubcategory = !!category.parent;
+    
+    let parentCategory = null;
+    let subcategories: typeof category[] = [];
+    let allCategoryIds: string[] = [categoryId];
+
+    if (isSubcategory) {
+      // This is a subcategory - get parent info for breadcrumb
+      const parentDoc = await Category.findById(category.parent).lean();
+      if (parentDoc) {
+        parentCategory = JSON.parse(JSON.stringify(parentDoc));
+      }
+      // Only get products from this subcategory
+      allCategoryIds = [categoryId];
+      subcategories = []; // No sub-subcategories
+    } else {
+      // This is a main category - get all subcategories
+      const subcategoryDocs = await Category.find({ 
+        parent: categoryId, 
+        isActive: true 
+      })
+        .sort({ sortOrder: 1 })
+        .lean();
+      
+      subcategories = JSON.parse(JSON.stringify(subcategoryDocs));
+      
+      // Include main category AND all subcategory IDs for product query
+      allCategoryIds = [categoryId, ...subcategories.map((s: { _id: string }) => s._id)];
+    }
+
+    // Get ALL products from this category and its subcategories
+    const productDocs = await Product.find({ 
+      category: { $in: allCategoryIds }, 
+      isActive: true 
+    })
+      .populate("category", "name slug")
+      .sort({ isFeatured: -1, createdAt: -1 })
       .lean();
-    const products = await Product.find({ category: (category as { _id: unknown })._id, isActive: true })
-      .sort({ createdAt: -1 })
-      .lean();
+
+    const products = JSON.parse(JSON.stringify(productDocs));
+
+    // Calculate product count per subcategory
+    const subcategoriesWithCounts = subcategories.map((sub: { _id: string; name: string; slug: string }) => ({
+      ...sub,
+      productCount: products.filter((p: { category?: { _id: string } }) => 
+        p.category?._id === sub._id
+      ).length,
+    }));
+
+    // Get unique brand names from products
+    const brandNames = [...new Set(products.map((p: { brand?: string }) => p.brand).filter(Boolean))] as string[];
+    
+    // Get brand details for the brands used in this category
+    const brandDocs = await Brand.find({ 
+      name: { $in: brandNames }, 
+      isActive: true 
+    }).lean();
+
+    // Count products per brand
+    const brandWithCounts = JSON.parse(JSON.stringify(brandDocs)).map((brand: { name: string }) => ({
+      ...brand,
+      productCount: products.filter((p: { brand?: string }) => p.brand === brand.name).length,
+    }));
+
+    // Get unique tags from products
+    const allTags = products.flatMap((p: { tags?: string[] }) => p.tags || []);
+    const uniqueTags = [...new Set(allTags)] as string[];
+
+    // Calculate max price
+    const prices = products.map((p: { priceB2C: number }) => p.priceB2C);
+    const maxPrice = prices.length > 0 ? Math.max(...prices) : 100000;
+
     return {
-      category: JSON.parse(JSON.stringify(category)),
-      subcategories: JSON.parse(JSON.stringify(subcategories)),
-      products: JSON.parse(JSON.stringify(products)),
+      category,
+      parentCategory,
+      subcategories: subcategoriesWithCounts,
+      products,
+      brands: brandWithCounts,
+      tags: uniqueTags,
+      maxPrice: Math.ceil(maxPrice / 1000) * 1000,
+      isSubcategory,
     };
-  } catch {
+  } catch (error) {
+    console.error("Error fetching category data:", error);
     return null;
   }
 }
@@ -38,64 +118,108 @@ async function getCategoryData(slug: string) {
 export async function generateMetadata({ params }: CategoryPageProps): Promise<Metadata> {
   const { slug } = await params;
   const data = await getCategoryData(slug);
-  if (!data) return { title: "Category Not Found" };
+  
+  if (!data) {
+    return { title: "Category Not Found" };
+  }
+  
+  const title = data.category.name;
+  const description = data.category.description || `Browse ${data.category.name} products at ${siteConfig.name}. Find the best deals on quality ${data.category.name.toLowerCase()} items.`;
+  
   return {
-    title: data.category.name,
-    description: data.category.description || `Browse ${data.category.name} products at Sabka Tech Bazar`,
+    title,
+    description,
+    alternates: {
+      canonical: getCanonicalUrl(`/category/${slug}`),
+    },
+    openGraph: {
+      title: `${title} | ${siteConfig.name}`,
+      description,
+      url: getCanonicalUrl(`/category/${slug}`),
+      images: data.category.image ? [data.category.image] : undefined,
+    },
   };
 }
-
-// Sample fallback products
-const sampleProducts = [
-  { _id: "s1", name: "TP-Link AC1200 Gigabit Router", slug: "tp-link-ac1200", priceB2C: 2499, priceB2B: 2199, mrp: 2999, stock: 15, images: ["https://images.unsplash.com/photo-1544985562-128e7b377a21?w=300&h=300&fit=crop"], brand: "TP-Link", isFeatured: true, isNewArrival: false },
-  { _id: "s2", name: "D-Link 8-Port Gigabit Switch", slug: "d-link-8port", priceB2C: 1899, priceB2B: 1699, mrp: 2199, stock: 25, images: ["https://images.unsplash.com/photo-1544985562-128e7b377a21?w=300&h=300&fit=crop"], brand: "D-Link", isFeatured: false, isNewArrival: true },
-  { _id: "s3", name: "Netgear Orbi Mesh WiFi System", slug: "netgear-orbi", priceB2C: 8999, priceB2B: 8499, mrp: 10999, stock: 8, images: ["https://images.unsplash.com/photo-1544985562-128e7b377a21?w=300&h=300&fit=crop"], brand: "Netgear", isFeatured: true, isNewArrival: false },
-  { _id: "s4", name: "Cisco WAP150 Access Point", slug: "cisco-wap150", priceB2C: 12499, priceB2B: 11999, mrp: 14999, stock: 0, images: ["https://images.unsplash.com/photo-1544985562-128e7b377a21?w=300&h=300&fit=crop"], brand: "Cisco", isFeatured: false, isNewArrival: false },
-  { _id: "s5", name: "Ubiquiti UniFi AP AC Pro", slug: "ubiquiti-unifi", priceB2C: 9999, priceB2B: 9499, mrp: 11999, stock: 12, images: ["https://images.unsplash.com/photo-1544985562-128e7b377a21?w=300&h=300&fit=crop"], brand: "Ubiquiti", isFeatured: true, isNewArrival: true },
-  { _id: "s6", name: "MikroTik RouterBoard hEX S", slug: "mikrotik-hex", priceB2C: 4599, priceB2B: 4199, mrp: 5299, stock: 20, images: ["https://images.unsplash.com/photo-1544985562-128e7b377a21?w=300&h=300&fit=crop"], brand: "MikroTik", isFeatured: false, isNewArrival: false },
-  { _id: "s7", name: "TP-Link EAP225 Access Point", slug: "tp-link-eap225", priceB2C: 3499, priceB2B: 3199, mrp: 3999, stock: 18, images: ["https://images.unsplash.com/photo-1544985562-128e7b377a21?w=300&h=300&fit=crop"], brand: "TP-Link", isFeatured: false, isNewArrival: true },
-  { _id: "s8", name: "Linksys EA7500 Dual-Band Router", slug: "linksys-ea7500", priceB2C: 5999, priceB2B: 5499, mrp: 6999, stock: 5, images: ["https://images.unsplash.com/photo-1544985562-128e7b377a21?w=300&h=300&fit=crop"], brand: "Linksys", isFeatured: false, isNewArrival: false },
-];
 
 export default async function CategoryPage({ params }: CategoryPageProps) {
   const { slug } = await params;
   const data = await getCategoryData(slug);
 
-  const displayProducts = data?.products?.length ? data.products : sampleProducts;
-  const categoryName = data?.category?.name || (slug.charAt(0).toUpperCase() + slug.slice(1));
-  const categoryDescription = data?.category?.description || `Explore our range of ${categoryName} products`;
-  const subcategories = data?.subcategories || [];
-  const brands = [...new Set(displayProducts.map((p: { brand?: string }) => p.brand).filter(Boolean))] as string[];
+  if (!data) {
+    notFound();
+  }
+
+  const { category, parentCategory, subcategories, products, brands, tags, maxPrice, isSubcategory } = data;
+
+  // Build breadcrumb items
+  const breadcrumbItems = [];
+  if (isSubcategory && parentCategory) {
+    breadcrumbItems.push({
+      label: parentCategory.name,
+      href: `/category/${parentCategory.slug}`,
+    });
+  }
+  breadcrumbItems.push({ label: category.name });
+
+  // Schema markup
+  const schemas = [
+    generateOrganizationSchema(),
+    generateCollectionPageSchema(
+      {
+        name: category.name,
+        slug: slug,
+        description: category.description || `Browse ${category.name} products`,
+        image: category.image,
+        productCount: products.length,
+      },
+      "category",
+      products.slice(0, 10)
+    ),
+  ];
 
   return (
     <div className="flex min-h-screen flex-col bg-[#F7F8FA]">
       <Header />
       <main className="flex-1">
-        {/* ── Breadcrumb ──────────────────────────────────────────────── */}
-        <div className="border-b border-border bg-white">
-          <div className="mx-auto flex max-w-7xl items-center gap-1.5 px-3 py-2.5 md:px-4">
-            <Link href="/" className="text-[11px] text-muted-foreground hover:text-primary">Home</Link>
-            <ChevronRight className="h-3 w-3 text-muted-foreground" />
-            <span className="text-[11px] font-medium text-foreground">{categoryName}</span>
-          </div>
-        </div>
+        {/* Schema */}
+        <JsonLd data={schemas} />
 
-        {/* ── Category header ─────────────────────────────────────────── */}
+        {/* Breadcrumb */}
+        <Breadcrumbs items={breadcrumbItems} />
+
+        {/* Category header */}
         <div className="border-b border-border bg-white px-3 py-4 md:px-4 md:py-6">
           <div className="mx-auto max-w-7xl">
-            <h1 className="text-lg font-extrabold text-foreground md:text-2xl">{categoryName}</h1>
-            <p className="mt-1 text-xs text-muted-foreground md:text-sm">{categoryDescription}</p>
+            {/* Show parent category if subcategory */}
+            {isSubcategory && parentCategory && (
+              <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-primary md:text-xs">
+                {parentCategory.name}
+              </p>
+            )}
+            <h1 className="text-lg font-extrabold text-foreground md:text-2xl">
+              {category.name}
+            </h1>
+            {category.description && (
+              <p className="mt-1 text-xs text-muted-foreground md:text-sm">
+                {category.description}
+              </p>
+            )}
             <p className="mt-1.5 text-[10px] font-medium text-muted-foreground md:text-xs">
-              {displayProducts.length} products found
+              {products.length} {products.length === 1 ? "product" : "products"} found
             </p>
           </div>
         </div>
 
-        {/* ── Client interactive section ──────────────────────────────── */}
+        {/* Client interactive section */}
         <CategoryPageClient
-          products={displayProducts}
+          products={products}
           subcategories={subcategories}
           brands={brands}
+          availableTags={tags}
+          maxPrice={maxPrice}
+          categorySlug={slug}
+          categoryName={category.name}
+          isSubcategory={isSubcategory}
         />
       </main>
       <Footer />
