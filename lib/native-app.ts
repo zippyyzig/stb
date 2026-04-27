@@ -328,18 +328,25 @@ export interface SocialLoginError {
   message?: string;
 }
 
+// Web Client ID for Google Sign-In (Android & Web OAuth)
+// Must match the Web OAuth 2.0 Client ID in Google Cloud Console for the Firebase project
+const GOOGLE_WEB_CLIENT_ID =
+  (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_GOOGLE_WEB_CLIENT_ID) ||
+  "393630939714-ccgciu2tmtf7me0souh2vt7a1ctqe1bf.apps.googleusercontent.com";
+
 /**
- * Native Google Sign-In using Median.co's Social Login plugin
- * This method uses the native Google SDK which properly handles OAuth
- * without leaving the app (no external browser redirect issues)
- * 
+ * Native Google Sign-In using Median.co's Social Login plugin.
+ * Uses the native Google SDK — no external browser, no redirect issues.
+ * On Android, Median requires the Web Client ID to be passed so it can
+ * exchange the auth code for an ID token server-side.
+ *
  * @param callbackUrl - Optional server-side redirect URL for token exchange
  * @returns Promise with user data or null if not in native app
  */
 export function nativeGoogleSignIn(callbackUrl?: string): Promise<GoogleLoginResult | null> {
   return new Promise((resolve, reject) => {
     if (!isMedianApp()) {
-      // Not in native app, return null so caller can fallback to web OAuth
+      // Not in native app — caller should fall back to Firebase web popup
       resolve(null);
       return;
     }
@@ -354,29 +361,30 @@ export function nativeGoogleSignIn(callbackUrl?: string): Promise<GoogleLoginRes
         return;
       }
 
-      // Set up the callback function that Median will call with the result
+      // Set up the callback that Median will invoke with the sign-in result
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (window as any).googleLoginCallback = (result: GoogleLoginResult | SocialLoginError) => {
-        if ('error' in result) {
+        if ("error" in result) {
           reject(new Error(result.message || result.error));
         } else {
           resolve(result);
         }
-        // Clean up the callback
+        // Clean up the global callback
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         delete (window as any).googleLoginCallback;
       };
 
-      // Call the native Google Sign-In
       if (callbackUrl) {
-        // Server-side redirect mode
+        // Server-side redirect mode — Median posts token to your server
         median.socialLogin.google.login({
+          clientId: GOOGLE_WEB_CLIENT_ID,
           redirectUri: callbackUrl,
         });
       } else {
-        // JavaScript callback mode
+        // JavaScript callback mode — result returned directly to the page
         median.socialLogin.google.login({
-          callback: 'googleLoginCallback',
+          clientId: GOOGLE_WEB_CLIENT_ID,
+          callback: "googleLoginCallback",
         });
       }
     } catch (error) {
