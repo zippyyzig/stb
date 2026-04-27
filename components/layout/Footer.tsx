@@ -17,6 +17,7 @@ import {
 const infoLinks = [
   { name: "About Us", href: "/about" },
   { name: "Shipping Info", href: "/shipping" },
+  { name: "Refund Policy", href: "/refund-policy" },
   { name: "Privacy Policy", href: "/privacy" },
   { name: "Terms & Conditions", href: "/terms" },
   { name: "Dealer Registration", href: "/auth/register?type=dealer" },

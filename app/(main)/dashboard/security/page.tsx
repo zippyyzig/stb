@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Eye, EyeOff, Loader2, ShieldCheck, Check, Lock } from "lucide-react";
+import Link from "next/link";
+import { Eye, EyeOff, Loader2, ShieldCheck, Check, Lock, Trash2, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -198,6 +199,28 @@ export default function SecurityPage() {
           Update Password
         </Button>
       </form>
+
+      {/* Delete Account Section */}
+      <div className="bg-card rounded-2xl border border-red-200 p-5">
+        <div className="flex items-start gap-3">
+          <div className="h-10 w-10 rounded-xl bg-red-50 flex items-center justify-center shrink-0">
+            <Trash2 className="h-5 w-5 text-red-500" />
+          </div>
+          <div className="flex-1">
+            <h3 className="font-heading font-semibold text-foreground">Delete Account</h3>
+            <p className="text-xs text-muted-foreground mt-1">
+              Permanently delete your account and all associated data. This action cannot be undone.
+            </p>
+            <Link
+              href="/dashboard/delete-account"
+              className="inline-flex items-center gap-1.5 mt-3 text-sm font-medium text-red-600 hover:text-red-700 hover:underline"
+            >
+              Delete my account
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
