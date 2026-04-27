@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Eye, EyeOff, Loader2, ShieldCheck, Check, Lock, Trash2, ChevronRight } from "lucide-react";
+import { Eye, EyeOff, Loader2, ShieldCheck, Check, Lock, Trash2, ChevronRight, Download } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,8 +17,29 @@ export default function SecurityPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   const isGoogleUser = session?.user && !session?.user?.email?.includes("google") && typeof session?.user === "object";
+
+  const handleExportData = async () => {
+    setExporting(true);
+    try {
+      const res = await fetch("/api/user/export-data");
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `smarttechbazaar-data-export-${new Date().toISOString().split("T")[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+      }
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -199,6 +220,37 @@ export default function SecurityPage() {
           Update Password
         </Button>
       </form>
+
+      {/* Export Data */}
+      <div className="bg-card rounded-2xl border border-border p-5">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <div className="h-10 w-10 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
+              <Download className="h-5 w-5 text-blue-600" />
+            </div>
+            <div>
+              <h3 className="font-heading font-semibold text-foreground">Export Your Data</h3>
+              <p className="text-xs text-muted-foreground mt-1">
+                Download a copy of all your personal data including orders, reviews, and account information.
+              </p>
+            </div>
+          </div>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleExportData}
+            disabled={exporting}
+            className="shrink-0 gap-1"
+          >
+            {exporting ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Download className="h-3.5 w-3.5" />
+            )}
+            {exporting ? "Exporting..." : "Export"}
+          </Button>
+        </div>
+      </div>
 
       {/* Delete Account */}
       <div className="bg-card rounded-2xl border border-destructive/30 p-5">
