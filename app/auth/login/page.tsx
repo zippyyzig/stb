@@ -1,12 +1,13 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { signInWithPopup } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
+import { isMedianApp, nativeGoogleSignIn } from "@/lib/native-app";
 import { Input } from "@/components/ui/input";
 import {
   Mail,
@@ -40,6 +41,12 @@ function LoginForm() {
   const [isLoading,    setIsLoading]    = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState(error || "");
+  const [isNativeApp, setIsNativeApp] = useState(false);
+
+  // Detect if running inside Median.co native app
+  useEffect(() => {
+    setIsNativeApp(isMedianApp());
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,10 +71,39 @@ function LoginForm() {
     setIsGoogleLoading(true);
     setErrorMessage("");
     try {
-      const result      = await signInWithPopup(auth, googleProvider);
-      const user        = result.user;
+      // Check if we're in a Median.co native app - use native SDK
+      if (isNativeApp) {
+        const nativeResult = await nativeGoogleSignIn();
+        if (nativeResult) {
+          // Use the native result to sign in with NextAuth
+          const signInResult = await signIn("google-firebase", {
+            email: nativeResult.email,
+            name: nativeResult.name,
+            googleId: nativeResult.userId,
+            avatar: nativeResult.picture || null,
+            redirect: false,
+          });
+          if (signInResult?.error) {
+            setErrorMessage(signInResult.error);
+          } else {
+            router.push(callbackUrl);
+            router.refresh();
+          }
+          return;
+        }
+        // If native login returns null but we're in native app, 
+        // the plugin might not be configured - fall through to web method
+      }
+      
+      // Web browser fallback - use Firebase popup
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
       const signInResult = await signIn("google-firebase", {
-        email: user.email, name: user.displayName, googleId: user.uid, avatar: user.photoURL, redirect: false,
+        email: user.email,
+        name: user.displayName,
+        googleId: user.uid,
+        avatar: user.photoURL,
+        redirect: false,
       });
       if (signInResult?.error) {
         setErrorMessage(signInResult.error);
@@ -77,7 +113,7 @@ function LoginForm() {
       }
     } catch (err) {
       console.error("Google sign-in error:", err);
-      setErrorMessage("Failed to sign in with Google");
+      setErrorMessage("Failed to sign in with Google. Please try again.");
     } finally {
       setIsGoogleLoading(false);
     }

@@ -347,6 +347,66 @@ document.body.classList.add('native-app');
 ### 6i. iOS-Specific Configuration
 
 - **Bundle identifier:** `com.smarttechbazaar.app` (must match `apple-app-site-association`)
+
+### 6j. Social Login (Google Sign-In) — CRITICAL
+
+**This step is required to fix the "stuck on firebaseapp.com" issue during Google Sign-In.**
+
+The app uses Median.co's native Social Login plugin instead of Firebase's web-based OAuth
+popup. This ensures Google Sign-In works correctly inside the native app without opening
+an external browser that can't redirect back to the app.
+
+#### Known Credentials (already wired into code)
+
+| Credential | Value | Status |
+|---|---|---|
+| Web Client ID | `393630939714-ccgciu2tmtf7me0souh2vt7a1ctqe1bf.apps.googleusercontent.com` | DONE — in code |
+| SHA-1 Fingerprint | `D7:A4:FE:2F:A0:D0:08:15:D5:B2:9A:5A:B7:02:3D:78:3C:43:23:D0` | Use in Google Cloud Console |
+| iOS Client ID | (not yet provided) | TODO |
+| iOS URL Scheme | (not yet provided) | TODO |
+
+#### Android Setup (use your SHA-1 above)
+
+1. In the Median.co dashboard, go to **Native Plugins > Social Login**.
+2. Enable **Google Sign-In** and paste the Web Client ID above.
+3. In Google Cloud Console, go to **APIs & Services > Credentials**.
+4. Create an **OAuth 2.0 Client ID** of type **Android**.
+5. Enter package name: `com.smarttechbazaar.app`
+6. Enter the SHA-1 fingerprint shown above: `D7:A4:FE:2F:A0:D0:08:15:D5:B2:9A:5A:B7:02:3D:78:3C:43:23:D0`
+7. Save — Google will generate an Android Client ID. Paste it into Median.co if it asks.
+
+> IMPORTANT — `assetlinks.json` needs a **SHA-256**, not SHA-1.
+> Get the SHA-256 from: Play Console > Release > Setup > App Integrity > App signing key certificate.
+> Then update `/public/.well-known/assetlinks.json` with that value.
+
+#### iOS Setup (TODO — need iOS Client ID)
+
+1. In Google Cloud Console, create an **OAuth 2.0 Client ID** of type **iOS**.
+2. Enter Bundle ID: `com.smarttechbazaar.app`
+3. Copy the generated **iOS Client ID** and paste it in Median.co Social Login > iOS Client ID.
+4. Copy the **iOS URL Scheme** (reversed client ID, format: `com.googleusercontent.apps.XXXXX`).
+5. In Median.co under **URL Schemes**, add the reversed client ID.
+6. Update this document with the iOS Client ID and URL Scheme once obtained.
+
+#### Sign in with Apple (iOS only — required by App Store guidelines)
+
+Apple requires apps with third-party social login to also offer "Sign in with Apple".
+
+1. In Median.co, enable **Sign in with Apple** under Social Login.
+2. In your Apple Developer account, enable "Sign in with Apple" for your App ID.
+3. The app code already supports native Apple Sign-In when the plugin is enabled.
+
+#### How the Code Works
+
+The login and register pages automatically detect if they are inside a Median.co native app:
+
+- **Native app:** Uses `median.socialLogin.google.login({ clientId: WEB_CLIENT_ID })` which
+  triggers the native Google SDK. No browser is opened. The result is returned directly to JS.
+
+- **Web browser:** Falls back to Firebase `signInWithPopup()` which works correctly in browsers.
+
+The Web Client ID is embedded in both `lib/firebase.ts` and `lib/native-app.ts`. No further
+code changes are needed once the Median.co Social Login plugin is configured in their dashboard.
 - **Minimum iOS version:** 16.0 or higher
 - Enable **Push Notifications** capability in the iOS configuration.
 - Enable **Associated Domains** capability and add `applinks:YOUR-DOMAIN.com`.

@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { signInWithPopup } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
+import { isMedianApp, nativeGoogleSignIn } from "@/lib/native-app";
 import { signIn } from "next-auth/react";
 import { Input } from "@/components/ui/input";
 import {
@@ -40,6 +41,12 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading]           = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [errorMessage, setErrorMessage]     = useState("");
+  const [isNativeApp, setIsNativeApp]       = useState(false);
+
+  // Detect if running inside Median.co native app
+  useEffect(() => {
+    setIsNativeApp(isMedianApp());
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -88,16 +95,48 @@ export default function RegisterPage() {
     setIsGoogleLoading(true);
     setErrorMessage("");
     try {
-      const result       = await signInWithPopup(auth, googleProvider);
-      const user         = result.user;
+      // Check if we're in a Median.co native app - use native SDK
+      if (isNativeApp) {
+        const nativeResult = await nativeGoogleSignIn();
+        if (nativeResult) {
+          // Use the native result to sign in with NextAuth
+          const signInResult = await signIn("google-firebase", {
+            email: nativeResult.email,
+            name: nativeResult.name,
+            googleId: nativeResult.userId,
+            avatar: nativeResult.picture || null,
+            redirect: false,
+          });
+          if (signInResult?.error) {
+            setErrorMessage(signInResult.error);
+          } else {
+            router.push("/auth/onboarding");
+            router.refresh();
+          }
+          return;
+        }
+        // If native login returns null, fall through to web method
+      }
+      
+      // Web browser fallback - use Firebase popup
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
       const signInResult = await signIn("google-firebase", {
-        email: user.email, name: user.displayName, googleId: user.uid, avatar: user.photoURL, redirect: false,
+        email: user.email,
+        name: user.displayName,
+        googleId: user.uid,
+        avatar: user.photoURL,
+        redirect: false,
       });
-      if (signInResult?.error) { setErrorMessage(signInResult.error); }
-      else { router.push("/auth/onboarding"); router.refresh(); }
+      if (signInResult?.error) {
+        setErrorMessage(signInResult.error);
+      } else {
+        router.push("/auth/onboarding");
+        router.refresh();
+      }
     } catch (error) {
       console.error("Google sign-in error:", error);
-      setErrorMessage("Failed to sign in with Google");
+      setErrorMessage("Failed to sign in with Google. Please try again.");
     } finally {
       setIsGoogleLoading(false);
     }

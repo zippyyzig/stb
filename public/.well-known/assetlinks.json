@@ -5,7 +5,7 @@
       "namespace": "android_app",
       "package_name": "com.smarttechbazaar.app",
       "sha256_cert_fingerprints": [
-        "REPLACE_WITH_YOUR_SHA256_FINGERPRINT"
+        "REPLACE_WITH_SHA256_FROM_PLAY_CONSOLE_APP_INTEGRITY_PAGE"
       ]
     }
   }
