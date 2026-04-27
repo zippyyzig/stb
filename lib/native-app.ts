@@ -296,3 +296,179 @@ export async function secureRetrieve(key: string): Promise<string | null> {
   }
   return null;
 }
+
+// ============================================================================
+// SOCIAL LOGIN - Native OAuth for Median.co apps
+// ============================================================================
+
+export interface GoogleLoginResult {
+  idToken: string;
+  accessToken: string;
+  email: string;
+  name: string;
+  givenName?: string;
+  familyName?: string;
+  picture?: string;
+  userId: string;
+}
+
+export interface AppleLoginResult {
+  identityToken: string;
+  authorizationCode: string;
+  user?: string;
+  email?: string;
+  fullName?: {
+    givenName?: string;
+    familyName?: string;
+  };
+}
+
+export interface SocialLoginError {
+  error: string;
+  message?: string;
+}
+
+/**
+ * Native Google Sign-In using Median.co's Social Login plugin
+ * This method uses the native Google SDK which properly handles OAuth
+ * without leaving the app (no external browser redirect issues)
+ * 
+ * @param callbackUrl - Optional server-side redirect URL for token exchange
+ * @returns Promise with user data or null if not in native app
+ */
+export function nativeGoogleSignIn(callbackUrl?: string): Promise<GoogleLoginResult | null> {
+  return new Promise((resolve, reject) => {
+    if (!isMedianApp()) {
+      // Not in native app, return null so caller can fallback to web OAuth
+      resolve(null);
+      return;
+    }
+
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const median = (window as any).median;
+      
+      if (!median?.socialLogin?.google?.login) {
+        console.warn("Median Social Login plugin not available");
+        resolve(null);
+        return;
+      }
+
+      // Set up the callback function that Median will call with the result
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (window as any).googleLoginCallback = (result: GoogleLoginResult | SocialLoginError) => {
+        if ('error' in result) {
+          reject(new Error(result.message || result.error));
+        } else {
+          resolve(result);
+        }
+        // Clean up the callback
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        delete (window as any).googleLoginCallback;
+      };
+
+      // Call the native Google Sign-In
+      if (callbackUrl) {
+        // Server-side redirect mode
+        median.socialLogin.google.login({
+          redirectUri: callbackUrl,
+        });
+      } else {
+        // JavaScript callback mode
+        median.socialLogin.google.login({
+          callback: 'googleLoginCallback',
+        });
+      }
+    } catch (error) {
+      console.error("Native Google Sign-In failed:", error);
+      reject(error);
+    }
+  });
+}
+
+/**
+ * Native Sign In with Apple using Median.co's Social Login plugin
+ * 
+ * @param callbackUrl - Optional server-side redirect URL for token exchange
+ * @returns Promise with user data or null if not in native app
+ */
+export function nativeAppleSignIn(callbackUrl?: string): Promise<AppleLoginResult | null> {
+  return new Promise((resolve, reject) => {
+    if (!isMedianApp()) {
+      resolve(null);
+      return;
+    }
+
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const median = (window as any).median;
+      
+      if (!median?.socialLogin?.apple?.login) {
+        console.warn("Median Apple Sign In plugin not available");
+        resolve(null);
+        return;
+      }
+
+      // Set up the callback function
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (window as any).appleLoginCallback = (result: AppleLoginResult | SocialLoginError) => {
+        if ('error' in result) {
+          reject(new Error(result.message || result.error));
+        } else {
+          resolve(result);
+        }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        delete (window as any).appleLoginCallback;
+      };
+
+      if (callbackUrl) {
+        median.socialLogin.apple.login({
+          redirectUri: callbackUrl,
+        });
+      } else {
+        median.socialLogin.apple.login({
+          callback: 'appleLoginCallback',
+        });
+      }
+    } catch (error) {
+      console.error("Native Apple Sign-In failed:", error);
+      reject(error);
+    }
+  });
+}
+
+/**
+ * Check if native social login is available
+ */
+export function isNativeSocialLoginAvailable(): boolean {
+  if (!isMedianApp()) return false;
+  
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const median = (window as any).median;
+    return !!(median?.socialLogin?.google?.login || median?.socialLogin?.apple?.login);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Logout from native social login
+ */
+export function nativeSocialLogout(): void {
+  if (!isMedianApp()) return;
+  
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const median = (window as any).median;
+    
+    // Logout from Google if available
+    if (median?.socialLogin?.google?.logout) {
+      median.socialLogin.google.logout();
+    }
+    
+    // Note: Apple Sign In doesn't have a logout method
+  } catch (error) {
+    console.error("Native social logout failed:", error);
+  }
+}
