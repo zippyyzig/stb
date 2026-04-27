@@ -2,9 +2,10 @@
 
 import { useState, useMemo, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import ProductCard from "@/components/products/ProductCard";
 import ProductFilterSidebar, { FilterState } from "@/components/products/ProductFilterSidebar";
-import { SlidersHorizontal, Grid3X3, LayoutList, X } from "lucide-react";
+import { SlidersHorizontal, Grid3X3, LayoutList, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -24,6 +25,11 @@ interface Product {
   mrp: number;
   stock: number;
   brand?: string;
+  category?: {
+    _id: string;
+    name: string;
+    slug: string;
+  };
   isFeatured?: boolean;
   isNewArrival?: boolean;
   isBestSeller?: boolean;
@@ -51,6 +57,8 @@ interface CategoryPageClientProps {
   availableTags?: string[];
   maxPrice?: number;
   categorySlug?: string;
+  categoryName?: string;
+  isSubcategory?: boolean;
 }
 
 const SORT_OPTIONS = [
@@ -70,11 +78,18 @@ function CategoryPageContent({
   availableTags = [],
   maxPrice = 100000,
   categorySlug,
+  categoryName,
+  isSubcategory = false,
 }: CategoryPageClientProps) {
   const searchParams = useSearchParams();
   const [filterOpen, setFilterOpen] = useState(false);
   const [gridCols, setGridCols] = useState<2 | 3>(2);
   const [sortBy, setSortBy] = useState(searchParams.get("sortBy") || "relevance");
+  
+  // Track selected subcategory for "view all" vs specific subcategory
+  const [activeSubcategory, setActiveSubcategory] = useState<string | null>(
+    searchParams.get("subcategory") || null
+  );
 
   // Initialize filters from URL
   const [filters, setFilters] = useState<FilterState>(() => ({
@@ -96,12 +111,28 @@ function CategoryPageContent({
   const handleFilterChange = useCallback((newFilters: FilterState) => {
     setFilters(newFilters);
     setSortBy(newFilters.sortBy);
+    // If subcategory filter is applied, update activeSubcategory
+    if (newFilters.subcategories.length === 1) {
+      setActiveSubcategory(newFilters.subcategories[0]);
+    } else if (newFilters.subcategories.length === 0) {
+      setActiveSubcategory(null);
+    }
   }, []);
 
   // Handle sort change from dropdown
   const handleSortChange = useCallback((value: string) => {
     setSortBy(value);
     setFilters((prev) => ({ ...prev, sortBy: value }));
+  }, []);
+
+  // Handle subcategory tab click
+  const handleSubcategoryClick = useCallback((subcategoryId: string | null) => {
+    setActiveSubcategory(subcategoryId);
+    if (subcategoryId) {
+      setFilters((prev) => ({ ...prev, subcategories: [subcategoryId] }));
+    } else {
+      setFilters((prev) => ({ ...prev, subcategories: [] }));
+    }
   }, []);
 
   // Filter and sort products
@@ -122,6 +153,13 @@ function CategoryPageContent({
     // Brand filter
     if (filters.brands.length > 0) {
       result = result.filter((p) => p.brand && filters.brands.includes(p.brand));
+    }
+
+    // Subcategory filter - filter by category._id
+    if (filters.subcategories.length > 0) {
+      result = result.filter((p) => 
+        p.category && filters.subcategories.includes(p.category._id)
+      );
     }
 
     // Price filter
@@ -194,7 +232,6 @@ function CategoryPageContent({
   // Count active filters
   const activeFiltersCount =
     filters.brands.length +
-    filters.subcategories.length +
     filters.tags.length +
     (filters.inStock ? 1 : 0) +
     (filters.onSale ? 1 : 0) +
@@ -206,6 +243,75 @@ function CategoryPageContent({
 
   return (
     <div className="mx-auto max-w-7xl px-3 py-3 md:px-4 md:py-5">
+      {/* Subcategory tabs - only show for main categories with subcategories */}
+      {!isSubcategory && subcategories.length > 0 && (
+        <div className="mb-4 overflow-x-auto">
+          <div className="flex gap-2 pb-2">
+            {/* All products tab */}
+            <button
+              onClick={() => handleSubcategoryClick(null)}
+              className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${
+                activeSubcategory === null
+                  ? "border-primary bg-primary text-white"
+                  : "border-border bg-white text-foreground hover:border-primary hover:text-primary"
+              }`}
+            >
+              All {categoryName}
+              <span className="rounded-full bg-white/20 px-1.5 py-0.5 text-[10px]">
+                {products.length}
+              </span>
+            </button>
+            
+            {/* Individual subcategory tabs */}
+            {subcategories.map((sub) => (
+              <button
+                key={sub._id}
+                onClick={() => handleSubcategoryClick(sub._id)}
+                className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${
+                  activeSubcategory === sub._id
+                    ? "border-primary bg-primary text-white"
+                    : "border-border bg-white text-foreground hover:border-primary hover:text-primary"
+                }`}
+              >
+                {sub.name}
+                {sub.productCount !== undefined && sub.productCount > 0 && (
+                  <span className={`rounded-full px-1.5 py-0.5 text-[10px] ${
+                    activeSubcategory === sub._id ? "bg-white/20" : "bg-muted"
+                  }`}>
+                    {sub.productCount}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Subcategory quick links grid - only show when viewing "All" */}
+      {!isSubcategory && subcategories.length > 0 && activeSubcategory === null && (
+        <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+          {subcategories.map((sub) => (
+            <Link
+              key={sub._id}
+              href={`/category/${sub.slug}`}
+              className="group flex items-center justify-between rounded-lg border border-border bg-white p-3 transition-all hover:border-primary hover:shadow-sm"
+            >
+              <div>
+                <p className="text-xs font-semibold text-foreground group-hover:text-primary">
+                  {sub.name}
+                </p>
+                {sub.productCount !== undefined && (
+                  <p className="text-[10px] text-muted-foreground">
+                    {sub.productCount} products
+                  </p>
+                )}
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary" />
+            </Link>
+          ))}
+        </div>
+      )}
+
       {/* Sticky sort/filter bar */}
       <div className="sticky top-0 z-30 mb-3 flex items-center justify-between gap-2 overflow-hidden rounded-xl border border-border bg-white px-3 py-2 shadow-sm md:mb-4 md:rounded-lg">
         {/* Mobile: Filter trigger */}
@@ -291,8 +397,18 @@ function CategoryPageContent({
               <div className="mb-3 text-4xl">📦</div>
               <h3 className="text-sm font-bold text-foreground">No products found</h3>
               <p className="mt-1 text-xs text-muted-foreground">
-                Try adjusting your filters or check back later
+                {products.length === 0 
+                  ? "No products have been added to this category yet."
+                  : "Try adjusting your filters or check back later"}
               </p>
+              {activeSubcategory && (
+                <button
+                  onClick={() => handleSubcategoryClick(null)}
+                  className="mt-3 text-xs font-semibold text-primary hover:underline"
+                >
+                  View all products
+                </button>
+              )}
             </div>
           ) : (
             <div

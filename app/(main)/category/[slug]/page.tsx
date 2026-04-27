@@ -21,24 +21,60 @@ async function getCategoryData(slug: string) {
   try {
     await dbConnect();
     
-    // Get category
-    const category = await Category.findOne({ slug, isActive: true }).lean();
-    if (!category) return null;
+    // First check if the slug is for a subcategory
+    const categoryDoc = await Category.findOne({ slug, isActive: true }).lean();
+    if (!categoryDoc) return null;
 
-    const categoryId = (category as { _id: unknown })._id;
+    const category = JSON.parse(JSON.stringify(categoryDoc));
+    const categoryId = category._id;
+    const isSubcategory = !!category.parent;
     
-    // Get subcategories
-    const subcategories = await Category.find({ parent: categoryId, isActive: true })
-      .sort({ sortOrder: 1 })
-      .lean();
+    let parentCategory = null;
+    let subcategories: typeof category[] = [];
+    let allCategoryIds: string[] = [categoryId];
 
-    // Get products for this category
-    const products = await Product.find({ 
-      category: categoryId, 
+    if (isSubcategory) {
+      // This is a subcategory - get parent info for breadcrumb
+      const parentDoc = await Category.findById(category.parent).lean();
+      if (parentDoc) {
+        parentCategory = JSON.parse(JSON.stringify(parentDoc));
+      }
+      // Only get products from this subcategory
+      allCategoryIds = [categoryId];
+      subcategories = []; // No sub-subcategories
+    } else {
+      // This is a main category - get all subcategories
+      const subcategoryDocs = await Category.find({ 
+        parent: categoryId, 
+        isActive: true 
+      })
+        .sort({ sortOrder: 1 })
+        .lean();
+      
+      subcategories = JSON.parse(JSON.stringify(subcategoryDocs));
+      
+      // Include main category AND all subcategory IDs for product query
+      allCategoryIds = [categoryId, ...subcategories.map((s: { _id: string }) => s._id)];
+    }
+
+    // Get ALL products from this category and its subcategories
+    const productDocs = await Product.find({ 
+      category: { $in: allCategoryIds }, 
       isActive: true 
     })
+      .populate("category", "name slug")
       .sort({ isFeatured: -1, createdAt: -1 })
       .lean();
+
+    const products = JSON.parse(JSON.stringify(productDocs));
+
+    // Calculate product count per subcategory
+    const subcategoriesWithCounts = subcategories.map((sub: { _id: string; name: string; slug: string }) => ({
+      ...sub,
+      productCount: products.filter((p: { category?: { _id: string } }) => 
+        p.category?._id === sub._id
+      ).length,
+    }));
 
     // Get unique brand names from products
     const brandNames = [...new Set(products.map((p: { brand?: string }) => p.brand).filter(Boolean))] as string[];
@@ -50,26 +86,28 @@ async function getCategoryData(slug: string) {
     }).lean();
 
     // Count products per brand
-    const brandWithCounts = brandDocs.map((brand) => ({
+    const brandWithCounts = JSON.parse(JSON.stringify(brandDocs)).map((brand: { name: string }) => ({
       ...brand,
       productCount: products.filter((p: { brand?: string }) => p.brand === brand.name).length,
     }));
 
     // Get unique tags from products
     const allTags = products.flatMap((p: { tags?: string[] }) => p.tags || []);
-    const uniqueTags = [...new Set(allTags)];
+    const uniqueTags = [...new Set(allTags)] as string[];
 
     // Calculate max price
     const prices = products.map((p: { priceB2C: number }) => p.priceB2C);
     const maxPrice = prices.length > 0 ? Math.max(...prices) : 100000;
 
     return {
-      category: JSON.parse(JSON.stringify(category)),
-      subcategories: JSON.parse(JSON.stringify(subcategories)),
-      products: JSON.parse(JSON.stringify(products)),
-      brands: JSON.parse(JSON.stringify(brandWithCounts)),
+      category,
+      parentCategory,
+      subcategories: subcategoriesWithCounts,
+      products,
+      brands: brandWithCounts,
       tags: uniqueTags,
-      maxPrice: Math.ceil(maxPrice / 1000) * 1000, // Round up to nearest 1000
+      maxPrice: Math.ceil(maxPrice / 1000) * 1000,
+      isSubcategory,
     };
   } catch (error) {
     console.error("Error fetching category data:", error);
@@ -107,12 +145,21 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
   const { slug } = await params;
   const data = await getCategoryData(slug);
 
-  // If category not found, show 404
   if (!data) {
     notFound();
   }
 
-  const { category, subcategories, products, brands, tags, maxPrice } = data;
+  const { category, parentCategory, subcategories, products, brands, tags, maxPrice, isSubcategory } = data;
+
+  // Build breadcrumb items
+  const breadcrumbItems = [];
+  if (isSubcategory && parentCategory) {
+    breadcrumbItems.push({
+      label: parentCategory.name,
+      href: `/category/${parentCategory.slug}`,
+    });
+  }
+  breadcrumbItems.push({ label: category.name });
 
   // Schema markup
   const schemas = [
@@ -138,11 +185,17 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
         <JsonLd data={schemas} />
 
         {/* Breadcrumb */}
-        <Breadcrumbs items={[{ label: category.name }]} />
+        <Breadcrumbs items={breadcrumbItems} />
 
         {/* Category header */}
         <div className="border-b border-border bg-white px-3 py-4 md:px-4 md:py-6">
           <div className="mx-auto max-w-7xl">
+            {/* Show parent category if subcategory */}
+            {isSubcategory && parentCategory && (
+              <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-primary md:text-xs">
+                {parentCategory.name}
+              </p>
+            )}
             <h1 className="text-lg font-extrabold text-foreground md:text-2xl">
               {category.name}
             </h1>
@@ -165,6 +218,8 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
           availableTags={tags}
           maxPrice={maxPrice}
           categorySlug={slug}
+          categoryName={category.name}
+          isSubcategory={isSubcategory}
         />
       </main>
       <Footer />
