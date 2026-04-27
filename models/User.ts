@@ -35,6 +35,20 @@ export interface IUser extends Document {
     pincode: string;
     isDefault: boolean;
   }[];
+  // Notification preferences (for app store compliance)
+  notificationPreferences?: {
+    orderUpdates: boolean;
+    promotions: boolean;
+    priceDrops: boolean;
+    supportMessages: boolean;
+    announcements: boolean;
+  };
+  // Push notification devices
+  pushDevices?: {
+    token: string;
+    platform: "ios" | "android" | "web" | "app";
+    registeredAt: Date;
+  }[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -47,6 +61,20 @@ const AddressSchema = new Schema({
   state: { type: String, required: true },
   pincode: { type: String, required: true },
   isDefault: { type: Boolean, default: false },
+});
+
+const NotificationPreferencesSchema = new Schema({
+  orderUpdates: { type: Boolean, default: true },
+  promotions: { type: Boolean, default: true },
+  priceDrops: { type: Boolean, default: true },
+  supportMessages: { type: Boolean, default: true },
+  announcements: { type: Boolean, default: true },
+}, { _id: false });
+
+const PushDeviceSchema = new Schema({
+  token: { type: String, required: true },
+  platform: { type: String, enum: ["ios", "android", "web", "app"], default: "web" },
+  registeredAt: { type: Date, default: Date.now },
 });
 
 const UserSchema = new Schema<IUser>(
@@ -132,6 +160,19 @@ const UserSchema = new Schema<IUser>(
       enum: ["retailer", "wholesaler", "distributor", "manufacturer", "other"],
     },
     addresses: [AddressSchema],
+    // Notification preferences for app store compliance
+    notificationPreferences: {
+      type: NotificationPreferencesSchema,
+      default: () => ({
+        orderUpdates: true,
+        promotions: true,
+        priceDrops: true,
+        supportMessages: true,
+        announcements: true,
+      }),
+    },
+    // Push notification devices
+    pushDevices: [PushDeviceSchema],
   },
   {
     timestamps: true,

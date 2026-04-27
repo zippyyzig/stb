@@ -11,6 +11,7 @@
   "lang": "en-IN",
   "dir": "ltr",
   "categories": ["shopping", "business", "technology"],
+  "id": "com.smarttechbazaar.app",
   "icons": [
     {
       "src": "/icons/icon-72x72.png",
@@ -55,26 +56,10 @@
       "purpose": "any"
     },
     {
-      "src": "/icons/icon-512x512.png",
+      "src": "/icons/icon-512x512.jpg",
       "sizes": "512x512",
-      "type": "image/png",
+      "type": "image/jpeg",
       "purpose": "any maskable"
-    }
-  ],
-  "screenshots": [
-    {
-      "src": "/screenshots/home.png",
-      "sizes": "1080x1920",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "Home Screen"
-    },
-    {
-      "src": "/screenshots/products.png",
-      "sizes": "1080x1920",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "Product Listing"
     }
   ],
   "shortcuts": [
@@ -83,21 +68,21 @@
       "short_name": "Products",
       "description": "Browse all products",
       "url": "/products",
-      "icons": [{ "src": "/icons/shortcut-products.png", "sizes": "96x96" }]
+      "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }]
     },
     {
       "name": "My Cart",
       "short_name": "Cart",
       "description": "View your shopping cart",
       "url": "/cart",
-      "icons": [{ "src": "/icons/shortcut-cart.png", "sizes": "96x96" }]
+      "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }]
     },
     {
       "name": "My Orders",
       "short_name": "Orders",
       "description": "Track your orders",
       "url": "/dashboard/orders",
-      "icons": [{ "src": "/icons/shortcut-orders.png", "sizes": "96x96" }]
+      "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }]
     }
   ],
   "related_applications": [],

@@ -1,8 +1,13 @@
+"use client";
+
 import { FileQuestion, Home, Search, ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
 export default function NotFoundPage() {
+  const router = useRouter();
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4 text-center">
       <div className="max-w-md w-full">
@@ -43,11 +48,7 @@ export default function NotFoundPage() {
           <Button
             variant="ghost"
             className="w-full gap-2 text-muted-foreground"
-            onClick={() => {
-              if (typeof window !== "undefined") {
-                window.history.back();
-              }
-            }}
+            onClick={() => router.back()}
           >
             <ArrowLeft className="h-4 w-4" />
             Go Back

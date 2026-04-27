@@ -48,6 +48,9 @@
     --stb-light: #FAFAFA;
     --stb-red: #E31837;
     --stb-red-dark: #C41230;
+    
+    /* Native app specific */
+    --stb-bottom-nav-height: 56px;
     --stb-red-light: #FEF2F4;
     --stb-slate: #6B7280;
     --stb-nav-height: 56px;
