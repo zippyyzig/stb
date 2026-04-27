@@ -1,0 +1,25 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "TEAM_ID.com.smarttechbazaar.app",
+        "paths": [
+          "/products/*",
+          "/product/*",
+          "/category/*",
+          "/brands/*",
+          "/dashboard/*",
+          "/cart",
+          "/checkout/*",
+          "/order/*"
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": [
+      "TEAM_ID.com.smarttechbazaar.app"
+    ]
+  }
+}

@@ -48,6 +48,9 @@
     --stb-light: #FAFAFA;
     --stb-red: #E31837;
     --stb-red-dark: #C41230;
+    
+    /* Native app specific */
+    --stb-bottom-nav-height: 56px;
     --stb-red-light: #FEF2F4;
     --stb-slate: #6B7280;
     --stb-nav-height: 56px;
@@ -303,4 +306,85 @@
 /* ── Focus ring ─────────────────────────────────────────────────────────── */
 .focus-ring {
   @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2;
+}
+
+/* ── Native App Specific Styles ─────────────────────────────────────────── */
+/* Hide footer in native app context for app-like experience */
+body.native-app footer {
+  display: none !important;
+}
+
+/* Adjust main content padding when in native app */
+body.native-app main {
+  padding-bottom: calc(var(--stb-bottom-nav-height) + env(safe-area-inset-bottom, 0px));
+}
+
+/* iOS specific adjustments */
+body.ios-app {
+  /* Prevent overscroll bounce on iOS */
+  overscroll-behavior: none;
+}
+
+/* Android specific adjustments */
+body.android-app {
+  /* Standard Android touch feedback */
+}
+
+/* Safe area padding utilities for native apps */
+.pt-safe { padding-top: env(safe-area-inset-top, 0px); }
+.pr-safe { padding-right: env(safe-area-inset-right, 0px); }
+.pl-safe { padding-left: env(safe-area-inset-left, 0px); }
+.mt-safe { margin-top: env(safe-area-inset-top, 0px); }
+
+/* Native app header adjustments */
+body.native-app header {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* Disable text selection in native app (more app-like) */
+body.native-app {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Allow text selection in inputs and textareas */
+body.native-app input,
+body.native-app textarea,
+body.native-app [contenteditable] {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* Smooth scrolling in native app */
+body.native-app {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Hide scrollbars in native app for cleaner look */
+body.native-app::-webkit-scrollbar {
+  display: none;
+}
+body.native-app {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Pull-to-refresh indicator styling */
+body.native-app .pull-to-refresh {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translateY(-100%);
+  transition: transform 0.2s ease;
+  z-index: 9999;
+  background: var(--background);
+}
+
+body.native-app .pull-to-refresh.active {
+  transform: translateY(0);
 }

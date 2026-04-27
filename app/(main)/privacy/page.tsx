@@ -97,16 +97,16 @@ const sections = [
         body: "You have the right to access the personal information we hold about you and to request correction of any inaccurate data. You can update most of your profile information directly from your account dashboard.",
       },
       {
-        subtitle: "Data Deletion",
-        body: "You may request deletion of your account and associated personal data at any time. Note that we may retain certain data as required by law or for legitimate business purposes such as dispute resolution.",
+        subtitle: "Account & Data Deletion",
+        body: "You have the right to delete your account at any time directly from the app. Go to Dashboard > Security > Delete Account to permanently remove your account and associated personal data. When you delete your account: your personal information (name, email, phone, addresses) will be permanently deleted; your order history will be anonymized but retained for legal and tax compliance purposes; your product reviews will be anonymized; and any open support tickets will be closed. This action cannot be undone. Please ensure you have no pending orders before deleting your account.",
       },
       {
         subtitle: "Opt-Out",
-        body: "You can opt out of marketing emails at any time by clicking the unsubscribe link in any email or by contacting us. Opting out of marketing communications will not affect transactional emails related to your orders.",
+        body: "You can opt out of marketing emails at any time by clicking the unsubscribe link in any email or by contacting us. You can also manage your notification preferences in the app under Dashboard > Notifications > Settings. Opting out of marketing communications will not affect transactional emails related to your orders.",
       },
       {
         subtitle: "Data Portability",
-        body: "Upon request, we can provide you with a copy of your personal data in a commonly used, machine-readable format.",
+        body: "Upon request, we can provide you with a copy of your personal data in a commonly used, machine-readable format. Contact us to request your data export.",
       },
     ],
   },

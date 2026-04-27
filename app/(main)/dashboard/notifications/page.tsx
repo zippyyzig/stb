@@ -13,8 +13,11 @@ import {
   Trash2,
   Loader2,
   ChevronRight,
+  Sliders,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PushNotificationBanner } from "@/components/notifications/PushNotificationBanner";
+import { NotificationSettings } from "@/components/notifications/NotificationSettings";
 
 interface Notification {
   _id: string;
@@ -50,6 +53,7 @@ export default function NotificationsPage() {
   const [loading, setLoading] = useState(true);
   const [markingAll, setMarkingAll] = useState(false);
   const [clearing, setClearing] = useState(false);
+  const [activeTab, setActiveTab] = useState<"notifications" | "settings">("notifications");
 
   useEffect(() => {
     fetchNotifications();
@@ -147,6 +151,50 @@ export default function NotificationsPage() {
 
   return (
     <div className="space-y-4">
+      {/* Push Notification Banner - shows when notifications not enabled */}
+      <PushNotificationBanner />
+
+      {/* Tab Navigation */}
+      <div className="flex items-center gap-1 p-1 bg-muted rounded-lg w-fit">
+        <button
+          onClick={() => setActiveTab("notifications")}
+          className={`px-4 py-2 text-xs font-medium rounded-md transition-colors ${
+            activeTab === "notifications"
+              ? "bg-white text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <span className="flex items-center gap-1.5">
+            <Bell className="h-3.5 w-3.5" />
+            Notifications
+            {unreadCount > 0 && (
+              <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-white">
+                {unreadCount}
+              </span>
+            )}
+          </span>
+        </button>
+        <button
+          onClick={() => setActiveTab("settings")}
+          className={`px-4 py-2 text-xs font-medium rounded-md transition-colors ${
+            activeTab === "settings"
+              ? "bg-white text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <span className="flex items-center gap-1.5">
+            <Sliders className="h-3.5 w-3.5" />
+            Settings
+          </span>
+        </button>
+      </div>
+
+      {/* Settings Tab */}
+      {activeTab === "settings" && <NotificationSettings />}
+
+      {/* Notifications Tab */}
+      {activeTab === "notifications" && (
+        <>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -273,6 +321,8 @@ export default function NotificationsPage() {
             );
           })}
         </div>
+      )}
+        </>
       )}
     </div>
   );
