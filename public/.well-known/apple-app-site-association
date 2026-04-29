@@ -3,7 +3,7 @@
     "apps": [],
     "details": [
       {
-        "appID": "TEAM_ID.com.smarttechbazaar.app",
+        "appID": "5TGG836W7V.com.smarttechbazaar.app",
         "paths": [
           "/products/*",
           "/product/*",
@@ -19,7 +19,7 @@
   },
   "webcredentials": {
     "apps": [
-      "TEAM_ID.com.smarttechbazaar.app"
+      "5TGG836W7V.com.smarttechbazaar.app"
     ]
   }
 }
