@@ -61,8 +61,12 @@ export const metadata: Metadata = {
       "Your trusted partner for computer accessories, CCTV cameras, printers, networking equipment, and all your technology needs.",
   },
   robots: {
-    index: true,
-    follow: true,
+    index: false, // TODO: Change to true after adding products and brands
+    follow: false, // TODO: Change to true after adding products and brands
+    googleBot: {
+      index: false, // TODO: Change to true after adding products and brands
+      follow: false, // TODO: Change to true after adding products and brands
+    },
   },
   other: {
     "mobile-web-app-capable": "yes",
