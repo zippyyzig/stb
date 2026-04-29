@@ -1,9 +1,30 @@
 import { MetadataRoute } from "next";
 import { siteConfig } from "@/lib/site-config";
 
+// ============================================================================
+// TODO: NOINDEX REMOVAL - Change this to false after adding products/brands
+// ============================================================================
+const BLOCK_ALL_CRAWLERS = true;
+
 export default function robots(): MetadataRoute.Robots {
   const baseUrl = siteConfig.url;
 
+  // Block all crawlers until site is ready with products
+  if (BLOCK_ALL_CRAWLERS) {
+    return {
+      rules: [
+        {
+          userAgent: "*",
+          disallow: "/",
+        },
+      ],
+      // Still include sitemap for when you're ready
+      sitemap: `${baseUrl}/sitemap.xml`,
+      host: baseUrl,
+    };
+  }
+
+  // Original rules - will be used when BLOCK_ALL_CRAWLERS is set to false
   return {
     rules: [
       {
@@ -29,7 +50,7 @@ export default function robots(): MetadataRoute.Robots {
           "/private",
           "/private/*",
           "/*.json$",
-          "/*?*", // Disallow URLs with query parameters (to prevent duplicate content)
+          "/*?*",
         ],
       },
       {

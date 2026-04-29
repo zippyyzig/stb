@@ -26,12 +26,12 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   icons: {
     icon: [
-      { url: "/icons/icon-32x32.jpg", sizes: "32x32", type: "image/jpeg" },
-      { url: "/icons/icon-192x192.jpg", sizes: "192x192", type: "image/jpeg" },
+      { url: "/icons/icon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
     ],
-    shortcut: "/icons/icon-192x192.jpg",
+    shortcut: "/icons/icon-192x192.png",
     apple: [
-      { url: "/icons/icon-192x192.jpg", sizes: "180x180", type: "image/jpeg" },
+      { url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
     ],
   },
   appleWebApp: {
@@ -61,8 +61,12 @@ export const metadata: Metadata = {
       "Your trusted partner for computer accessories, CCTV cameras, printers, networking equipment, and all your technology needs.",
   },
   robots: {
-    index: true,
-    follow: true,
+    index: false, // TODO: Change to true after adding products and brands
+    follow: false, // TODO: Change to true after adding products and brands
+    googleBot: {
+      index: false, // TODO: Change to true after adding products and brands
+      follow: false, // TODO: Change to true after adding products and brands
+    },
   },
   other: {
     "mobile-web-app-capable": "yes",
@@ -100,42 +104,42 @@ export default function RootLayout({
         {/* Splash screens for iOS */}
         <link
           rel="apple-touch-startup-image"
-          href="/splash/apple-splash-2048-2732.jpg"
+          href="/splash/apple-splash-2048-2732.png"
           media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
         />
         <link
           rel="apple-touch-startup-image"
-          href="/splash/apple-splash-1668-2388.jpg"
+          href="/splash/apple-splash-1668-2388.png"
           media="(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
         />
         <link
           rel="apple-touch-startup-image"
-          href="/splash/apple-splash-1536-2048.jpg"
+          href="/splash/apple-splash-1536-2048.png"
           media="(device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
         />
         <link
           rel="apple-touch-startup-image"
-          href="/splash/apple-splash-1290-2796.jpg"
+          href="/splash/apple-splash-1290-2796.png"
           media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
         />
         <link
           rel="apple-touch-startup-image"
-          href="/splash/apple-splash-1179-2556.jpg"
+          href="/splash/apple-splash-1179-2556.png"
           media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
         />
         <link
           rel="apple-touch-startup-image"
-          href="/splash/apple-splash-1170-2532.jpg"
+          href="/splash/apple-splash-1170-2532.png"
           media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
         />
         <link
           rel="apple-touch-startup-image"
-          href="/splash/apple-splash-1125-2436.jpg"
+          href="/splash/apple-splash-1125-2436.png"
           media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
         />
         <link
           rel="apple-touch-startup-image"
-          href="/splash/apple-splash-750-1334.jpg"
+          href="/splash/apple-splash-750-1334.png"
           media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
         />
       </head>
