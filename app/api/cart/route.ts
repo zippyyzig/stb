@@ -5,6 +5,7 @@ import dbConnect from "@/lib/mongodb";
 import Cart from "@/models/Cart";
 import Product from "@/models/Product";
 import User from "@/models/User";
+import { validateObjectId, validateQuantity } from "@/lib/validation";
 
 // GET user's cart
 export async function GET() {
@@ -82,6 +83,23 @@ export async function POST(request: NextRequest) {
     if (!productId) {
       return NextResponse.json(
         { error: "Product ID is required" },
+        { status: 400 }
+      );
+    }
+
+    // Validate product ID format to prevent injection
+    if (!validateObjectId(productId)) {
+      return NextResponse.json(
+        { error: "Invalid product ID format" },
+        { status: 400 }
+      );
+    }
+
+    // Validate quantity
+    const qtyValidation = validateQuantity(quantity);
+    if (!qtyValidation.valid) {
+      return NextResponse.json(
+        { error: qtyValidation.error },
         { status: 400 }
       );
     }
@@ -164,6 +182,22 @@ export async function PUT(request: NextRequest) {
       );
     }
 
+    // Validate product ID format
+    if (!validateObjectId(productId)) {
+      return NextResponse.json(
+        { error: "Invalid product ID format" },
+        { status: 400 }
+      );
+    }
+
+    // Validate quantity (allow 0 for removal, but check upper bound)
+    if (typeof quantity !== "number" || isNaN(quantity) || quantity < 0 || quantity > 1000) {
+      return NextResponse.json(
+        { error: "Invalid quantity" },
+        { status: 400 }
+      );
+    }
+
     await dbConnect();
 
     const cart = await Cart.findOne({ user: session.user.id });
@@ -218,6 +252,14 @@ export async function DELETE(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const productId = searchParams.get("productId");
+
+    // If productId is provided, validate it
+    if (productId && !validateObjectId(productId)) {
+      return NextResponse.json(
+        { error: "Invalid product ID format" },
+        { status: 400 }
+      );
+    }
 
     await dbConnect();
 

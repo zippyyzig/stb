@@ -243,6 +243,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Determine if user is B2B (GST verified) for correct pricing
+    const isB2B = user.gstNumber && user.isGstVerified;
+
     // 10. Fetch and validate products (use server prices)
     const productIds = items.map(item => item.productId);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -255,7 +258,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 11. Build order items with server-side prices
+    // 11. Build order items with server-side prices (B2B vs B2C)
     const orderItems = [];
     let subtotal = 0;
 
@@ -277,7 +280,9 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const itemTotal = product.price * item.quantity;
+      // Use correct price based on user type (B2B gets wholesale pricing)
+      const price = isB2B ? product.priceB2B : product.priceB2C;
+      const itemTotal = price * item.quantity;
       subtotal += itemTotal;
 
       orderItems.push({
@@ -285,7 +290,7 @@ export async function POST(request: NextRequest) {
         name: product.name,
         sku: product.sku,
         image: product.images?.[0] || "",
-        price: product.price,
+        price: price,
         quantity: item.quantity,
         total: itemTotal,
       });

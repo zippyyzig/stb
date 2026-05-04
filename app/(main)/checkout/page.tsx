@@ -49,12 +49,34 @@ interface RazorpayOptions {
   handler: (response: RazorpayResponse) => void;
   modal?: {
     ondismiss?: () => void;
+    escape?: boolean;
+    animation?: boolean;
+    confirm_close?: boolean;
+  };
+  retry?: {
+    enabled: boolean;
+    max_count?: number;
   };
 }
 
 interface RazorpayInstance {
   open: () => void;
-  on: (event: string, handler: () => void) => void;
+  on: (event: string, handler: (response: RazorpayErrorResponse) => void) => void;
+  close: () => void;
+}
+
+interface RazorpayErrorResponse {
+  error: {
+    code: string;
+    description: string;
+    source: string;
+    step: string;
+    reason: string;
+    metadata: {
+      order_id: string;
+      payment_id: string;
+    };
+  };
 }
 
 interface RazorpayResponse {
@@ -97,6 +119,7 @@ interface TaxBreakdown {
   totalTax: number;
   customerState: string;
   isIntraState: boolean;
+  customerGstin?: string | null;
 }
 
 interface PaymentOrderResponse {
@@ -140,6 +163,12 @@ export default function CheckoutPage() {
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [razorpayLoaded, setRazorpayLoaded] = useState(false);
   const [orderError, setOrderError] = useState<string | null>(null);
+  
+  // Payment failure states
+  const [paymentFailed, setPaymentFailed] = useState(false);
+  const [failedOrderId, setFailedOrderId] = useState<string | null>(null);
+  const [paymentAttempts, setPaymentAttempts] = useState(0);
+  const [isB2B, setIsB2B] = useState(false);
   
   // Tax breakdown state
   const [taxBreakdown, setTaxBreakdown] = useState<TaxBreakdown | null>(null);
@@ -191,6 +220,7 @@ export default function CheckoutPage() {
       if (data.success && data.breakdown) {
         setTaxBreakdown(data.breakdown.taxBreakdown);
         setShippingCost(data.breakdown.shippingCost);
+        setIsB2B(data.breakdown.isB2B || false);
       }
     } catch (error) {
       console.error("Error calculating tax:", error);
@@ -273,7 +303,7 @@ export default function CheckoutPage() {
     setShowAddressForm(false);
   };
 
-  const initiateRazorpayPayment = async () => {
+  const initiateRazorpayPayment = async (retryOrderId?: string) => {
     if (!selectedAddress) {
       setOrderError("Please add a delivery address");
       return;
@@ -284,10 +314,25 @@ export default function CheckoutPage() {
       return;
     }
 
+    // Check max payment attempts
+    if (paymentAttempts >= 5) {
+      setOrderError("Maximum payment attempts reached. Please try again later or contact support.");
+      return;
+    }
+
     setIsPlacingOrder(true);
     setOrderError(null);
+    setPaymentFailed(false);
 
     try {
+      let orderData: PaymentOrderResponse;
+
+      // If retrying, use existing order ID if available
+      if (retryOrderId && failedOrderId === retryOrderId) {
+        // For retry, we still need to create a new order to get fresh credentials
+        // Razorpay orders can't be reused after failure
+      }
+
       // Step 1: Create Razorpay order on server
       const createOrderResponse = await fetch("/api/payment/create-order", {
         method: "POST",
@@ -308,18 +353,21 @@ export default function CheckoutPage() {
         }),
       });
 
-      const orderData: PaymentOrderResponse = await createOrderResponse.json();
+      orderData = await createOrderResponse.json();
 
       if (!createOrderResponse.ok || !orderData.success) {
         throw new Error((orderData as unknown as { error: string }).error || "Failed to create payment order");
       }
 
-      // Step 2: Open Razorpay checkout
+      // Store order ID for potential retry
+      setFailedOrderId(orderData.orderId);
+
+      // Step 2: Open Razorpay checkout with enhanced options
       const options: RazorpayOptions = {
         key: orderData.keyId,
         amount: orderData.amount,
         currency: orderData.currency,
-        name: "SabKaTechBazar",
+        name: "SmartTechBazar",
         description: "Order Payment",
         order_id: orderData.orderId,
         prefill: {
@@ -329,6 +377,21 @@ export default function CheckoutPage() {
         },
         theme: {
           color: "#FF6B00", // Primary brand color
+        },
+        // Enable retry within Razorpay modal
+        retry: {
+          enabled: true,
+          max_count: 3,
+        },
+        modal: {
+          ondismiss: function () {
+            // User closed the payment modal
+            setIsPlacingOrder(false);
+            setOrderError("Payment was cancelled. You can try again when ready.");
+          },
+          escape: true,
+          animation: true,
+          confirm_close: true,
         },
         handler: async function (response: RazorpayResponse) {
           // Step 3: Verify payment on server
@@ -358,32 +421,98 @@ export default function CheckoutPage() {
             const verifyData = await verifyResponse.json();
 
             if (verifyResponse.ok && verifyData.success) {
-              // Payment successful - redirect to success page
+              // Payment successful - clear failure states and redirect
+              setPaymentFailed(false);
+              setPaymentAttempts(0);
+              setFailedOrderId(null);
               router.push(`/order-success?orderId=${verifyData.orderId}&orderNumber=${verifyData.orderNumber}`);
             } else {
-              setOrderError(verifyData.error || "Payment verification failed. Please contact support.");
+              // Verification failed - this is a serious issue
+              setOrderError(verifyData.error || "Payment verification failed. If amount was deducted, please contact support with Order ID: " + response.razorpay_order_id);
+              setPaymentFailed(true);
               setIsPlacingOrder(false);
             }
-          } catch {
-            setOrderError("Payment verification failed. Please contact support if amount was deducted.");
+          } catch (verifyError) {
+            console.error("Verification error:", verifyError);
+            setOrderError("Payment verification failed. Please contact support if amount was deducted. Order ID: " + response.razorpay_order_id);
+            setPaymentFailed(true);
             setIsPlacingOrder(false);
           }
-        },
-        modal: {
-          ondismiss: function () {
-            setIsPlacingOrder(false);
-          },
         },
       };
 
       const razorpay = new window.Razorpay(options);
+
+      // Handle payment failures with detailed error tracking
+      razorpay.on("payment.failed", async function (response: RazorpayErrorResponse) {
+        console.error("Payment failed:", response.error);
+        
+        // Increment attempt count
+        setPaymentAttempts(prev => prev + 1);
+        setPaymentFailed(true);
+        setIsPlacingOrder(false);
+
+        // Log failure to backend for analytics
+        try {
+          const failureResponse = await fetch("/api/payment/failed", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              razorpay_order_id: orderData.orderId,
+              error: response.error,
+            }),
+          });
+
+          const failureData = await failureResponse.json();
+          
+          // Show user-friendly error message
+          const errorMessage = failureData.userMessage || getPaymentErrorMessage(response.error);
+          setOrderError(errorMessage);
+
+          // Check if user can retry
+          if (!failureData.canRetry) {
+            setOrderError("Maximum payment attempts reached. Please try again later or use a different payment method.");
+          }
+        } catch {
+          // Even if logging fails, show error to user
+          setOrderError(getPaymentErrorMessage(response.error));
+        }
+      });
+
       razorpay.open();
 
     } catch (error) {
       console.error("Payment error:", error);
       setOrderError(error instanceof Error ? error.message : "Failed to initiate payment. Please try again.");
+      setPaymentFailed(true);
       setIsPlacingOrder(false);
     }
+  };
+
+  // Helper function to get user-friendly error messages
+  const getPaymentErrorMessage = (error: RazorpayErrorResponse["error"]): string => {
+    const errorMessages: Record<string, string> = {
+      "BAD_REQUEST_ERROR": "There was an issue with the payment. Please try again.",
+      "GATEWAY_ERROR": "Bank gateway is temporarily unavailable. Please try again in a few minutes.",
+      "NETWORK_ERROR": "Network issue detected. Please check your internet and try again.",
+    };
+
+    // Check for specific codes
+    if (error.code && errorMessages[error.code]) {
+      return errorMessages[error.code];
+    }
+
+    // Check reason for common patterns
+    if (error.reason) {
+      const reason = error.reason.toLowerCase();
+      if (reason.includes("cancel")) return "Payment was cancelled. You can retry when ready.";
+      if (reason.includes("timeout")) return "Payment timed out. Please try again.";
+      if (reason.includes("declined")) return "Payment was declined. Please try a different method.";
+      if (reason.includes("insufficient")) return "Insufficient funds. Please try another card.";
+    }
+
+    // Default with description if available
+    return error.description || "Payment failed. Please try again or use a different payment method.";
   };
 
   const handlePlaceCODOrder = async () => {
@@ -396,19 +525,20 @@ export default function CheckoutPage() {
     setOrderError(null);
 
     try {
+      // Send minimal data - server calculates prices securely
       const orderData = {
         items: items.map((item) => ({
           product: item.product._id,
-          name: item.product.name,
-          price: item.price,
           quantity: item.quantity,
-          total: item.total,
-          image: item.product.images?.[0],
         })),
-        shippingAddress: selectedAddress,
-        subtotal: total,
-        shippingCost,
-        total: grandTotal,
+        shippingAddress: {
+          name: selectedAddress.name,
+          phone: selectedAddress.phone,
+          address: selectedAddress.address,
+          city: selectedAddress.city,
+          state: selectedAddress.state,
+          pincode: selectedAddress.pincode,
+        },
         paymentMethod: "cod",
       };
 
@@ -421,9 +551,9 @@ export default function CheckoutPage() {
       const data = await response.json();
 
       if (response.ok) {
-        // Clear cart and redirect to success
+        // Clear cart and redirect to success with order number
         await fetch("/api/cart", { method: "DELETE" });
-        router.push(`/order-success?orderId=${data.order._id}`);
+        router.push(`/order-success?orderId=${data.order._id}&orderNumber=${data.order.orderNumber}`);
       } else {
         setOrderError(data.error || "Failed to place order");
       }
@@ -441,6 +571,13 @@ export default function CheckoutPage() {
     } else {
       handlePlaceCODOrder();
     }
+  };
+
+  // Retry payment with same cart
+  const handleRetryPayment = () => {
+    setOrderError(null);
+    setPaymentFailed(false);
+    initiateRazorpayPayment(failedOrderId || undefined);
   };
 
   if (status === "loading" || isLoading) {
@@ -493,15 +630,54 @@ export default function CheckoutPage() {
 
           {/* Error Alert */}
           {orderError && (
-            <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-red-200 bg-red-50 p-3 text-red-800 md:mb-6 md:gap-3 md:p-4">
-              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 md:h-5 md:w-5" />
-              <p className="text-xs md:text-sm">{orderError}</p>
-              <button
-                onClick={() => setOrderError(null)}
-                className="ml-auto shrink-0 text-red-600 hover:text-red-800"
-              >
-                <span className="text-xs">Dismiss</span>
-              </button>
+            <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-red-800 md:mb-6 md:p-4">
+              <div className="flex items-start gap-2.5 md:gap-3">
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 md:h-5 md:w-5" />
+                <div className="flex-1">
+                  <p className="text-xs md:text-sm">{orderError}</p>
+                  {paymentFailed && paymentAttempts < 5 && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <Button
+                        onClick={handleRetryPayment}
+                        variant="destructive"
+                        size="sm"
+                        className="gap-1.5"
+                        disabled={isPlacingOrder}
+                      >
+                        {isPlacingOrder ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <CreditCard className="h-3.5 w-3.5" />
+                        )}
+                        Retry Payment
+                      </Button>
+                      <Button
+                        onClick={() => setPaymentMethod("cod")}
+                        variant="outline"
+                        size="sm"
+                        className="gap-1.5 border-red-300 text-red-700 hover:bg-red-100"
+                      >
+                        <Truck className="h-3.5 w-3.5" />
+                        Switch to COD
+                      </Button>
+                    </div>
+                  )}
+                  {paymentAttempts > 0 && paymentAttempts < 5 && (
+                    <p className="mt-2 text-[10px] text-red-600">
+                      Attempt {paymentAttempts} of 5
+                    </p>
+                  )}
+                </div>
+                <button
+                  onClick={() => {
+                    setOrderError(null);
+                    setPaymentFailed(false);
+                  }}
+                  className="shrink-0 text-red-600 hover:text-red-800"
+                >
+                  <span className="text-xs">Dismiss</span>
+                </button>
+              </div>
             </div>
           )}
 
@@ -769,6 +945,23 @@ export default function CheckoutPage() {
                         : `₹${shippingCost.toLocaleString("en-IN")}`}
                     </span>
                   </div>
+
+                  {/* B2B Pricing Indicator */}
+                  {isB2B && (
+                    <div className="rounded-lg border border-green-200 bg-green-50 p-2.5">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-green-600" />
+                        <span className="text-xs font-medium text-green-700">
+                          B2B Wholesale Pricing Applied
+                        </span>
+                      </div>
+                      {taxBreakdown?.customerGstin && (
+                        <p className="mt-1 text-[10px] text-green-600">
+                          GSTIN: {taxBreakdown.customerGstin}
+                        </p>
+                      )}
+                    </div>
+                  )}
 
                   {/* GST Breakdown */}
                   {taxBreakdown && (

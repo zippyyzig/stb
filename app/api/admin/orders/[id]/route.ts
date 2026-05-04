@@ -9,6 +9,7 @@ import InventoryLog from "@/models/InventoryLog";
 import Notification from "@/models/Notification";
 import { sendEmail } from "@/lib/email";
 import { orderStatusUpdateTemplate, refundProcessedTemplate } from "@/lib/email-templates";
+import { validateObjectId, sanitizeString } from "@/lib/validation";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -22,6 +23,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     if (!session || (session.user.role !== "admin" && session.user.role !== "super_admin")) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Validate order ID format
+    if (!validateObjectId(id)) {
+      return NextResponse.json({ error: "Invalid order ID" }, { status: 400 });
     }
 
     await dbConnect();
@@ -57,7 +63,23 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Validate order ID format
+    if (!validateObjectId(id)) {
+      return NextResponse.json({ error: "Invalid order ID" }, { status: 400 });
+    }
+
     const data = await request.json();
+    
+    // Sanitize text inputs
+    if (data.cancellationReason) {
+      data.cancellationReason = sanitizeString(data.cancellationReason, 500);
+    }
+    if (data.notes) {
+      data.notes = sanitizeString(data.notes, 1000);
+    }
+    if (data.trackingNumber) {
+      data.trackingNumber = sanitizeString(data.trackingNumber, 100);
+    }
 
     await dbConnect();
 
@@ -213,6 +235,11 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         { error: "Only Super Admin can delete orders" },
         { status: 403 }
       );
+    }
+
+    // Validate order ID format
+    if (!validateObjectId(id)) {
+      return NextResponse.json({ error: "Invalid order ID" }, { status: 400 });
     }
 
     await dbConnect();

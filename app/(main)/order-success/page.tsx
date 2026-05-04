@@ -5,13 +5,13 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle, Package, ArrowRight, Home } from "lucide-react";
 
 interface OrderSuccessPageProps {
-  searchParams: Promise<{ orderId?: string }>;
+  searchParams: Promise<{ orderId?: string; orderNumber?: string }>;
 }
 
 export default async function OrderSuccessPage({
   searchParams,
 }: OrderSuccessPageProps) {
-  const { orderId } = await searchParams;
+  const { orderId, orderNumber } = await searchParams;
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -30,12 +30,12 @@ export default async function OrderSuccessPage({
             begin processing it soon.
           </p>
 
-          {/* Order ID */}
-          {orderId && (
+          {/* Order Number */}
+          {(orderNumber || orderId) && (
             <div className="mx-auto mt-6 rounded-lg bg-muted/50 px-6 py-4">
-              <p className="body-sm text-muted-foreground">Order ID</p>
+              <p className="body-sm text-muted-foreground">Order Number</p>
               <p className="font-mono text-lg font-bold text-foreground">
-                {orderId.slice(-8).toUpperCase()}
+                {orderNumber || orderId?.slice(-8).toUpperCase()}
               </p>
             </div>
           )}
@@ -74,7 +74,7 @@ export default async function OrderSuccessPage({
 
           {/* Action Buttons */}
           <div className="mt-8 flex flex-col gap-3">
-            <Link href="/account/orders">
+            <Link href={orderId ? `/dashboard/orders/${orderId}` : "/dashboard/orders"}>
               <Button className="w-full gap-2" size="lg">
                 <Package className="h-4 w-4" />
                 Track Your Order

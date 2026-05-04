@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
 import Coupon from "@/models/Coupon";
 import Order from "@/models/Order";
+import { sanitizeString } from "@/lib/validation";
 
 // POST validate and apply coupon
 export async function POST(request: NextRequest) {
@@ -16,17 +17,26 @@ export async function POST(request: NextRequest) {
 
     const { code, cartTotal, cartItems } = await request.json();
 
-    if (!code) {
+    if (!code || typeof code !== "string") {
       return NextResponse.json({ error: "Coupon code is required" }, { status: 400 });
     }
 
-    if (!cartTotal || cartTotal <= 0) {
+    // Sanitize coupon code - only allow alphanumeric characters
+    const sanitizedCode = sanitizeString(code, 50)
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, "");
+
+    if (sanitizedCode.length < 3 || sanitizedCode.length > 20) {
+      return NextResponse.json({ error: "Invalid coupon code format" }, { status: 400 });
+    }
+
+    if (!cartTotal || typeof cartTotal !== "number" || cartTotal <= 0 || cartTotal > 10000000) {
       return NextResponse.json({ error: "Invalid cart total" }, { status: 400 });
     }
 
     await dbConnect();
 
-    const coupon = await Coupon.findOne({ code: code.toUpperCase() });
+    const coupon = await Coupon.findOne({ code: sanitizedCode });
 
     if (!coupon) {
       return NextResponse.json({ error: "Invalid coupon code" }, { status: 404 });

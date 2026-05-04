@@ -111,7 +111,7 @@ const TaxBreakdownSchema = new Schema({
   sgst: { type: Number, default: 0, min: 0 },
   igst: { type: Number, default: 0, min: 0 },
   totalTax: { type: Number, required: true, min: 0 },
-  customerStateCode: { type: String, required: true },
+  customerStateCode: { type: String, default: "" },
   customerGstin: { type: String, default: null },
   businessGstin: { type: String, default: null },
 });

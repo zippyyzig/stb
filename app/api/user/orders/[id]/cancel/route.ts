@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
 import Order from "@/models/Order";
 import Product from "@/models/Product";
+import { validateObjectId, sanitizeString } from "@/lib/validation";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -18,7 +19,14 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { reason } = await request.json();
+    // Validate order ID format to prevent injection
+    if (!validateObjectId(id)) {
+      return NextResponse.json({ error: "Invalid order ID" }, { status: 400 });
+    }
+
+    const body = await request.json();
+    // Sanitize cancellation reason
+    const reason = body.reason ? sanitizeString(body.reason, 500) : "Cancelled by customer";
 
     await dbConnect();
 
@@ -37,7 +45,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     order.status = "cancelled";
     order.cancelledAt = new Date();
-    order.cancellationReason = reason || "Cancelled by customer";
+    order.cancellationReason = reason;
 
     await order.save();
 

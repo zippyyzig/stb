@@ -217,7 +217,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 7. Calculate subtotal using SERVER-SIDE prices (security critical)
+    // 7. Determine if user is B2B (GST verified) for correct pricing
+    const isB2B = user.gstNumber && user.isGstVerified;
+
+    // 8. Calculate subtotal using SERVER-SIDE prices (security critical)
     let subtotal = 0;
     const validatedItems = [];
 
@@ -239,15 +242,16 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Use server-side price, not client-provided price
-      const itemTotal = product.price * item.quantity;
+      // Use correct price based on user type (B2B gets wholesale pricing)
+      const price = isB2B ? product.priceB2B : product.priceB2C;
+      const itemTotal = price * item.quantity;
       subtotal += itemTotal;
 
       validatedItems.push({
         productId: product._id.toString(),
         name: product.name,
         sku: product.sku,
-        price: product.price,
+        price: price,
         quantity: item.quantity,
         total: itemTotal,
       });
@@ -316,8 +320,10 @@ export async function POST(request: NextRequest) {
           totalTax: gstBreakdown.totalTax,
           customerState: gstBreakdown.customerStateName,
           isIntraState: gstBreakdown.isIntraState,
+          customerGstin: user.gstNumber || null,
         },
         total: finalTotal,
+        isB2B: !!isB2B,
       },
       // Customer details for Razorpay prefill
       prefill: {
