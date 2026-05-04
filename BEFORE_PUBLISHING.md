@@ -1,687 +1,515 @@
 # Before Publishing — Smart Tech Bazaar Mobile App
 
-This document covers every step you must complete before submitting the Smart Tech Bazaar app
-to the Google Play Store and Apple App Store using Median.co as your wrapper.
-Follow each section in order. Do not skip any step.
+This document covers every step needed to publish the Smart Tech Bazaar app to the Google Play Store and Apple App Store using Median.co as your wrapper.
+
+**Last Updated:** Based on current app configuration
 
 ---
 
 ## Table of Contents
 
-1. [Accounts & Memberships You Must Have](#1-accounts--memberships-you-must-have)
-2. [Deploy Your Website to Production](#2-deploy-your-website-to-production)
-3. [Update Placeholder Values in Code](#3-update-placeholder-values-in-code)
-4. [App Icons & Splash Screens](#4-app-icons--splash-screens)
-5. [Set Up OneSignal for Push Notifications](#5-set-up-onesignal-for-push-notifications)
-6. [Set Up Median.co App Project](#6-set-up-medianco-app-project)
-7. [Android — Google Play Store](#7-android--google-play-store)
-8. [iOS — Apple App Store](#8-ios--apple-app-store)
-9. [Privacy Policy & Legal Pages](#9-privacy-policy--legal-pages)
-10. [Final Pre-Submission Checklist](#10-final-pre-submission-checklist)
+1. [Current Configuration Status](#1-current-configuration-status)
+2. [Accounts & Memberships Required](#2-accounts--memberships-required)
+3. [Environment Variables](#3-environment-variables)
+4. [Remaining Code Updates](#4-remaining-code-updates)
+5. [OneSignal Push Notifications](#5-onesignal-push-notifications)
+6. [Median.co Configuration](#6-medianco-configuration)
+7. [Google Play Store Submission](#7-google-play-store-submission)
+8. [Apple App Store Submission](#8-apple-app-store-submission)
+9. [Pre-Submission Testing Checklist](#9-pre-submission-testing-checklist)
+10. [Post-Submission](#10-post-submission)
 
 ---
 
-## 1. Accounts & Memberships You Must Have
+## 1. Current Configuration Status
 
-Before you begin, make sure you have paid for and registered all of the following accounts.
-None of these can be skipped.
+### COMPLETED Items
 
-| Account | Cost | Where to Sign Up |
-|---|---|---|
-| Median.co account | Starts at $99/year per platform | https://median.co/pricing |
-| Google Play Developer account | One-time $25 registration fee | https://play.google.com/console |
-| Apple Developer Program membership | $99/year | https://developer.apple.com/programs/ |
-| OneSignal account (push notifications) | Free tier available | https://onesignal.com |
+| Item | File | Status |
+|------|------|--------|
+| Android App Links | `public/.well-known/assetlinks.json` | DONE - SHA-256: `82:60:EA:EC:BB:B6:62:0E:B8:AC:29:64:C6:50:12:EC:6E:9F:77:61:A4:0D:28:32:8C:A2:34:14:F2:9D:05:17` |
+| iOS Universal Links | `public/.well-known/apple-app-site-association` | DONE - Team ID: `5TGG836W7V` |
+| PWA Manifest | `public/manifest.json` | DONE - App ID: `com.smarttechbazaar.app` |
+| App Icons | `public/icons/` | DONE - PNG icons (192x192, 512x512) |
+| Splash Screens | `public/splash/` | DONE - All 8 iOS sizes generated |
+| OG Image | `public/og-image.png` | DONE - 1200x630 social sharing image |
+| Health Endpoint | `/api/health` | DONE - Returns `{"status":"ok",...}` |
+| Privacy Policy | `/privacy` | DONE |
+| Terms of Service | `/terms` | DONE |
+| Shipping Policy | `/shipping` | DONE |
+| Site Config | `lib/site-config.ts` | DONE |
+| Push Notifications (Client) | `hooks/use-push-notifications.ts` | DONE |
+| Push Notifications (Server) | `lib/push-notifications.ts` | DONE - OneSignal REST API integrated |
+| Native App Detection | `lib/native-app.ts` | DONE |
+| Deep Linking | `hooks/use-deep-linking.ts` | DONE - URL scheme: `stb://` |
+| App Rating Dialog | `components/app/AppRatingDialog.tsx` | DONE |
+| Offline Page | `app/offline/page.tsx` | DONE |
+| Error Handling | `app/error.tsx`, `app/not-found.tsx` | DONE |
+| robots.txt | `app/robots.ts` | DONE |
+| sitemap.xml | `app/sitemap.ts` | DONE |
 
----
+### REMAINING Items
 
-## 2. Deploy Your Website to Production
-
-Your Median.co wrapper wraps a **live URL**, not local code. You must deploy the app to
-a production domain before building the mobile wrapper.
-
-**Steps:**
-
-1. Deploy the Next.js app to Vercel (or any host) and confirm it is live at your domain,
-   for example `https://smarttechbazaar.com`.
-2. Confirm the following URLs are accessible (visit each one in your browser):
-   - `https://YOUR-DOMAIN.com/` — Home page loads correctly
-   - `https://YOUR-DOMAIN.com/manifest.json` — Returns JSON, not a 404
-   - `https://YOUR-DOMAIN.com/.well-known/assetlinks.json` — Returns JSON, not a 404
-   - `https://YOUR-DOMAIN.com/.well-known/apple-app-site-association` — Returns JSON, not a 404
-   - `https://YOUR-DOMAIN.com/api/health` — Returns `{"status":"ok",...}`
-3. Make sure your site uses **HTTPS**. Both app stores require a secure connection and
-   Median.co will refuse to wrap an HTTP-only site.
-4. Make sure all pages load correctly on a real mobile device browser before wrapping.
-
----
-
-## 3. Update Placeholder Values in Code
-
-Several files contain placeholder values that you must replace with your real information
-before publishing. Each one is listed below with the exact file path and what to change.
+| Item | Status | Action Required |
+|------|--------|-----------------|
+| Apple App Store ID | PENDING | Replace `__YOUR_APP_ID__` in `hooks/use-app-rating.ts` |
+| Production Razorpay Keys | PENDING | Replace test keys with live keys |
+| SEO Indexing | DISABLED | Change `index: false` to `index: true` in `app/layout.tsx` when ready |
+| Business Contact Info | NEEDS UPDATE | Update phone/email in `lib/site-config.ts` |
 
 ---
 
-### 3a. Android Digital Asset Links
+## 2. Accounts & Memberships Required
 
-**File:** `public/.well-known/assetlinks.json`
+| Account | Cost | URL | Status |
+|---------|------|-----|--------|
+| Median.co | $99+/year per platform | https://median.co/pricing | Required |
+| Google Play Developer | One-time $25 | https://play.google.com/console | Required |
+| Apple Developer Program | $99/year | https://developer.apple.com/programs/ | Required |
+| OneSignal | Free tier | https://onesignal.com | CONFIGURED |
+| Firebase (for Google Sign-In) | Free | https://console.firebase.google.com | CONFIGURED |
+| Razorpay | Per transaction | https://razorpay.com | CONFIGURED (test mode) |
+| ImageKit | Free tier | https://imagekit.io | CONFIGURED |
+| MongoDB Atlas | Free tier | https://mongodb.com | CONFIGURED |
+| Vercel | Free tier | https://vercel.com | CONFIGURED |
 
-Replace `REPLACE_WITH_YOUR_SHA256_FINGERPRINT` with the actual SHA-256 fingerprint of your
-Android signing key.
+---
 
-**How to get the fingerprint:**
+## 3. Environment Variables
 
-1. In Google Play Console, go to **Setup > App signing**.
-2. Under "App signing key certificate", copy the SHA-256 fingerprint shown there.
-3. Paste it into the file, replacing `REPLACE_WITH_YOUR_SHA256_FINGERPRINT`.
+### Currently Configured (in `.env.example`)
 
-The file should look like this when done:
+```bash
+# MongoDB
+MONGODB_URI=mongodb+srv://... (CONFIGURED)
 
-```json
-[
-  {
-    "relation": ["delegate_permission/common.handle_all_urls"],
-    "target": {
-      "namespace": "android_app",
-      "package_name": "com.smarttechbazaar.app",
-      "sha256_cert_fingerprints": [
-        "AB:CD:12:34:EF:..."
-      ]
-    }
-  }
-]
+# ImageKit
+IMAGEKIT_URL_ENDPOINT=https://ik.imagekit.io/sabkatechbazar (CONFIGURED)
+IMAGEKIT_PUBLIC_KEY=public_TWHqSdyjv7kGh032TGbBKZb/AIc= (CONFIGURED)
+IMAGEKIT_PRIVATE_KEY=private_LygDURJqV/8OVn5bN3moIAWdd84= (CONFIGURED)
+
+# NextAuth
+NEXTAUTH_SECRET=your-super-secret-key-here-change-in-production (CHANGE FOR PRODUCTION)
+NEXTAUTH_URL=http://localhost:3000 (CHANGE FOR PRODUCTION)
+
+# Firebase (Google Sign-in)
+NEXT_PUBLIC_FIREBASE_API_KEY=AIzaSyAyuKH1MP_MttahHqtRyh8sJMsZtNw33GU (CONFIGURED)
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=sabkatechbazar.firebaseapp.com (CONFIGURED)
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=sabkatechbazar (CONFIGURED)
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=sabkatechbazar.firebasestorage.app (CONFIGURED)
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=393630939714 (CONFIGURED)
+NEXT_PUBLIC_FIREBASE_APP_ID=1:393630939714:web:227ef59d3c9e770c624bdb (CONFIGURED)
+
+# Razorpay (TEST KEYS - CHANGE FOR PRODUCTION)
+RAZORPAY_KEY_ID=rzp_test_SdrRacK0lWfohO (CHANGE FOR PRODUCTION)
+RAZORPAY_KEY_SECRET=rvsn07IwQKe9Hrj2rQrE2IiJ (CHANGE FOR PRODUCTION)
+NEXT_PUBLIC_RAZORPAY_KEY_ID=rzp_test_SdrRacK0lWfohO (CHANGE FOR PRODUCTION)
+
+# Vercel Blob
+BLOB_READ_WRITE_TOKEN=vercel_blob_rw_XZtLy2nIoGQ8mDbG_... (CONFIGURED)
+
+# OneSignal Push Notifications
+ONESIGNAL_APP_ID=70c19aa3-9238-4543-acf1-0c564fc4af5a (CONFIGURED)
+ONESIGNAL_REST_API_KEY=os_v2_app_odazvi4shbcuhlhrbrle7rfpliovgz5l5lee22mcuhnhikag4oxxulsvpxhq5wx7jgieto6vokyxrdpu3sryyh72ll4zju4q2syg7hy (CONFIGURED)
 ```
 
-**Also update `package_name`** if you chose a different package name in Play Console.
-The current value is `com.smarttechbazaar.app`. It must match exactly what you registered
-in the Play Console.
+### Production Changes Required
+
+Before going live, update these in Vercel Dashboard > Settings > Environment Variables:
+
+| Variable | Current | Production Value |
+|----------|---------|------------------|
+| `NEXTAUTH_SECRET` | Placeholder | Generate: `openssl rand -base64 32` |
+| `NEXTAUTH_URL` | `http://localhost:3000` | `https://smarttechbazaar.com` |
+| `NEXT_PUBLIC_SITE_URL` | Not set | `https://smarttechbazaar.com` |
+| `RAZORPAY_KEY_ID` | Test key (`rzp_test_...`) | Live key (`rzp_live_...`) |
+| `RAZORPAY_KEY_SECRET` | Test secret | Live secret |
+| `NEXT_PUBLIC_RAZORPAY_KEY_ID` | Test key | Live key |
 
 ---
 
-### 3b. Apple App Site Association (iOS Universal Links)
+## 4. Remaining Code Updates
 
-**File:** `public/.well-known/apple-app-site-association`
+### 4a. Apple App Store ID (REQUIRED)
 
-Replace both occurrences of `TEAM_ID` with your 10-character Apple Developer Team ID.
+**File:** `hooks/use-app-rating.ts` (Line ~104)
 
-**How to find your Team ID:**
-
-1. Log in to https://developer.apple.com/account
-2. Click on your name in the top-right corner, then "Membership details"
-3. Your Team ID is listed there (e.g. `A1B2C3D4E5`)
-
-The file should look like this when done:
-
-```json
-{
-  "applinks": {
-    "apps": [],
-    "details": [
-      {
-        "appID": "A1B2C3D4E5.com.smarttechbazaar.app",
-        ...
-      }
-    ]
-  },
-  "webcredentials": {
-    "apps": [
-      "A1B2C3D4E5.com.smarttechbazaar.app"
-    ]
-  }
-}
-```
-
-**Also update the bundle identifier** (`com.smarttechbazaar.app`) if you chose a different
-one in App Store Connect. It must match exactly.
-
----
-
-### 3c. App Store & Play Store Rating Links
-
-**File:** `hooks/use-app-rating.ts`
-
-Find this line:
-
-```ts
+Find:
+```typescript
 window.open("https://apps.apple.com/app/id__YOUR_APP_ID__", "_blank");
 ```
 
-Replace `__YOUR_APP_ID__` with your numeric Apple App Store app ID.
+Replace `__YOUR_APP_ID__` with your numeric Apple App Store ID (e.g., `6504123456`).
 
-**How to find your App ID:**
-
+**How to get your App ID:**
 1. Go to https://appstoreconnect.apple.com
 2. Select your app
-3. Go to **App Information** — your Apple ID (a number like `6504123456`) is shown there
+3. Go to **App Information** — your Apple ID is shown there
 
-The corrected line should look like:
+### 4b. Enable SEO Indexing (when ready for public)
 
-```ts
-window.open("https://apps.apple.com/app/id6504123456", "_blank");
+**File:** `app/layout.tsx`
+
+Find the robots metadata and change from:
+```typescript
+robots: {
+  index: false,
+  follow: false,
+}
 ```
 
-The Play Store link below it already uses the package name and requires no change
-if you kept `com.smarttechbazaar.app` as your package name.
-
----
-
-### 3d. Deep Link Scheme (Optional but Recommended)
-
-**File:** `hooks/use-deep-linking.ts`
-
-The custom URL scheme is currently set to `stb://`. If you want to change this
-(for example to `smarttechbazaar://`), find all occurrences of `stb://` in the file
-and replace them. Also register the same custom scheme in Median.co when configuring
-your app (covered in Step 6).
-
----
-
-## 4. App Icons & Splash Screens
-
-The app currently ships with placeholder generated icons. You must replace these with
-**high-quality, properly sized icons** before submitting to either store.
-Reviewers will reject an app with blurry, pixelated, or clearly placeholder icons.
-
-### 4a. Create Your Final App Icon
-
-- Design a **1024×1024 px** master icon in PNG format (no transparency for iOS).
-- The icon must have no text, no screenshots, no Apple or Google trademarked images.
-- It must not look like an existing app icon.
-
-**Tools you can use:**
-
-- Figma (free) — design the icon, export at 1024×1024
-- Adobe Illustrator
-- Canva
-
-### 4b. Generate All Required Sizes
-
-Once you have the 1024×1024 master icon:
-
-1. Go to https://www.appicon.co/ (free tool)
-2. Upload your 1024×1024 PNG
-3. Check all platforms (iOS, Android)
-4. Download the ZIP — it contains all required sizes
-
-### 4c. Place Icons in the Project
-
-Replace the placeholder files in `public/icons/` with your generated icons:
-
-| File | Required Size |
-|---|---|
-| `public/icons/icon-512x512.png` | 512×512 px |
-| `public/icons/icon-192x192.png` | 192×192 px |
-| `public/icons/icon-32x32.png` | 32×32 px |
-
-Update `public/manifest.json` to reference the correct file types (`"type": "image/png"`)
-if you switch from `.jpg` to `.png`.
-
-Also update `app/layout.tsx` icon paths to match your final filenames.
-
-### 4d. Splash Screens for iOS
-
-iOS requires launch (splash) screen images. Create a simple splash screen with your logo
-on a white or brand-colored background and export at these sizes:
-
-| File to create | Size |
-|---|---|
-| `public/splash/apple-splash-2048-2732.png` | 2048×2732 px |
-| `public/splash/apple-splash-1668-2388.png` | 1668×2388 px |
-| `public/splash/apple-splash-1536-2048.png` | 1536×2048 px |
-| `public/splash/apple-splash-1290-2796.png` | 1290×2796 px |
-| `public/splash/apple-splash-1179-2556.png` | 1179×2556 px |
-| `public/splash/apple-splash-1170-2532.png` | 1170×2532 px |
-| `public/splash/apple-splash-1125-2436.png` | 1125×2436 px |
-| `public/splash/apple-splash-750-1334.png` | 750×1334 px |
-
-Median.co also has a splash screen configuration inside its dashboard that can override
-or supplement these files — configure it in Step 6.
-
----
-
-## 5. Set Up OneSignal for Push Notifications
-
-Push notifications are critical. Both stores look for evidence of real native features.
-An app that is purely a web wrapper with no native capability will be rejected.
-
-### 5a. Create a OneSignal Account and App
-
-1. Go to https://onesignal.com and create a free account.
-2. Click **New App/Website** and name it "Smart Tech Bazaar".
-3. Select **Google Android** first, complete the setup, then repeat for **Apple iOS**.
-
-### 5b. Android (FCM Setup)
-
-1. Go to https://console.firebase.google.com and create a new Firebase project (free).
-2. Add an Android app with package name `com.smarttechbazaar.app`.
-3. Download `google-services.json` — you will need to give this to Median.co.
-4. In Firebase, go to **Project Settings > Cloud Messaging** and copy your **Server Key**.
-5. Back in OneSignal Android setup, paste the Server Key when prompted.
-
-### 5c. iOS (APNs Setup)
-
-1. In your Apple Developer account, go to **Certificates, Identifiers & Profiles**.
-2. Under **Keys**, create a new key, enable **Apple Push Notifications service (APNs)**.
-3. Download the `.p8` key file (you can only download it once — save it safely).
-4. Note down your **Key ID** and **Team ID**.
-5. In OneSignal iOS setup, upload the `.p8` file and enter the Key ID and Team ID.
-
-### 5d. Get Your OneSignal App ID and REST API Key
-
-After completing setup, your OneSignal App ID is shown on the dashboard.
-It looks like: `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`
-
-Save this — you need to enter it in Median.co in the next step.
-
-### 5e. Configure Server-Side Push Notifications
-
-The app sends push notifications from the server when:
-- An order is placed (customer receives confirmation)
-- Order status changes (shipped, delivered, cancelled, etc.)
-- Support ticket receives a reply
-- Support ticket is resolved
-
-To enable server-side push notifications, add these environment variables to your
-Vercel project (or `.env.local` for local testing):
-
-```
-ONESIGNAL_APP_ID=your-app-id-here
-ONESIGNAL_REST_API_KEY=your-rest-api-key-here
+To:
+```typescript
+robots: {
+  index: true,
+  follow: true,
+}
 ```
 
-**To get your REST API Key:**
+### 4c. Update Business Contact Info (RECOMMENDED)
 
-1. In OneSignal dashboard, go to **Settings > Keys & IDs**.
-2. Copy the **REST API Key** (starts with `os_v2_app_...` for newer accounts).
-3. Add it to your environment variables.
+**File:** `lib/site-config.ts`
 
-**Important:** The REST API Key is secret and must never be exposed in client-side code.
-It is only used in server-side API routes.
+Update with real business information:
+- `business.email` — Real support email
+- `business.phone` — Real phone number
+- `business.address` — Real business address
+- `business.geo` — Correct coordinates
+- `business.socialLinks` — Real social media URLs
 
 ---
 
-## 6. Set Up Median.co App Project
+## 5. OneSignal Push Notifications
 
-This is where you configure the actual mobile app wrapper.
+### Current Status: CONFIGURED
 
-1. Log in to https://median.co and click **Create New App**.
-2. Enter your live website URL (e.g. `https://smarttechbazaar.com`).
-3. Give the app a name: **Smart Tech Bazaar**.
+| Platform | Status | Notes |
+|----------|--------|-------|
+| Web Push | CONFIGURED | Working |
+| Android (FCM) | CONFIGURED | You confirmed FCM is set up |
+| iOS (APNs) | PENDING | Requires Apple Developer account |
 
-### 6a. App Appearance
+### OneSignal Credentials
 
-- Upload your app icon (1024×1024 PNG, no transparency).
-- Set the splash screen background color to `#FFFFFF` (white) or `#E31837` (brand red).
-- Upload your splash screen image (your logo centered on the background color).
-- Set the status bar style to **Light** (white icons on red header).
+```
+App ID: 70c19aa3-9238-4543-acf1-0c564fc4af5a
+REST API Key: os_v2_app_odazvi4shbcuhlhrbrle7rfpliovgz5l5lee22mcuhnhikag4oxxulsvpxhq5wx7jgieto6vokyxrdpu3sryyh72ll4zju4q2syg7hy
+```
 
-### 6b. Navigation
+### Server-Side Push Integration (DONE)
 
-- **Disable** the default Median.co navigation bar — the website already has its own header.
-- Enable **pull-to-refresh** for a native feel.
-- Set the **initial URL** to `https://YOUR-DOMAIN.com/`.
+Push notifications are automatically sent for:
+- Order placed confirmation
+- Order status updates (shipped, delivered, cancelled, etc.)
+- Support ticket replies
+- Support ticket resolved
 
-### 6c. Push Notifications (OneSignal)
+**Files updated:**
+- `lib/push-notifications.ts` — Core push notification service
+- `app/api/payment/verify/route.ts` — Sends push on order placed
+- `app/api/admin/orders/[id]/route.ts` — Sends push on status change
+- `app/api/admin/tickets/[id]/reply/route.ts` — Sends push on ticket reply
+- `app/api/admin/tickets/[id]/route.ts` — Sends push on ticket resolved
 
-- Enable the **OneSignal plugin** in Median.co.
-- Paste your **OneSignal App ID** from Step 5d.
-- Set the **prompt timing** to "After 3 seconds on first launch" or use the soft-ask prompt
-  (the `PushNotificationBanner` component already handles this in the web app).
+### iOS APNs Setup (REQUIRED for iOS)
 
-### 6d. Permissions
+1. Go to https://developer.apple.com > Certificates, Identifiers & Profiles
+2. Under **Keys**, create a new key with **Apple Push Notifications service (APNs)** enabled
+3. Download the `.p8` key file (save it securely — you can only download once)
+4. Note your **Key ID** and **Team ID** (already have: `5TGG836W7V`)
+5. In OneSignal dashboard, go to **Settings > Platforms > Apple iOS**
+6. Upload the `.p8` file and enter Key ID and Team ID
+7. Save
 
-Enable the following device permissions in the Median.co configuration:
+---
 
-| Permission | Reason |
-|---|---|
-| Push Notifications | Order updates, promotions |
-| Camera | Product image uploads, profile photo |
-| Photo Library | Upload images |
-| Location (optional) | Show nearby stores or delivery estimates |
+## 6. Median.co Configuration
 
-### 6e. Custom URL Scheme (Deep Linking)
+### App Details
 
-- Register the URL scheme `stb` so deep links like `stb://product/123` work.
-- Under **URL Handling**, add your domain `smarttechbazaar.com` so universal links work.
+| Setting | Value |
+|---------|-------|
+| App Name | Smart Tech Bazaar |
+| Website URL | `https://smarttechbazaar.com` |
+| Package Name (Android) | `com.smarttechbazaar.app` |
+| Bundle ID (iOS) | `com.smarttechbazaar.app` |
+| Team ID (iOS) | `5TGG836W7V` |
+| Theme Color | `#E31837` |
+| Background Color | `#FFFFFF` |
 
-### 6f. CSS to Inject (App-Specific Styling)
+### Native Plugins to Enable
 
-In Median.co's **CSS Injection** field, add the following to hide the web footer
-inside the app (the footer is unnecessary in native apps):
+| Plugin | Configuration |
+|--------|---------------|
+| OneSignal | App ID: `70c19aa3-9238-4543-acf1-0c564fc4af5a` |
+| Social Login (Google) | Web Client ID: `393630939714-ccgciu2tmtf7me0souh2vt7a1ctqe1bf.apps.googleusercontent.com` |
+| Social Login (Apple) | Enable for iOS |
+| Pull to Refresh | Enable |
+| Camera | Enable (for product reviews/profile photos) |
+| Photo Library | Enable |
 
+### URL Scheme Configuration
+
+| Setting | Value |
+|---------|-------|
+| Custom URL Scheme | `stb` |
+| Associated Domains | `smarttechbazaar.com` |
+
+### CSS Injection (Optional)
+
+To hide the web footer in the native app:
 ```css
 footer { display: none !important; }
 ```
 
-### 6g. JavaScript to Inject (Optional)
+### Android-Specific
 
-If you want Median.co to set the `native-app` body class explicitly on load:
+- Minimum Android Version: 7.0 (API 24)
+- Upload `google-services.json` from Firebase
+- SHA-256 fingerprint configured in `assetlinks.json`
 
-```javascript
-document.body.classList.add('native-app');
-```
+### iOS-Specific
 
-### 6h. Android-Specific Configuration
-
-- **Package name:** `com.smarttechbazaar.app` (must match `assetlinks.json`)
-- **Minimum Android version:** 7.0 (API 24) or higher
-- Upload `google-services.json` from Firebase (from Step 5b) when prompted.
-- Enable **App Signing** and note the SHA-256 fingerprint for `assetlinks.json` (Step 3a).
-
-### 6i. iOS-Specific Configuration
-
-- **Bundle identifier:** `com.smarttechbazaar.app` (must match `apple-app-site-association`)
-
-### 6j. Social Login (Google Sign-In) — CRITICAL
-
-**This step is required to fix the "stuck on firebaseapp.com" issue during Google Sign-In.**
-
-The app uses Median.co's native Social Login plugin instead of Firebase's web-based OAuth
-popup. This ensures Google Sign-In works correctly inside the native app without opening
-an external browser that can't redirect back to the app.
-
-#### Known Credentials (already wired into code)
-
-| Credential | Value | Status |
-|---|---|---|
-| Web Client ID | `393630939714-ccgciu2tmtf7me0souh2vt7a1ctqe1bf.apps.googleusercontent.com` | DONE — in code |
-| SHA-1 Fingerprint | `D7:A4:FE:2F:A0:D0:08:15:D5:B2:9A:5A:B7:02:3D:78:3C:43:23:D0` | Use in Google Cloud Console |
-| iOS Client ID | (not yet provided) | TODO |
-| iOS URL Scheme | (not yet provided) | TODO |
-
-#### Android Setup (use your SHA-1 above)
-
-1. In the Median.co dashboard, go to **Native Plugins > Social Login**.
-2. Enable **Google Sign-In** and paste the Web Client ID above.
-3. In Google Cloud Console, go to **APIs & Services > Credentials**.
-4. Create an **OAuth 2.0 Client ID** of type **Android**.
-5. Enter package name: `com.smarttechbazaar.app`
-6. Enter the SHA-1 fingerprint shown above: `D7:A4:FE:2F:A0:D0:08:15:D5:B2:9A:5A:B7:02:3D:78:3C:43:23:D0`
-7. Save — Google will generate an Android Client ID. Paste it into Median.co if it asks.
-
-> IMPORTANT — `assetlinks.json` needs a **SHA-256**, not SHA-1.
-> Get the SHA-256 from: Play Console > Release > Setup > App Integrity > App signing key certificate.
-> Then update `/public/.well-known/assetlinks.json` with that value.
-
-#### iOS Setup (TODO — need iOS Client ID)
-
-1. In Google Cloud Console, create an **OAuth 2.0 Client ID** of type **iOS**.
-2. Enter Bundle ID: `com.smarttechbazaar.app`
-3. Copy the generated **iOS Client ID** and paste it in Median.co Social Login > iOS Client ID.
-4. Copy the **iOS URL Scheme** (reversed client ID, format: `com.googleusercontent.apps.XXXXX`).
-5. In Median.co under **URL Schemes**, add the reversed client ID.
-6. Update this document with the iOS Client ID and URL Scheme once obtained.
-
-#### Sign in with Apple (iOS only — required by App Store guidelines)
-
-Apple requires apps with third-party social login to also offer "Sign in with Apple".
-
-1. In Median.co, enable **Sign in with Apple** under Social Login.
-2. In your Apple Developer account, enable "Sign in with Apple" for your App ID.
-3. The app code already supports native Apple Sign-In when the plugin is enabled.
-
-#### How the Code Works
-
-The login and register pages automatically detect if they are inside a Median.co native app:
-
-- **Native app:** Uses `median.socialLogin.google.login({ clientId: WEB_CLIENT_ID })` which
-  triggers the native Google SDK. No browser is opened. The result is returned directly to JS.
-
-- **Web browser:** Falls back to Firebase `signInWithPopup()` which works correctly in browsers.
-
-The Web Client ID is embedded in both `lib/firebase.ts` and `lib/native-app.ts`. No further
-code changes are needed once the Median.co Social Login plugin is configured in their dashboard.
-- **Minimum iOS version:** 16.0 or higher
-- Enable **Push Notifications** capability in the iOS configuration.
-- Enable **Associated Domains** capability and add `applinks:YOUR-DOMAIN.com`.
+- Minimum iOS Version: 16.0
+- Enable Push Notifications capability
+- Enable Associated Domains capability: `applinks:smarttechbazaar.com`
 
 ---
 
-## 7. Android — Google Play Store
+## 7. Google Play Store Submission
 
-### 7a. Create Your App in Play Console
+### 7a. Store Listing Information
 
-1. Go to https://play.google.com/console
-2. Click **Create app**.
-3. Fill in:
-   - App name: **Smart Tech Bazaar**
-   - Default language: **English (India)** or your primary language
-   - App or game: **App**
-   - Free or paid: **Free**
-4. Accept the declarations and click **Create app**.
+| Item | Value/Requirement |
+|------|-------------------|
+| App Name | Smart Tech Bazaar (max 30 chars) |
+| Short Description | Shop computer accessories, CCTV, printers & IT solutions (max 80 chars) |
+| Full Description | 4000 characters describing features |
+| Category | Shopping |
+| Content Rating | Complete questionnaire (likely "Everyone") |
+| App Icon | 512x512 PNG — use `public/icons/icon-512x512.png` |
+| Feature Graphic | Create 1024x500 PNG banner |
+| Screenshots | Min 2 phone screenshots (1080x1920 or similar) |
+| Privacy Policy | `https://smarttechbazaar.com/privacy` |
 
-### 7b. Store Listing
+### 7b. Data Safety Form
 
-Fill out all required fields under **Grow > Store presence > Main store listing**:
+| Data Type | Collected? | Shared? |
+|-----------|------------|---------|
+| Name | Yes | No |
+| Email address | Yes | No |
+| Phone number | Yes | No |
+| User IDs | Yes | No |
+| Purchase history | Yes | No |
+| Device IDs | Yes | No (used for push notifications only) |
 
-- **App name:** Smart Tech Bazaar (max 30 characters)
-- **Short description:** Shop computer accessories, CCTV, printers & IT solutions (max 80 characters)
-- **Full description:** Write at least 4000 characters describing the app features, what users can do, and why it is useful. Do NOT copy-paste generic text — Google will flag it.
-- **App icon:** Upload your 512×512 PNG icon
-- **Feature graphic:** Create a 1024×500 px banner image (required)
-- **Screenshots:** Upload at least 2 phone screenshots (1080×1920 px recommended)
-  Take real screenshots of your app on a device or emulator.
+### 7c. App Content
 
-### 7c. App Content (Important — Do Not Skip)
-
-Under **Policy > App content**, fill out every section:
-
-- **Privacy policy:** Paste the full URL to your privacy policy page, e.g. `https://YOUR-DOMAIN.com/privacy`
-- **Ads:** Select "No, this app does not contain ads" (unless you have ads)
-- **App access:** Select "All or most functionality is accessible without special access" or provide test credentials if login is required — provide a demo account (email + password) for the reviewer
-- **Content rating:** Complete the questionnaire. For a shopping app, you will likely receive a rating of "Everyone"
-- **Target audience:** Select the appropriate age range (e.g. 18+)
-- **Data safety:** Complete the Data Safety form — see Section 9 for what to declare
+- **App access:** Provide test credentials for reviewers
+- **Test account:** Create a dedicated reviewer account
+- **Target audience:** 13+ (no children's content)
 
 ### 7d. Release
 
-1. Under **Release > Production**, click **Create new release**.
-2. Upload the signed `.aab` file generated by Median.co.
-3. Write release notes.
-4. Roll out to 100% (or start with a smaller percentage for a staged rollout).
-5. Submit for review. Initial reviews take 3–7 business days.
+1. Create Internal Testing track first
+2. Test on real devices
+3. Create Production release
+4. Upload `.aab` file from Median.co
+5. Submit for review (3-7 days)
 
 ---
 
-## 8. iOS — Apple App Store
+## 8. Apple App Store Submission
 
-### 8a. Create Your App in App Store Connect
+### 8a. App Store Connect Setup
 
-1. Go to https://appstoreconnect.apple.com
-2. Click **My Apps**, then the **+** button and **New App**.
-3. Fill in:
-   - Platform: **iOS**
-   - Name: **Smart Tech Bazaar**
-   - Primary language: **English (India)** or your choice
-   - Bundle ID: Select `com.smarttechbazaar.app` (must already be registered in your developer account)
-   - SKU: A unique identifier, e.g. `stb-ios-001`
-   - User access: **Full access**
+| Setting | Value |
+|---------|-------|
+| Bundle ID | `com.smarttechbazaar.app` |
+| Team ID | `5TGG836W7V` |
+| SKU | `stb-ios-001` |
+| Category | Shopping (Primary), Business (Secondary) |
+| Price | Free |
 
-### 8b. App Store Listing
+### 8b. App Information
 
-Under **App Information** and **Pricing and Availability**:
+| Item | Value/Requirement |
+|------|-------------------|
+| App Name | Smart Tech Bazaar |
+| Subtitle | Computer Accessories & IT Solutions (max 30 chars) |
+| Keywords | computer accessories, CCTV, printers, networking, IT solutions, B2B, wholesale, India (max 100 chars) |
+| Description | Full description of features |
+| Privacy Policy URL | `https://smarttechbazaar.com/privacy` |
+| Support URL | `https://smarttechbazaar.com/contact` |
 
-- **Category:** Shopping (Primary), Business (Secondary)
-- **Privacy Policy URL:** `https://YOUR-DOMAIN.com/privacy` (required)
-- **Price:** Free
+### 8c. Screenshots Required
 
-Under **Prepare for Submission** (your version):
+| Device | Size | Quantity |
+|--------|------|----------|
+| iPhone 6.7" | 1290x2796 | Min 2 |
+| iPhone 5.5" | 1242x2208 | Min 2 |
+| iPad 12.9" (if supporting) | 2048x2732 | Min 2 |
 
-- **App name:** Smart Tech Bazaar
-- **Subtitle:** Computer Accessories & IT Solutions (max 30 characters, optional)
-- **Keywords:** computer accessories, CCTV, printers, networking, IT solutions, B2B, wholesale, India (max 100 characters total, comma-separated)
-- **Description:** Write a full description of the app. Mention all native features — push notifications, account management, order tracking.
-- **What's New:** Write brief release notes for version 1.0
-- **Support URL:** `https://YOUR-DOMAIN.com/contact` or your support email URL
-- **Screenshots:** Required sizes:
-  - iPhone 6.7": 1290×2796 px (at least 3 screenshots)
-  - iPhone 5.5": 1242×2208 px (at least 3 screenshots)
-  - iPad 12.9" (if you support iPad): 2048×2732 px
+### 8d. App Review Information
 
-### 8c. App Review Information (Critical)
-
-Apple reviewers must be able to test your app. Fill in the **App Review Information** section:
+**CRITICAL:** Apple will reject without valid test credentials.
 
 - **Sign-in required:** YES
-- **Username:** Create a test account specifically for Apple review, e.g. `appreviewer@smarttechbazaar.com`
-- **Password:** Set a password for this test account
-- **Notes for reviewer:** Write 2–3 sentences explaining what the app does and what the reviewer should test. For example:
+- **Username:** Create test account: `appreviewer@smarttechbazaar.com`
+- **Password:** Set a secure password
+- **Notes for reviewer:**
   > "Smart Tech Bazaar is a B2B and B2C e-commerce app for computer accessories and IT equipment. Use the provided credentials to browse products, add items to cart, and view order history. Push notifications can be enabled from the notification prompt that appears on first use."
 
-Without valid test credentials, Apple will reject the app with "We were unable to review your app".
+### 8e. Export Compliance
 
-### 8d. Export Compliance
-
-When prompted:
-- **Does your app use encryption?** — Select **Yes** if you use HTTPS (you do).
-- **Does it qualify for the exemption?** — Select **Yes** (standard HTTPS qualifies under the encryption exemption for US export compliance).
-- This avoids needing to file an annual self-classification report.
-
-### 8e. Age Rating
-
-Complete the **Age Rating** questionnaire. A shopping app with no adult content will
-receive a **4+** or **12+** rating.
+- **Uses encryption?** YES (HTTPS)
+- **Qualifies for exemption?** YES (standard HTTPS qualifies)
 
 ### 8f. Build Upload
 
-1. Median.co will generate a `.ipa` file (or you can have them submit directly via Xcode Cloud).
-2. Upload the `.ipa` using **Transporter** (Mac app, free on App Store) or Xcode.
-3. Wait for the build to process (15–30 minutes) then select it under your version.
-4. Click **Submit for Review**.
-5. Apple reviews typically take 24–72 hours for the first submission.
+1. Median.co generates `.ipa` file
+2. Upload via **Transporter** (Mac app) or Xcode
+3. Wait for processing (15-30 minutes)
+4. Select build and submit
+5. Review time: 1-7 days
 
 ---
 
-## 9. Privacy Policy & Legal Pages
+## 9. Pre-Submission Testing Checklist
 
-Both stores require a publicly accessible privacy policy that is accurate and complete.
+### Functionality Tests
 
-### What Must Be in Your Privacy Policy
+- [ ] Home page loads correctly
+- [ ] Product browsing and search work
+- [ ] Category filtering works
+- [ ] Add to cart works
+- [ ] User registration works
+- [ ] User login works (email/password)
+- [ ] Google Sign-In works in native app
+- [ ] Checkout flow completes
+- [ ] Payment (Razorpay) works
+- [ ] Order confirmation displays
+- [ ] Order history loads in dashboard
+- [ ] Order detail page shows timeline
+- [ ] Support ticket creation works
+- [ ] Support ticket replies work
+- [ ] Profile editing works
+- [ ] Address management works
+- [ ] Password change works
+- [ ] Account deletion works
+- [ ] Data export works
 
-The privacy policy at `/privacy` already exists in the app. Verify it covers all of the following. If anything is missing, add it.
+### Push Notification Tests
 
-**Data you collect:**
+- [ ] Permission prompt appears on first launch
+- [ ] Push notification received after order placed
+- [ ] Push notification received when order shipped
+- [ ] Push notification received when ticket replied
+- [ ] Tapping notification opens correct page
 
-- [ ] Account information (name, email, phone number)
-- [ ] Order history and transaction data
-- [ ] Device information (for push notifications)
-- [ ] Usage data (pages visited)
+### Native App Tests
 
-**How data is used:**
+- [ ] App installs correctly
+- [ ] Splash screen displays
+- [ ] App icon appears correctly
+- [ ] Deep links work (`stb://product/...`)
+- [ ] Universal links work (website URLs open in app)
+- [ ] Back button works correctly on Android
+- [ ] Pull to refresh works
+- [ ] Offline page appears when no internet
+- [ ] App rating dialog appears after 3 sessions
 
-- [ ] To process orders
-- [ ] To send order status notifications
-- [ ] To send promotional notifications (only if user opts in)
-- [ ] For customer support
+### Performance Tests
 
-**Third-party services used:**
-
-- [ ] OneSignal (push notifications) — link to https://onesignal.com/privacy_policy
-- [ ] Payment gateway (Razorpay, Stripe, etc.) — link to their privacy policy
-
-**User rights:**
-
-- [ ] Right to access their data (Data Export feature — already built at `/dashboard/security`)
-- [ ] Right to delete their account (Account Deletion feature — already built at `/dashboard/delete-account`)
-- [ ] Right to opt out of marketing notifications (Notification Settings — already built at `/dashboard/notifications`)
-
-**Contact information:**
-
-- [ ] Your company name and address
-- [ ] A contact email address for privacy inquiries
-
-### Google Play Data Safety Form
-
-In Play Console under **Policy > App content > Data safety**, declare:
-
-| Data Type | Collected? | Shared? | Notes |
-|---|---|---|---|
-| Name | Yes | No | Required for account creation |
-| Email address | Yes | No | Required for account and login |
-| Phone number | Yes | No | Required for orders |
-| User IDs | Yes | No | Internal account identifier |
-| Purchase history | Yes | No | Order tracking |
-| Device IDs | Yes | No | Push notification token |
-
-Select that data is collected but **not sold**, and is used only for **app functionality** and **analytics**.
+- [ ] Pages load within 3 seconds on 4G
+- [ ] Images load without broken links
+- [ ] No console errors in production
+- [ ] App doesn't crash
 
 ---
 
-## 10. Final Pre-Submission Checklist
+## 10. Post-Submission
 
-Go through this list one item at a time before you click submit on either store.
+### After Submitting
 
-### Code & Configuration
+- [ ] Monitor review status daily
+- [ ] Respond to reviewer questions promptly
+- [ ] If rejected, read feedback carefully and fix specific issues
+- [ ] Do not resubmit without addressing the exact rejection reason
 
-- [ ] `public/.well-known/assetlinks.json` — SHA-256 fingerprint is real (not the placeholder)
-- [ ] `public/.well-known/apple-app-site-association` — `TEAM_ID` replaced with real Team ID
-- [ ] `hooks/use-app-rating.ts` — Apple App Store ID replaced (not `__YOUR_APP_ID__`)
-- [ ] `public/manifest.json` — `id` field matches your package name / bundle ID
-- [ ] All icon files are real, high-quality PNG images (not placeholder JPGs)
-- [ ] Website is deployed to production and accessible over HTTPS
+### Typical Review Times
 
-### Median.co App Configuration
+| Platform | First Submission | Updates |
+|----------|------------------|---------|
+| Google Play | 3-7 business days | 1-3 days |
+| Apple App Store | 1-7 days | 1-2 days |
 
-- [ ] App name, icon, and splash screen are set correctly
-- [ ] OneSignal App ID is entered and push notifications are tested on a real device
-- [ ] Web footer is hidden via CSS injection
-- [ ] Deep link URL scheme `stb` is registered
-- [ ] Domain `smarttechbazaar.com` is added to URL handling
-- [ ] Android package name matches `assetlinks.json`
-- [ ] iOS bundle ID matches `apple-app-site-association`
+### Common Rejection Reasons
 
-### Functionality Testing (Test on a Real Device)
+**Google Play:**
+- Privacy policy missing or incomplete
+- Placeholder content ("Lorem ipsum")
+- App provides no value beyond website
+- Incorrect content rating
+- Undeclared permissions
 
-- [ ] App opens without a white screen or loading error
-- [ ] Home page, products, product detail all load correctly
-- [ ] User can register a new account
-- [ ] User can log in and log out
-- [ ] User can browse and add products to the cart
-- [ ] Checkout flow completes without errors
-- [ ] Push notification permission prompt appears
-- [ ] A test push notification can be received (send from OneSignal dashboard)
-- [ ] Account deletion flow works end-to-end
-- [ ] Data export downloads a valid JSON file
-- [ ] Offline page appears when there is no internet connection
-- [ ] Back button works correctly on Android (does not exit the app unexpectedly)
+**Apple App Store:**
+- Missing demo account credentials
+- App is just a website wrapper with no native features
+- Broken links or placeholder content
+- Login doesn't work
+- Description doesn't match functionality
 
-### Google Play Specific
+### Your Native Features (to mention in store listing)
 
-- [ ] Store listing is complete with all screenshots, icon, and feature graphic
-- [ ] Data Safety form is filled out
-- [ ] Content rating questionnaire is completed
-- [ ] Privacy policy URL is entered
-- [ ] Test credentials are added in App content section
-- [ ] Signed `.aab` file is uploaded
-
-### Apple App Store Specific
-
-- [ ] All required screenshot sizes are uploaded (6.7" and 5.5" required)
-- [ ] Privacy policy URL is entered
-- [ ] Test account credentials are entered in App Review Information
-- [ ] Age rating questionnaire is completed
-- [ ] Export compliance is answered
-- [ ] Associated Domains (`applinks:YOUR-DOMAIN.com`) is enabled in the app capabilities
-- [ ] Push Notifications capability is enabled
-- [ ] Build is uploaded and processed
+These justify the app is not just a web wrapper:
+- Native push notifications (order updates, support replies)
+- Native Google Sign-In
+- Native Apple Sign-In (iOS)
+- App rating prompts
+- Offline handling
+- Deep linking support
+- Biometric authentication (future)
+- Camera access for reviews
 
 ---
 
-## Important Notes
+## Quick Reference
 
-**Package name / Bundle ID:** Once you publish to either store with a package name or
-bundle ID, you can never change it. Choose carefully. The current value is
-`com.smarttechbazaar.app`.
+### URLs
 
-**App Review test account:** Create a permanent dedicated test account in your database
-that you never delete. Apple and Google reviewers use it repeatedly, including for
-future update reviews.
+| Purpose | URL |
+|---------|-----|
+| Google Play Console | https://play.google.com/console |
+| Apple App Store Connect | https://appstoreconnect.apple.com |
+| Apple Developer | https://developer.apple.com |
+| OneSignal Dashboard | https://onesignal.com |
+| Firebase Console | https://console.firebase.google.com |
+| Vercel Dashboard | https://vercel.com/dashboard |
+| Razorpay Dashboard | https://dashboard.razorpay.com |
 
-**Version numbers:** Your first release must be version `1.0.0`. Android build version
-code must be a positive integer starting at 1. Every update must have a higher version
-code.
+### App Identifiers
 
-**Responding to rejections:** If Apple or Google reject your app, they will give you a
-specific reason. Do not resubmit without addressing the exact issue they mention.
-You can reply to the rejection to ask for clarification before resubmitting.
+| Platform | Identifier |
+|----------|------------|
+| Android Package | `com.smarttechbazaar.app` |
+| iOS Bundle ID | `com.smarttechbazaar.app` |
+| Apple Team ID | `5TGG836W7V` |
+| OneSignal App ID | `70c19aa3-9238-4543-acf1-0c564fc4af5a` |
+| Firebase Project | `sabkatechbazar` |
+| Deep Link Scheme | `stb://` |
+
+### Key Files
+
+| File | Purpose |
+|------|---------|
+| `public/manifest.json` | PWA manifest |
+| `public/.well-known/assetlinks.json` | Android App Links |
+| `public/.well-known/apple-app-site-association` | iOS Universal Links |
+| `public/icons/icon-512x512.png` | App store icon |
+| `public/splash/` | iOS splash screens |
+| `lib/site-config.ts` | Business/SEO configuration |
+| `lib/push-notifications.ts` | Server-side push notifications |
+| `lib/native-app.ts` | Native app detection & features |
+| `hooks/use-app-rating.ts` | App rating prompts |
+| `.env.example` | Environment variables template |
