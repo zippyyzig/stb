@@ -16,6 +16,8 @@ import {
   ClipboardList,
   Clock,
   RotateCcw,
+  Download,
+  FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ViewInvoiceButton from "@/components/orders/ViewInvoiceButton";
@@ -158,7 +160,21 @@ export default function OrderDetailPage() {
         </div>
         <div className="ml-auto flex items-center gap-2">
           {order.paymentStatus === "paid" && (
-            <ViewInvoiceButton orderId={order._id} size="sm" />
+            <>
+              <ViewInvoiceButton orderId={order._id} size="sm" />
+              <Link href={`/dashboard/orders/${order._id}/invoice`}>
+                <Button variant="outline" size="sm" className="gap-1.5">
+                  <FileText className="h-4 w-4" />
+                  <span className="hidden sm:inline">Full Invoice</span>
+                </Button>
+              </Link>
+              <a href={`/api/orders/${order._id}/invoice/pdf`} download>
+                <Button variant="outline" size="sm" className="gap-1.5">
+                  <Download className="h-4 w-4" />
+                  <span className="hidden sm:inline">PDF</span>
+                </Button>
+              </a>
+            </>
           )}
           <span className={`text-xs font-medium px-2.5 py-1 rounded-full capitalize ${statusColors[order.status] || "bg-gray-100 text-gray-700"}`}>
             {order.status}

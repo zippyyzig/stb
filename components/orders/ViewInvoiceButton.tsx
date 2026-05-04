@@ -65,6 +65,7 @@ export default function ViewInvoiceButton({
         <InvoiceView
           invoice={invoice as Parameters<typeof InvoiceView>[0]["invoice"]}
           onClose={() => setInvoice(null)}
+          orderId={orderId}
         />
       )}
     </>

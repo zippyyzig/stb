@@ -11,6 +11,9 @@ import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import { OfflineAlert } from "@/components/ui/offline-alert";
+import { useNetworkStatus } from "@/hooks/useNetworkStatus";
+import { isRunningInMobileApp, getMobilePlatform, vibrate } from "@/lib/mobile-utils";
 import {
   ChevronRight,
   Loader2,
@@ -21,6 +24,7 @@ import {
   Plus,
   AlertCircle,
   CheckCircle2,
+  WifiOff,
 } from "lucide-react";
 
 // Razorpay types
@@ -173,6 +177,16 @@ export default function CheckoutPage() {
   // Tax breakdown state
   const [taxBreakdown, setTaxBreakdown] = useState<TaxBreakdown | null>(null);
   const [isCalculatingTax, setIsCalculatingTax] = useState(false);
+  
+  // Mobile app detection
+  const { isOnline } = useNetworkStatus();
+  const [isMobileApp, setIsMobileApp] = useState(false);
+  const [mobilePlatform, setMobilePlatform] = useState<"ios" | "android" | "web">("web");
+  
+  useEffect(() => {
+    setIsMobileApp(isRunningInMobileApp());
+    setMobilePlatform(getMobilePlatform());
+  }, []);
 
   const [newAddress, setNewAddress] = useState({
     name: "",
@@ -306,6 +320,14 @@ export default function CheckoutPage() {
   const initiateRazorpayPayment = async (retryOrderId?: string) => {
     if (!selectedAddress) {
       setOrderError("Please add a delivery address");
+      vibrate(100); // Haptic feedback on error
+      return;
+    }
+
+    // Check network connectivity (essential for mobile apps)
+    if (!isOnline) {
+      setOrderError("You're offline. Please check your internet connection and try again.");
+      vibrate([50, 100, 50]); // Haptic pattern for error
       return;
     }
 
@@ -518,6 +540,14 @@ export default function CheckoutPage() {
   const handlePlaceCODOrder = async () => {
     if (!selectedAddress) {
       setOrderError("Please add a delivery address");
+      vibrate(100);
+      return;
+    }
+
+    // Check network connectivity
+    if (!isOnline) {
+      setOrderError("You're offline. Please check your internet connection and try again.");
+      vibrate([50, 100, 50]);
       return;
     }
 
@@ -598,6 +628,9 @@ export default function CheckoutPage() {
 
   return (
     <div className="flex min-h-screen flex-col">
+      {/* Offline Alert for Mobile Apps */}
+      <OfflineAlert onRetry={() => window.location.reload()} />
+      
       {/* Load Razorpay Script */}
       <Script
         src="https://checkout.razorpay.com/v1/checkout.js"

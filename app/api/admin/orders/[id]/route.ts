@@ -8,7 +8,7 @@ import User from "@/models/User";
 import InventoryLog from "@/models/InventoryLog";
 import Notification from "@/models/Notification";
 import { sendEmail } from "@/lib/email";
-import { orderStatusUpdateTemplate, refundProcessedTemplate } from "@/lib/email-templates";
+import { orderStatusUpdateTemplate, refundProcessedTemplate, shippingNotificationTemplate, deliveryConfirmationTemplate } from "@/lib/email-templates";
 import { validateObjectId, sanitizeString } from "@/lib/validation";
 
 interface RouteParams {
@@ -147,6 +147,10 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       }
     }
 
+    // Track if tracking number is being added (for shipping notification email)
+    const previousTrackingNumber = order.trackingNumber;
+    const isNewTrackingNumber = data.trackingNumber && data.trackingNumber !== previousTrackingNumber;
+
     if (data.trackingNumber !== undefined) {
       order.trackingNumber = data.trackingNumber;
     }
@@ -208,6 +212,69 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
             html: refundEmail,
           });
         }
+
+        // If order is delivered, send delivery confirmation email
+        if (data.status === "delivered" && previousStatus !== "delivered") {
+          const deliveryEmail = deliveryConfirmationTemplate(
+            customer.name,
+            order.orderNumber,
+            new Date().toLocaleDateString("en-IN", { dateStyle: "full" }),
+            order.items.map((item: { name: string; quantity: number }) => ({
+              name: item.name,
+              quantity: item.quantity,
+            })),
+            order._id.toString()
+          );
+          await sendEmail({
+            to: customer.email,
+            subject: `Order Delivered - ${order.orderNumber}`,
+            html: deliveryEmail,
+          });
+        }
+      }
+    }
+
+    // Send shipping notification when tracking number is added
+    if (isNewTrackingNumber) {
+      const customer = await User.findById(order.user);
+      if (customer) {
+        const estimatedDeliveryStr = order.estimatedDelivery 
+          ? new Date(order.estimatedDelivery).toLocaleDateString("en-IN", { 
+              weekday: "long", 
+              day: "numeric", 
+              month: "long", 
+              year: "numeric" 
+            })
+          : undefined;
+
+        const shippingEmail = shippingNotificationTemplate(
+          customer.name,
+          order.orderNumber,
+          data.trackingNumber,
+          data.trackingUrl || order.trackingUrl,
+          undefined, // carrier - can be added to order model if needed
+          estimatedDeliveryStr,
+          order.items.map((item: { name: string; quantity: number }) => ({
+            name: item.name,
+            quantity: item.quantity,
+          })),
+          order._id.toString()
+        );
+        
+        await sendEmail({
+          to: customer.email,
+          subject: `Your Order ${order.orderNumber} Has Been Shipped!`,
+          html: shippingEmail,
+        });
+
+        // Create notification for customer
+        await Notification.create({
+          user: order.user,
+          type: "order",
+          title: "Order Shipped",
+          message: `Your order #${order.orderNumber} has been shipped! Tracking: ${data.trackingNumber}`,
+          link: `/dashboard/orders/${order._id}`,
+        });
       }
     }
 
