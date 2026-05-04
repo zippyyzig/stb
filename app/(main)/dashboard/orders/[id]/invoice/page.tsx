@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -13,9 +13,12 @@ import {
   CheckCircle,
   Copy,
   ExternalLink,
+  WifiOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import InvoiceView from "@/components/orders/InvoiceView";
+import { useNetworkStatus } from "@/hooks/useNetworkStatus";
+import { shareContent } from "@/lib/mobile-utils";
 
 interface InvoiceData {
   invoiceNumber: string;
@@ -77,6 +80,7 @@ export default function InvoicePage() {
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
+  const { isOnline } = useNetworkStatus();
 
   useEffect(() => {
     const loadInvoice = async () => {
@@ -100,6 +104,12 @@ export default function InvoicePage() {
   }, [orderId]);
 
   const handleDownloadPDF = async () => {
+    // Check network connectivity
+    if (!isOnline) {
+      setError("You're offline. Please check your internet connection to download the PDF.");
+      return;
+    }
+    
     setDownloading(true);
     try {
       const res = await fetch(`/api/orders/${orderId}/invoice/pdf`);
@@ -412,13 +422,13 @@ export default function InvoicePage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => {
-              if (navigator.share) {
-                navigator.share({
-                  title: `Invoice ${invoice.invoiceNumber}`,
-                  url: window.location.href,
-                });
-              } else {
+            onClick={async () => {
+              const shared = await shareContent({
+                title: `Invoice ${invoice.invoiceNumber}`,
+                text: `Invoice for Order ${invoice.orderNumber}`,
+                url: window.location.href,
+              });
+              if (!shared) {
                 handleCopyLink();
               }
             }}

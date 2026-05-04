@@ -95,7 +95,7 @@ export default async function OrderSuccessPage({
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
-      <main className="flex-1 bg-background px-4 py-10">
+      <main className="flex-1 bg-background px-4 py-6 pb-24 sm:py-10 sm:pb-10">
         <div className="mx-auto max-w-2xl">
           {/* Success Header */}
           <div className="text-center mb-8">
