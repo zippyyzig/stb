@@ -771,6 +771,43 @@ export default function CheckoutPage() {
                   </div>
                 )}
 
+                {/* Display selected new address (when no saved addresses or user entered new address) */}
+                {selectedAddress && selectedAddress._id === "new" && !showAddressForm && (
+                  <div className="space-y-3 mb-4">
+                    <div className="rounded-lg border border-primary bg-primary/5 p-3 md:p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
+                            <p className="text-sm font-medium">{selectedAddress.name}</p>
+                          </div>
+                          <p className="body-sm text-muted-foreground mt-1">{selectedAddress.phone}</p>
+                          <p className="body-sm mt-0.5 break-words text-muted-foreground">
+                            {selectedAddress.address}, {selectedAddress.city}, {selectedAddress.state} - {selectedAddress.pincode}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setShowAddressForm(true);
+                        setNewAddress({
+                          name: selectedAddress.name,
+                          phone: selectedAddress.phone,
+                          address: selectedAddress.address,
+                          city: selectedAddress.city,
+                          state: selectedAddress.state,
+                          pincode: selectedAddress.pincode,
+                        });
+                      }}
+                      className="flex items-center gap-2 text-sm text-primary hover:underline"
+                    >
+                      <MapPin className="h-4 w-4" />
+                      Edit or change address
+                    </button>
+                  </div>
+                )}
+
                 {/* New address form */}
                 {showAddressForm && (
                   <div className="space-y-4">
