@@ -434,6 +434,7 @@ export default function InvoicePage() {
         <InvoiceView
           invoice={invoice}
           onClose={() => setShowInvoiceModal(false)}
+          orderId={orderId}
         />
       )}
     </div>
