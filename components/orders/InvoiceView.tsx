@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef } from "react";
-import { Printer, Download } from "lucide-react";
+import { useRef, useState } from "react";
+import { Printer, Download, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface InvoiceItem {
@@ -60,10 +60,15 @@ interface InvoiceData {
 interface InvoiceViewProps {
   invoice: InvoiceData;
   onClose?: () => void;
+  orderId?: string;
 }
 
-export default function InvoiceView({ invoice, onClose }: InvoiceViewProps) {
+export default function InvoiceView({ invoice, onClose, orderId }: InvoiceViewProps) {
   const printRef = useRef<HTMLDivElement>(null);
+  const [downloading, setDownloading] = useState(false);
+
+  // Extract orderId from invoice if not passed directly
+  const invoiceOrderId = orderId || invoice.orderNumber?.replace("INV-", "").replace("STB", "");
 
   const handlePrint = () => {
     const content = printRef.current;
@@ -121,6 +126,39 @@ export default function InvoiceView({ invoice, onClose }: InvoiceViewProps) {
     printWindow.print();
   };
 
+  const handleDownloadPDF = async () => {
+    if (!orderId) {
+      // Fallback to print if no orderId
+      handlePrint();
+      return;
+    }
+
+    setDownloading(true);
+    try {
+      const res = await fetch(`/api/orders/${orderId}/invoice/pdf`);
+      
+      if (!res.ok) {
+        throw new Error("Failed to generate PDF");
+      }
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Invoice-${invoice.orderNumber}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error("Failed to download PDF:", error);
+      // Fallback to print
+      handlePrint();
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString("en-IN", {
       day: "numeric",
@@ -144,6 +182,21 @@ export default function InvoiceView({ invoice, onClose }: InvoiceViewProps) {
               <Printer className="mr-2 h-4 w-4" />
               Print
             </Button>
+            {orderId && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleDownloadPDF}
+                disabled={downloading}
+              >
+                {downloading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Download className="mr-2 h-4 w-4" />
+                )}
+                Download PDF
+              </Button>
+            )}
             {onClose && (
               <Button variant="ghost" size="sm" onClick={onClose}>
                 Close

@@ -671,7 +671,216 @@ export function refundProcessedTemplate(
   return baseTemplate(content, `Refund of ₹${refundAmount.toLocaleString()} processed for order ${orderNumber}`);
 }
 
-// 14. Newsletter Subscription Confirmation
+// 14. Payment Success Email (for Razorpay payments)
+export function paymentSuccessTemplate(
+  customerName: string,
+  orderNumber: string,
+  paymentId: string,
+  items: Array<{ name: string; quantity: number; price: number }>,
+  subtotal: number,
+  shipping: number,
+  tax: number,
+  total: number,
+  shippingAddress: string,
+  estimatedDelivery?: string
+): string {
+  const itemsHtml = items
+    .map(
+      (item) => `
+    <tr>
+      <td style="padding: 12px 8px; border-bottom: 1px solid #eee;">${item.name}</td>
+      <td style="padding: 12px 8px; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
+      <td style="padding: 12px 8px; border-bottom: 1px solid #eee; text-align: right;">₹${item.price.toLocaleString()}</td>
+      <td style="padding: 12px 8px; border-bottom: 1px solid #eee; text-align: right;">₹${(item.quantity * item.price).toLocaleString()}</td>
+    </tr>
+  `
+    )
+    .join("");
+
+  const content = `
+    <div class="content">
+      <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 30px; border-radius: 12px; text-align: center; margin-bottom: 30px;">
+        <div style="width: 60px; height: 60px; background: rgba(255,255,255,0.2); border-radius: 50%; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center;">
+          <span style="font-size: 30px; color: #ffffff;">&#10003;</span>
+        </div>
+        <h2 style="color: #ffffff; margin: 0 0 5px 0; font-size: 24px;">Payment Successful!</h2>
+        <p style="color: rgba(255,255,255,0.9); margin: 0; font-size: 14px;">Your order has been confirmed</p>
+      </div>
+      
+      <p>Dear <strong>${customerName}</strong>,</p>
+      <p>Thank you for your purchase! Your payment has been successfully processed and your order is now confirmed.</p>
+      
+      <div class="info-box">
+        <h3>Payment Confirmation</h3>
+        <p><strong>Order Number:</strong> <span class="highlight">${orderNumber}</span></p>
+        <p><strong>Payment ID:</strong> <span style="font-family: monospace; font-size: 13px;">${paymentId}</span></p>
+        <p><strong>Payment Method:</strong> Razorpay (Online Payment)</p>
+        <p><strong>Status:</strong> <span class="status-badge status-delivered">PAID</span></p>
+      </div>
+      
+      <h3 style="margin-top: 25px; margin-bottom: 15px;">Order Summary</h3>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th style="background-color: #f8f9fa; padding: 12px 8px; text-align: left;">Item</th>
+            <th style="background-color: #f8f9fa; padding: 12px 8px; text-align: center;">Qty</th>
+            <th style="background-color: #f8f9fa; padding: 12px 8px; text-align: right;">Price</th>
+            <th style="background-color: #f8f9fa; padding: 12px 8px; text-align: right;">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${itemsHtml}
+        </tbody>
+      </table>
+      
+      <div style="background-color: #f8f9fa; padding: 20px; margin-top: 20px; border-radius: 8px;">
+        <table style="width: 100%;">
+          <tr>
+            <td style="padding: 5px 0; color: #555;">Subtotal:</td>
+            <td style="padding: 5px 0; text-align: right;">₹${subtotal.toLocaleString()}</td>
+          </tr>
+          <tr>
+            <td style="padding: 5px 0; color: #555;">Shipping:</td>
+            <td style="padding: 5px 0; text-align: right;">${shipping === 0 ? "Free" : `₹${shipping.toLocaleString()}`}</td>
+          </tr>
+          <tr>
+            <td style="padding: 5px 0; color: #555;">Tax (GST):</td>
+            <td style="padding: 5px 0; text-align: right;">₹${tax.toLocaleString()}</td>
+          </tr>
+          <tr style="font-weight: bold; font-size: 18px; border-top: 2px solid #dee2e6;">
+            <td style="padding-top: 12px;">Total Paid:</td>
+            <td style="padding-top: 12px; text-align: right; color: #10b981;">₹${total.toLocaleString()}</td>
+          </tr>
+        </table>
+      </div>
+      
+      <div class="info-box mt-20">
+        <h3>Shipping Address</h3>
+        <p>${shippingAddress.replace(/\n/g, "<br>")}</p>
+        ${estimatedDelivery ? `<p><strong>Estimated Delivery:</strong> ${estimatedDelivery}</p>` : ""}
+      </div>
+      
+      <div style="display: flex; gap: 15px; margin-top: 25px;">
+        <a href="${SITE_URL}/dashboard/orders/${orderNumber}" class="button" style="flex: 1; text-align: center;">Track Your Order</a>
+        <a href="${SITE_URL}/dashboard/orders/${orderNumber}/invoice" style="flex: 1; text-align: center; display: inline-block; background-color: #f8f9fa; color: #333 !important; text-decoration: none; padding: 14px 30px; border-radius: 8px; font-weight: 600; font-size: 15px; border: 1px solid #dee2e6;">Download Invoice</a>
+      </div>
+      
+      <p style="margin-top: 25px;">We'll notify you once your order is shipped. If you have any questions, please don't hesitate to contact us.</p>
+    </div>
+  `;
+  return baseTemplate(content, `Payment confirmed for order ${orderNumber} - ₹${total.toLocaleString()}`);
+}
+
+// 15. Shipping Notification Email
+export function shippingNotificationTemplate(
+  customerName: string,
+  orderNumber: string,
+  trackingNumber: string,
+  trackingUrl?: string,
+  carrier?: string,
+  estimatedDelivery?: string,
+  items?: Array<{ name: string; quantity: number }>
+): string {
+  const itemsHtml = items
+    ? items.map((item) => `<li style="margin-bottom: 5px;">${item.name} x ${item.quantity}</li>`).join("")
+    : "";
+
+  const content = `
+    <div class="content">
+      <div style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); padding: 30px; border-radius: 12px; text-align: center; margin-bottom: 30px;">
+        <div style="width: 60px; height: 60px; background: rgba(255,255,255,0.2); border-radius: 50%; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center;">
+          <span style="font-size: 28px; color: #ffffff;">&#128666;</span>
+        </div>
+        <h2 style="color: #ffffff; margin: 0 0 5px 0; font-size: 24px;">Your Order is on the Way!</h2>
+        <p style="color: rgba(255,255,255,0.9); margin: 0; font-size: 14px;">Order ${orderNumber} has been shipped</p>
+      </div>
+      
+      <p>Dear <strong>${customerName}</strong>,</p>
+      <p>Great news! Your order has been shipped and is on its way to you.</p>
+      
+      <div class="info-box">
+        <h3>Shipping Details</h3>
+        <p><strong>Order Number:</strong> <span class="highlight">${orderNumber}</span></p>
+        <p><strong>Tracking Number:</strong> <span style="font-family: monospace; font-size: 14px; background: #f0f0f0; padding: 4px 8px; border-radius: 4px;">${trackingNumber}</span></p>
+        ${carrier ? `<p><strong>Carrier:</strong> ${carrier}</p>` : ""}
+        ${estimatedDelivery ? `<p><strong>Estimated Delivery:</strong> <span style="color: #10b981; font-weight: 600;">${estimatedDelivery}</span></p>` : ""}
+      </div>
+      
+      ${items && items.length > 0 ? `
+        <div style="margin-top: 25px;">
+          <h3>Items in this Shipment</h3>
+          <ul style="margin: 15px 0; padding-left: 20px; color: #555;">
+            ${itemsHtml}
+          </ul>
+        </div>
+      ` : ""}
+      
+      <div style="text-align: center; margin: 30px 0;">
+        ${trackingUrl ? `
+          <a href="${trackingUrl}" class="button" style="margin-right: 10px;">Track Package</a>
+        ` : ""}
+        <a href="${SITE_URL}/dashboard/orders/${orderNumber}" class="button" style="background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);">View Order</a>
+      </div>
+      
+      <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; border-radius: 0 8px 8px 0; margin-top: 20px;">
+        <p style="margin: 0; color: #92400e; font-size: 14px;"><strong>Delivery Tip:</strong> Please ensure someone is available to receive the package. For any delivery issues, contact the carrier directly or reach out to us.</p>
+      </div>
+    </div>
+  `;
+  return baseTemplate(content, `Your order ${orderNumber} has been shipped! Tracking: ${trackingNumber}`);
+}
+
+// 16. Delivery Confirmation Email
+export function deliveryConfirmationTemplate(
+  customerName: string,
+  orderNumber: string,
+  deliveredAt: string,
+  items: Array<{ name: string; quantity: number }>
+): string {
+  const itemsHtml = items.map((item) => `<li style="margin-bottom: 5px;">${item.name} x ${item.quantity}</li>`).join("");
+
+  const content = `
+    <div class="content">
+      <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 30px; border-radius: 12px; text-align: center; margin-bottom: 30px;">
+        <div style="width: 60px; height: 60px; background: rgba(255,255,255,0.2); border-radius: 50%; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center;">
+          <span style="font-size: 30px; color: #ffffff;">&#127881;</span>
+        </div>
+        <h2 style="color: #ffffff; margin: 0 0 5px 0; font-size: 24px;">Order Delivered!</h2>
+        <p style="color: rgba(255,255,255,0.9); margin: 0; font-size: 14px;">Your order ${orderNumber} has arrived</p>
+      </div>
+      
+      <p>Dear <strong>${customerName}</strong>,</p>
+      <p>Your order has been successfully delivered! We hope you're happy with your purchase.</p>
+      
+      <div class="info-box">
+        <h3>Delivery Details</h3>
+        <p><strong>Order Number:</strong> <span class="highlight">${orderNumber}</span></p>
+        <p><strong>Delivered On:</strong> ${deliveredAt}</p>
+      </div>
+      
+      <div style="margin-top: 25px;">
+        <h3>Items Delivered</h3>
+        <ul style="margin: 15px 0; padding-left: 20px; color: #555;">
+          ${itemsHtml}
+        </ul>
+      </div>
+      
+      <div style="background-color: #f0fdf4; border: 1px solid #86efac; padding: 20px; border-radius: 8px; margin-top: 25px; text-align: center;">
+        <p style="margin: 0 0 15px 0; color: #166534; font-weight: 600;">How was your experience?</p>
+        <p style="margin: 0; color: #555; font-size: 14px;">We'd love to hear your feedback! Please consider leaving a review for the products you purchased.</p>
+      </div>
+      
+      <div style="text-align: center; margin-top: 25px;">
+        <a href="${SITE_URL}/dashboard/orders/${orderNumber}" class="button">View Order Details</a>
+      </div>
+      
+      <p style="margin-top: 25px;">Thank you for shopping with us! If you have any issues with your order, please contact our support team.</p>
+    </div>
+  `;
+  return baseTemplate(content, `Your order ${orderNumber} has been delivered! We hope you love it.`);
+}
+
+// 17. Newsletter Subscription Confirmation
 export function newsletterSubscriptionTemplate(email: string): string {
   const content = `
     <div class="content">

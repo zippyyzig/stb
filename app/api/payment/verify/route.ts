@@ -7,6 +7,7 @@ import Order from "@/models/Order";
 import Product from "@/models/Product";
 import User from "@/models/User";
 import Cart from "@/models/Cart";
+import Notification from "@/models/Notification";
 import Razorpay from "razorpay";
 import {
   validatePhoneNumber,
@@ -17,6 +18,8 @@ import {
   validateObjectId,
   sanitizeString,
 } from "@/lib/validation";
+import { sendEmail, COMPANY_EMAIL } from "@/lib/email";
+import { paymentSuccessTemplate, newOrderNotificationTemplate } from "@/lib/email-templates";
 
 // Initialize Razorpay instance for fetching order details
 const razorpay = new Razorpay({
@@ -357,7 +360,84 @@ export async function POST(request: NextRequest) {
       { $set: { items: [] } }
     );
 
-    // 17. Return success response
+    // 17. Send payment success email to customer
+    try {
+      const shippingAddressText = `${sanitizedShippingAddress.name}\n${sanitizedShippingAddress.phone}\n${sanitizedShippingAddress.address}\n${sanitizedShippingAddress.city}, ${sanitizedShippingAddress.state} - ${sanitizedShippingAddress.pincode}`;
+      
+      const estimatedDeliveryDate = new Date();
+      estimatedDeliveryDate.setDate(estimatedDeliveryDate.getDate() + 5);
+      const estimatedDeliveryStr = estimatedDeliveryDate.toLocaleDateString("en-IN", { 
+        weekday: "long", 
+        day: "numeric", 
+        month: "long", 
+        year: "numeric" 
+      });
+
+      const emailItems = orderItems.map(item => ({
+        name: item.name,
+        quantity: item.quantity,
+        price: item.price,
+      }));
+
+      const paymentEmailHtml = paymentSuccessTemplate(
+        user.name,
+        order.orderNumber,
+        razorpay_payment_id,
+        emailItems,
+        subtotal,
+        shippingCost,
+        totalTax,
+        total,
+        shippingAddressText,
+        estimatedDeliveryStr
+      );
+
+      await sendEmail({
+        to: user.email,
+        subject: `Payment Confirmed - Order ${order.orderNumber}`,
+        html: paymentEmailHtml,
+      });
+    } catch (emailError) {
+      console.error("Failed to send payment success email:", emailError);
+      // Don't fail the order if email fails
+    }
+
+    // 18. Send new order notification to admin
+    try {
+      if (COMPANY_EMAIL) {
+        const adminEmailHtml = newOrderNotificationTemplate(
+          order.orderNumber,
+          user.name,
+          user.email,
+          total,
+          orderItems.length,
+          new Date().toLocaleDateString("en-IN", { dateStyle: "full" })
+        );
+
+        await sendEmail({
+          to: COMPANY_EMAIL,
+          subject: `New Order Received - ${order.orderNumber} (₹${total.toLocaleString("en-IN")})`,
+          html: adminEmailHtml,
+        });
+      }
+    } catch (adminEmailError) {
+      console.error("Failed to send admin notification email:", adminEmailError);
+    }
+
+    // 19. Create admin notification in database
+    try {
+      await Notification.create({
+        type: "order",
+        title: "New Order Received",
+        message: `New order #${order.orderNumber} from ${user.name} for ₹${total.toLocaleString("en-IN")}`,
+        link: `/admin/orders/${order._id}`,
+        isAdmin: true,
+      });
+    } catch (notificationError) {
+      console.error("Failed to create admin notification:", notificationError);
+    }
+
+    // 20. Return success response
     return NextResponse.json({
       success: true,
       message: "Payment verified and order created successfully",
