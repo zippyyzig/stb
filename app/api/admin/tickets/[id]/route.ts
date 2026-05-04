@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
 import Ticket from "@/models/Ticket";
+import { sendTicketResolvedNotification } from "@/lib/push-notifications";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -60,14 +61,22 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       updatedAt: new Date(),
     };
 
-    // Track status changes
+    // Track status changes and send notifications
+    let previousStatus: string | null = null;
+    let ticketUserId: string | null = null;
+    let ticketNumber: string | null = null;
+    
     if (data.status) {
-      const ticket = await Ticket.findById(id);
-      if (ticket && ticket.status !== data.status) {
-        if (data.status === "resolved" && !ticket.resolvedAt) {
+      const existingTicket = await Ticket.findById(id);
+      if (existingTicket && existingTicket.status !== data.status) {
+        previousStatus = existingTicket.status;
+        ticketUserId = existingTicket.user?.toString() || null;
+        ticketNumber = existingTicket.ticketNumber;
+        
+        if (data.status === "resolved" && !existingTicket.resolvedAt) {
           updateData.resolvedAt = new Date();
         }
-        if (data.status === "closed" && !ticket.closedAt) {
+        if (data.status === "closed" && !existingTicket.closedAt) {
           updateData.closedAt = new Date();
         }
       }
@@ -84,6 +93,19 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     if (!ticket) {
       return NextResponse.json({ error: "Ticket not found" }, { status: 404 });
+    }
+
+    // Send push notification if ticket was resolved
+    if (previousStatus && data.status === "resolved" && ticketUserId && ticketNumber) {
+      try {
+        await sendTicketResolvedNotification(
+          ticketUserId,
+          ticketNumber,
+          id
+        );
+      } catch (pushError) {
+        console.error("Failed to send push notification:", pushError);
+      }
     }
 
     return NextResponse.json({

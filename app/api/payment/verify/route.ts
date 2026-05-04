@@ -20,6 +20,7 @@ import {
 } from "@/lib/validation";
 import { sendEmail, COMPANY_EMAIL } from "@/lib/email";
 import { paymentSuccessTemplate, newOrderNotificationTemplate } from "@/lib/email-templates";
+import { sendOrderPlacedNotification } from "@/lib/push-notifications";
 
 // Initialize Razorpay instance for fetching order details
 const razorpay = new Razorpay({
@@ -438,7 +439,20 @@ export async function POST(request: NextRequest) {
       console.error("Failed to create admin notification:", notificationError);
     }
 
-    // 20. Return success response
+    // 20. Send push notification to customer's mobile app
+    try {
+      await sendOrderPlacedNotification(
+        session.user.id,
+        order.orderNumber,
+        order._id.toString(),
+        total
+      );
+    } catch (pushError) {
+      console.error("Failed to send push notification:", pushError);
+      // Don't fail the order if push notification fails
+    }
+
+    // 21. Return success response
     return NextResponse.json({
       success: true,
       message: "Payment verified and order created successfully",

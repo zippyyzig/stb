@@ -1,269 +1,270 @@
-# Smart Tech Bazaar - App Store Publishing Checklist
+# Smart Tech Bazaar - Final Publishing Checklist
 
-This checklist covers everything needed to publish your app to both Google Play Store and Apple App Store.
+Use this checklist to verify everything is ready before submitting to app stores.
 
 ---
 
-## COMPLETED ITEMS
+## CONFIGURATION STATUS
 
-### Website Configuration
-- [x] `manifest.json` - Properly configured with PNG icons
-- [x] `/.well-known/assetlinks.json` - Android App Links configured with SHA-256 fingerprint
-- [x] `/.well-known/apple-app-site-association` - iOS Universal Links configured with Team ID `5TGG836W7V`
-- [x] `/api/health` - Health check endpoint returns `{"status":"ok",...}`
-- [x] Splash screens - All 8 iOS splash screen sizes generated (PNG format)
-- [x] App icons - PNG icons in all required sizes (192x192, 512x512, etc.)
-- [x] OG Image - 1200x630 social sharing image created
+### Completed
+
+- [x] `manifest.json` - PWA manifest configured with PNG icons
+- [x] `assetlinks.json` - Android App Links with SHA-256: `82:60:EA:EC:BB:...`
+- [x] `apple-app-site-association` - iOS Universal Links with Team ID: `5TGG836W7V`
+- [x] `/api/health` - Health check endpoint working
+- [x] Splash screens - All 8 iOS splash screen sizes (PNG)
+- [x] App icons - PNG icons (192x192, 512x512)
+- [x] OG Image - 1200x630 social sharing image
 - [x] robots.txt - Configured via `app/robots.ts`
 - [x] sitemap.xml - Dynamic sitemap via `app/sitemap.ts`
-- [x] Legal pages exist - Privacy Policy, Terms of Service, Shipping Policy
+- [x] Privacy Policy page - `/privacy`
+- [x] Terms of Service page - `/terms`
+- [x] Shipping Policy page - `/shipping`
+- [x] OneSignal configured - App ID & REST API Key set
+- [x] FCM configured - Firebase Cloud Messaging for Android push
+- [x] Server-side push notifications - Integrated with order/ticket flows
+- [x] Native app detection - `lib/native-app.ts`
+- [x] Deep linking - URL scheme `stb://`
+- [x] App rating dialog - Prompts after 3 sessions
+- [x] Offline page - `/offline`
+- [x] Error handling - `error.tsx`, `not-found.tsx`
+- [x] Google Sign-In - Native and web fallback
+
+### Pending
+
+- [ ] Apple App Store ID - Replace `__YOUR_APP_ID__` in `hooks/use-app-rating.ts`
+- [ ] iOS APNs setup - Upload `.p8` key to OneSignal
+- [ ] Production Razorpay keys - Replace test keys with live keys
+- [ ] Production NextAuth secret - Generate secure secret
+- [ ] Enable SEO indexing - Change `index: false` to `index: true`
+- [ ] Update business contact info - Real phone/email in `lib/site-config.ts`
 
 ---
 
-## REMAINING TASKS BEFORE PUBLISHING
+## ENVIRONMENT VARIABLES CHECKLIST
 
-### 1. Environment Variables (REQUIRED)
+### Vercel Production Environment
 
-Set these in Vercel project settings before deployment:
-
-| Variable | Description | Status |
-|----------|-------------|--------|
-| `MONGODB_URI` | MongoDB connection string | **REQUIRED** |
-| `NEXTAUTH_SECRET` | NextAuth.js secret key | **REQUIRED** |
-| `NEXTAUTH_URL` | Your production URL (e.g., `https://smarttechbazaar.com`) | **REQUIRED** |
-| `NEXT_PUBLIC_SITE_URL` | Same as NEXTAUTH_URL | **REQUIRED** |
-
-**How to set:**
-1. Go to Vercel Dashboard > Your Project > Settings > Environment Variables
-2. Add each variable for Production environment
+| Variable | Status | Action |
+|----------|--------|--------|
+| `MONGODB_URI` | Set | Verify working |
+| `IMAGEKIT_URL_ENDPOINT` | Set | Verify working |
+| `IMAGEKIT_PUBLIC_KEY` | Set | Verify working |
+| `IMAGEKIT_PRIVATE_KEY` | Set | Verify working |
+| `NEXTAUTH_SECRET` | CHANGE | Generate: `openssl rand -base64 32` |
+| `NEXTAUTH_URL` | CHANGE | Set to `https://smarttechbazaar.com` |
+| `NEXT_PUBLIC_SITE_URL` | ADD | Set to `https://smarttechbazaar.com` |
+| `NEXT_PUBLIC_FIREBASE_*` | Set | Verify working |
+| `RAZORPAY_KEY_ID` | CHANGE | Replace with live key (`rzp_live_...`) |
+| `RAZORPAY_KEY_SECRET` | CHANGE | Replace with live secret |
+| `NEXT_PUBLIC_RAZORPAY_KEY_ID` | CHANGE | Replace with live key |
+| `BLOB_READ_WRITE_TOKEN` | Set | Verify working |
+| `ONESIGNAL_APP_ID` | Set | `70c19aa3-9238-4543-acf1-0c564fc4af5a` |
+| `ONESIGNAL_REST_API_KEY` | Set | Configured |
 
 ---
 
-### 2. Domain Configuration (REQUIRED)
+## PRE-DEPLOYMENT CHECKLIST
 
-**Before submitting to app stores, your domain must be:**
-- [ ] Connected to Vercel (Settings > Domains)
-- [ ] SSL certificate active (automatic with Vercel)
-- [ ] All URLs accessible without errors
+### Domain & SSL
 
-**Test these URLs after deployment:**
+- [ ] Domain connected to Vercel
+- [ ] SSL certificate active (automatic)
+- [ ] All URLs accessible over HTTPS
+
+### Test These URLs After Deployment
+
 ```
-https://smarttechbazaar.com/                              → Home page loads
-https://smarttechbazaar.com/manifest.json                 → Returns JSON
-https://smarttechbazaar.com/.well-known/assetlinks.json   → Returns JSON
-https://smarttechbazaar.com/.well-known/apple-app-site-association → Returns JSON
-https://smarttechbazaar.com/api/health                    → Returns {"status":"ok",...}
-```
-
----
-
-### 3. Update Site Configuration
-
-Edit `lib/site-config.ts` with your real business information:
-
-- [ ] Update `email` with real support email
-- [ ] Update `phone` with real phone number
-- [ ] Update `address` with real business address
-- [ ] Update `geo` coordinates if address changed
-- [ ] Update social media links (Facebook, Instagram, etc.)
-
----
-
-### 4. Google Play Store Submission
-
-#### 4a. Create Google Play Console Account
-- [ ] Go to https://play.google.com/console
-- [ ] Pay one-time $25 registration fee
-- [ ] Complete account verification
-
-#### 4b. App Listing Information Required
-Prepare the following content:
-
-| Item | Requirement |
-|------|-------------|
-| App Name | "Smart Tech Bazaar" (max 30 characters) |
-| Short Description | Max 80 characters |
-| Full Description | Max 4000 characters |
-| App Icon | 512x512 PNG (use `public/icons/icon-512x512.png`) |
-| Feature Graphic | 1024x500 PNG |
-| Screenshots | Min 2 phone screenshots (1080x1920 or similar) |
-| Screenshots | Min 1 tablet screenshot (if supporting tablets) |
-| Privacy Policy URL | `https://smarttechbazaar.com/privacy` |
-| Category | Shopping |
-| Content Rating | Complete questionnaire |
-| Target Audience | 13+ (no children's content) |
-
-#### 4c. App Signing
-- [x] SHA-256 fingerprint added to `assetlinks.json`
-- [ ] Use Google Play App Signing (recommended)
-
-#### 4d. Release Setup
-- [ ] Create Internal Testing track first
-- [ ] Test on real Android devices
-- [ ] Then move to Production
-
----
-
-### 5. Apple App Store Submission
-
-#### 5a. Create Apple Developer Account
-- [ ] Go to https://developer.apple.com
-- [ ] Pay annual $99 fee
-- [ ] Complete enrollment
-
-#### 5b. App Store Connect Setup
-- [ ] Create new app in App Store Connect
-- [ ] Set Bundle ID: `com.smarttechbazaar.app`
-- [ ] Set Team ID: `5TGG836W7V` (already configured)
-
-#### 5c. App Listing Information Required
-
-| Item | Requirement |
-|------|-------------|
-| App Name | "Smart Tech Bazaar" (max 30 characters) |
-| Subtitle | Max 30 characters |
-| Description | Max 4000 characters |
-| Keywords | Max 100 characters, comma-separated |
-| App Icon | 1024x1024 PNG (no transparency, no rounded corners) |
-| Screenshots | iPhone 6.7" (1290x2796) - Min 2, Max 10 |
-| Screenshots | iPhone 6.5" (1284x2778) - Min 2, Max 10 |
-| Screenshots | iPhone 5.5" (1242x2208) - Min 2, Max 10 |
-| Screenshots | iPad Pro 12.9" (2048x2732) - if supporting iPad |
-| Privacy Policy URL | `https://smarttechbazaar.com/privacy` |
-| Support URL | `https://smarttechbazaar.com/contact` |
-| Marketing URL | `https://smarttechbazaar.com` (optional) |
-| Age Rating | Complete questionnaire |
-| Category | Shopping |
-
-#### 5d. Associated Domains
-- [x] `apple-app-site-association` configured
-- [ ] Add Associated Domains capability in Xcode: `applinks:smarttechbazaar.com`
-
----
-
-### 6. Median.co / PWA Wrapper Configuration
-
-If using Median.co (or similar PWA-to-native wrapper):
-
-#### 6a. Android Configuration
-```json
-{
-  "appName": "Smart Tech Bazaar",
-  "packageName": "com.smarttechbazaar.app",
-  "initialUrl": "https://smarttechbazaar.com",
-  "permissions": ["INTERNET", "ACCESS_NETWORK_STATE"],
-  "splashScreen": {
-    "backgroundColor": "#FFFFFF"
-  },
-  "statusBar": {
-    "style": "dark",
-    "backgroundColor": "#E31837"
-  }
-}
-```
-
-#### 6b. iOS Configuration
-```json
-{
-  "appName": "Smart Tech Bazaar",
-  "bundleId": "com.smarttechbazaar.app",
-  "teamId": "5TGG836W7V",
-  "initialUrl": "https://smarttechbazaar.com",
-  "statusBar": {
-    "style": "dark"
-  }
-}
+https://smarttechbazaar.com/                              → Home page
+https://smarttechbazaar.com/manifest.json                 → JSON response
+https://smarttechbazaar.com/.well-known/assetlinks.json   → JSON response
+https://smarttechbazaar.com/.well-known/apple-app-site-association → JSON response
+https://smarttechbazaar.com/api/health                    → {"status":"ok",...}
+https://smarttechbazaar.com/privacy                       → Privacy policy page
+https://smarttechbazaar.com/terms                         → Terms page
 ```
 
 ---
 
-### 7. Pre-Submission Testing Checklist
+## FUNCTIONALITY TESTING
 
-Test on real devices before submission:
+### Core Shopping Flow
 
-#### Functionality Tests
-- [ ] Home page loads correctly
-- [ ] Product browsing works
-- [ ] Search functionality works
-- [ ] Add to cart works
-- [ ] User registration works
-- [ ] User login works
-- [ ] Checkout process works
-- [ ] Order confirmation displays
+- [ ] Browse products
+- [ ] View product detail
+- [ ] Add to cart
+- [ ] View cart
+- [ ] Apply coupon code
+- [ ] Proceed to checkout
+- [ ] Select/add address
+- [ ] Complete payment (Razorpay)
+- [ ] View order confirmation
+- [ ] Receive confirmation email
 
-#### PWA/Native Tests
-- [ ] App installs correctly on device
-- [ ] Splash screen displays with logo
-- [ ] App icon appears correctly
-- [ ] Push notifications work (if implemented)
-- [ ] Deep links open correct pages
-- [ ] Back button behavior is correct
-- [ ] Offline handling (if implemented)
+### User Account
 
-#### Performance Tests
-- [ ] Pages load within 3 seconds on 4G
-- [ ] Images load without broken links
-- [ ] No console errors in production
+- [ ] Register new account
+- [ ] Login with email/password
+- [ ] Login with Google
+- [ ] View dashboard
+- [ ] View order history
+- [ ] View order detail
+- [ ] Cancel order (if eligible)
+- [ ] Download invoice
+- [ ] Edit profile
+- [ ] Change password
+- [ ] Manage addresses
+- [ ] Export data
+- [ ] Delete account
+
+### Support System
+
+- [ ] Create support ticket
+- [ ] View ticket list
+- [ ] Reply to ticket
+- [ ] Receive admin replies
+
+### Push Notifications
+
+- [ ] Permission prompt appears
+- [ ] Order placed notification received
+- [ ] Order shipped notification received
+- [ ] Ticket reply notification received
+- [ ] Notification opens correct page
+
+### Native App Features (Test in Median.co app)
+
+- [ ] App opens without white screen
+- [ ] Splash screen displays
+- [ ] Google Sign-In works natively
+- [ ] Deep links work (`stb://product/...`)
+- [ ] Universal links work
+- [ ] Pull to refresh works
+- [ ] Back button works (Android)
+- [ ] Offline page appears when disconnected
+- [ ] App rating dialog appears after 3 sessions
 
 ---
 
-### 8. Common Rejection Reasons to Avoid
+## GOOGLE PLAY STORE CHECKLIST
 
-#### Google Play Store
-- [ ] Privacy policy is accessible and complete
-- [ ] No placeholder content or "Lorem ipsum"
-- [ ] App has real functionality (not just a website wrapper with no value)
-- [ ] Correct content rating
-- [ ] All declared permissions are used and explained
+### Store Listing
 
-#### Apple App Store
-- [ ] Privacy policy includes data collection details
-- [ ] App provides value beyond website (native features recommended)
-- [ ] No broken links or placeholder content
-- [ ] Login/account features work correctly
-- [ ] App description matches functionality
-- [ ] Screenshots are accurate and not misleading
+- [ ] App name (max 30 chars)
+- [ ] Short description (max 80 chars)
+- [ ] Full description (4000 chars)
+- [ ] App icon (512x512 PNG)
+- [ ] Feature graphic (1024x500 PNG)
+- [ ] Phone screenshots (min 2)
+- [ ] Tablet screenshots (if supporting)
+- [ ] Privacy policy URL
+- [ ] Category: Shopping
+
+### App Content (Policy)
+
+- [ ] Privacy policy entered
+- [ ] Ads declaration (No ads)
+- [ ] App access: Test credentials provided
+- [ ] Content rating completed
+- [ ] Target audience: 13+
+- [ ] Data safety form completed
+
+### Release
+
+- [ ] Internal testing completed
+- [ ] Production release created
+- [ ] `.aab` file uploaded
+- [ ] Release notes written
+- [ ] Submitted for review
 
 ---
 
-### 9. Post-Submission
+## APPLE APP STORE CHECKLIST
 
-After submitting:
-- [ ] Monitor review status daily
-- [ ] Respond to reviewer questions promptly
-- [ ] If rejected, read feedback carefully and fix issues
-- [ ] Plan for 1-3 day review time (Google) or 1-7 days (Apple)
+### App Store Connect
+
+- [ ] App created with Bundle ID: `com.smarttechbazaar.app`
+- [ ] Team ID: `5TGG836W7V`
+- [ ] SKU set
+
+### App Information
+
+- [ ] App name
+- [ ] Subtitle (max 30 chars)
+- [ ] Description
+- [ ] Keywords (max 100 chars)
+- [ ] Category: Shopping
+- [ ] Privacy policy URL
+- [ ] Support URL
+
+### Screenshots
+
+- [ ] iPhone 6.7" (1290x2796) - min 2
+- [ ] iPhone 5.5" (1242x2208) - min 2
+- [ ] iPad 12.9" (2048x2732) - if supporting iPad
+
+### App Review Information
+
+- [ ] Sign-in required: YES
+- [ ] Demo username provided
+- [ ] Demo password provided
+- [ ] Review notes written
+
+### Build
+
+- [ ] APNs key uploaded to OneSignal
+- [ ] `.ipa` uploaded via Transporter
+- [ ] Build processed
+- [ ] Build selected
+- [ ] Submitted for review
+
+### Compliance
+
+- [ ] Export compliance answered (Yes - HTTPS)
+- [ ] Age rating completed
 
 ---
 
-## Quick Reference
+## ONESIGNAL PLATFORM STATUS
 
-| Platform | Console URL |
-|----------|-------------|
-| Google Play | https://play.google.com/console |
-| Apple App Store | https://appstoreconnect.apple.com |
-| Vercel Dashboard | https://vercel.com/dashboard |
+| Platform | Configuration | Status |
+|----------|---------------|--------|
+| Web Push | Dashboard | DONE |
+| Android (FCM) | Firebase Server Key | DONE |
+| iOS (APNs) | `.p8` key upload | PENDING |
 
-| App Configuration |  |
-|-------------------|--|
-| Package Name (Android) | `com.smarttechbazaar.app` |
-| Bundle ID (iOS) | `com.smarttechbazaar.app` |
+---
+
+## POST-SUBMISSION
+
+- [ ] Monitor review status
+- [ ] Respond to reviewer questions within 24 hours
+- [ ] If rejected, read feedback and fix specific issues
+- [ ] Plan for review times: Google (3-7 days), Apple (1-7 days)
+
+---
+
+## QUICK REFERENCE
+
+### Console URLs
+
+| Service | URL |
+|---------|-----|
+| Google Play Console | https://play.google.com/console |
+| App Store Connect | https://appstoreconnect.apple.com |
+| OneSignal | https://onesignal.com |
+| Firebase | https://console.firebase.google.com |
+| Vercel | https://vercel.com/dashboard |
+| Razorpay | https://dashboard.razorpay.com |
+
+### App Identifiers
+
+| Identifier | Value |
+|------------|-------|
+| Android Package | `com.smarttechbazaar.app` |
+| iOS Bundle ID | `com.smarttechbazaar.app` |
 | Apple Team ID | `5TGG836W7V` |
+| OneSignal App ID | `70c19aa3-9238-4543-acf1-0c564fc4af5a` |
+| Deep Link Scheme | `stb://` |
 | Theme Color | `#E31837` |
 | Background Color | `#FFFFFF` |
-
----
-
-## Files Reference
-
-| File | Purpose |
-|------|---------|
-| `public/manifest.json` | PWA manifest |
-| `public/.well-known/assetlinks.json` | Android App Links |
-| `public/.well-known/apple-app-site-association` | iOS Universal Links |
-| `public/icons/icon-512x512.png` | App store icon |
-| `public/splash/` | iOS splash screens |
-| `public/og-image.png` | Social sharing image |
-| `app/(main)/privacy/page.tsx` | Privacy policy page |
-| `app/(main)/terms/page.tsx` | Terms of service page |
-| `lib/site-config.ts` | Site configuration |

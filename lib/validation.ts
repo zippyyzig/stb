@@ -152,6 +152,7 @@ export function validateName(name: string): {
 
 /**
  * Validate address text
+ * Minimum 5 characters to allow for short but valid addresses like "MG Road"
  */
 export function validateAddress(address: string): {
   valid: boolean;
@@ -164,8 +165,8 @@ export function validateAddress(address: string): {
 
   const normalized = sanitizeString(address, 500);
 
-  if (normalized.length < 10) {
-    return { valid: false, normalized: "", error: "Address too short" };
+  if (normalized.length < 5) {
+    return { valid: false, normalized: "", error: "Address must be at least 5 characters" };
   }
 
   if (normalized.length > 500) {
