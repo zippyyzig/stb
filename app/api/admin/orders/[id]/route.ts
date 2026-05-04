@@ -10,6 +10,7 @@ import Notification from "@/models/Notification";
 import { sendEmail } from "@/lib/email";
 import { orderStatusUpdateTemplate, refundProcessedTemplate, shippingNotificationTemplate, deliveryConfirmationTemplate } from "@/lib/email-templates";
 import { validateObjectId, sanitizeString } from "@/lib/validation";
+import { sendOrderStatusNotification } from "@/lib/push-notifications";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -231,6 +232,19 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
             html: deliveryEmail,
           });
         }
+      }
+
+      // Send push notification for order status change
+      try {
+        await sendOrderStatusNotification(
+          order.user.toString(),
+          order.orderNumber,
+          order._id.toString(),
+          data.status,
+          order.trackingNumber
+        );
+      } catch (pushError) {
+        console.error("Failed to send push notification:", pushError);
       }
     }
 

@@ -7,6 +7,7 @@ import Ticket, { ITicketReply } from "@/models/Ticket";
 import User from "@/models/User";
 import { sendEmail } from "@/lib/email";
 import { ticketReplyTemplate } from "@/lib/email-templates";
+import { sendTicketReplyNotification, sendTicketResolvedNotification } from "@/lib/push-notifications";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -88,6 +89,26 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           subject: `Re: ${ticket.subject} - Ticket ${ticket.ticketNumber}`,
           html: replyEmail,
         });
+
+        // Send push notification to customer's mobile app
+        try {
+          if (isResolved) {
+            await sendTicketResolvedNotification(
+              ticket.user.toString(),
+              ticket.ticketNumber,
+              ticket._id.toString()
+            );
+          } else {
+            await sendTicketReplyNotification(
+              ticket.user.toString(),
+              ticket.ticketNumber,
+              ticket._id.toString(),
+              session.user.name || "Support Team"
+            );
+          }
+        } catch (pushError) {
+          console.error("Failed to send push notification:", pushError);
+        }
       }
     }
 

@@ -267,12 +267,37 @@ An app that is purely a web wrapper with no native capability will be rejected.
 4. Note down your **Key ID** and **Team ID**.
 5. In OneSignal iOS setup, upload the `.p8` file and enter the Key ID and Team ID.
 
-### 5d. Get Your OneSignal App ID
+### 5d. Get Your OneSignal App ID and REST API Key
 
 After completing setup, your OneSignal App ID is shown on the dashboard.
 It looks like: `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`
 
 Save this — you need to enter it in Median.co in the next step.
+
+### 5e. Configure Server-Side Push Notifications
+
+The app sends push notifications from the server when:
+- An order is placed (customer receives confirmation)
+- Order status changes (shipped, delivered, cancelled, etc.)
+- Support ticket receives a reply
+- Support ticket is resolved
+
+To enable server-side push notifications, add these environment variables to your
+Vercel project (or `.env.local` for local testing):
+
+```
+ONESIGNAL_APP_ID=your-app-id-here
+ONESIGNAL_REST_API_KEY=your-rest-api-key-here
+```
+
+**To get your REST API Key:**
+
+1. In OneSignal dashboard, go to **Settings > Keys & IDs**.
+2. Copy the **REST API Key** (starts with `os_v2_app_...` for newer accounts).
+3. Add it to your environment variables.
+
+**Important:** The REST API Key is secret and must never be exposed in client-side code.
+It is only used in server-side API routes.
 
 ---
 
