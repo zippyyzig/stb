@@ -79,25 +79,25 @@ export default function InvoicePage() {
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
 
   useEffect(() => {
-    fetchInvoice();
-  }, [orderId]);
+    const loadInvoice = async () => {
+      try {
+        const res = await fetch(`/api/orders/${orderId}/invoice`);
+        const data = await res.json();
 
-  const fetchInvoice = async () => {
-    try {
-      const res = await fetch(`/api/orders/${orderId}/invoice`);
-      const data = await res.json();
-
-      if (res.ok && data.invoice) {
-        setInvoice(data.invoice);
-      } else {
-        setError(data.error || "Failed to load invoice");
+        if (res.ok && data.invoice) {
+          setInvoice(data.invoice);
+        } else {
+          setError(data.error || "Failed to load invoice");
+        }
+      } catch {
+        setError("Failed to load invoice");
+      } finally {
+        setLoading(false);
       }
-    } catch {
-      setError("Failed to load invoice");
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+
+    loadInvoice();
+  }, [orderId]);
 
   const handleDownloadPDF = async () => {
     setDownloading(true);

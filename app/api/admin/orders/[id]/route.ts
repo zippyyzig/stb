@@ -222,7 +222,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
             order.items.map((item: { name: string; quantity: number }) => ({
               name: item.name,
               quantity: item.quantity,
-            }))
+            })),
+            order._id.toString()
           );
           await sendEmail({
             to: customer.email,
@@ -256,7 +257,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
           order.items.map((item: { name: string; quantity: number }) => ({
             name: item.name,
             quantity: item.quantity,
-          }))
+          })),
+          order._id.toString()
         );
         
         await sendEmail({

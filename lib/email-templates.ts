@@ -682,7 +682,8 @@ export function paymentSuccessTemplate(
   tax: number,
   total: number,
   shippingAddress: string,
-  estimatedDelivery?: string
+  estimatedDelivery?: string,
+  orderId?: string
 ): string {
   const itemsHtml = items
     .map(
@@ -761,8 +762,8 @@ export function paymentSuccessTemplate(
       </div>
       
       <div style="display: flex; gap: 15px; margin-top: 25px;">
-        <a href="${SITE_URL}/dashboard/orders/${orderNumber}" class="button" style="flex: 1; text-align: center;">Track Your Order</a>
-        <a href="${SITE_URL}/dashboard/orders/${orderNumber}/invoice" style="flex: 1; text-align: center; display: inline-block; background-color: #f8f9fa; color: #333 !important; text-decoration: none; padding: 14px 30px; border-radius: 8px; font-weight: 600; font-size: 15px; border: 1px solid #dee2e6;">Download Invoice</a>
+        <a href="${SITE_URL}/dashboard/orders/${orderId || orderNumber}" class="button" style="flex: 1; text-align: center;">Track Your Order</a>
+        <a href="${SITE_URL}/dashboard/orders/${orderId || orderNumber}/invoice" style="flex: 1; text-align: center; display: inline-block; background-color: #f8f9fa; color: #333 !important; text-decoration: none; padding: 14px 30px; border-radius: 8px; font-weight: 600; font-size: 15px; border: 1px solid #dee2e6;">Download Invoice</a>
       </div>
       
       <p style="margin-top: 25px;">We'll notify you once your order is shipped. If you have any questions, please don't hesitate to contact us.</p>
@@ -779,7 +780,8 @@ export function shippingNotificationTemplate(
   trackingUrl?: string,
   carrier?: string,
   estimatedDelivery?: string,
-  items?: Array<{ name: string; quantity: number }>
+  items?: Array<{ name: string; quantity: number }>,
+  orderId?: string
 ): string {
   const itemsHtml = items
     ? items.map((item) => `<li style="margin-bottom: 5px;">${item.name} x ${item.quantity}</li>`).join("")
@@ -819,7 +821,7 @@ export function shippingNotificationTemplate(
         ${trackingUrl ? `
           <a href="${trackingUrl}" class="button" style="margin-right: 10px;">Track Package</a>
         ` : ""}
-        <a href="${SITE_URL}/dashboard/orders/${orderNumber}" class="button" style="background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);">View Order</a>
+        <a href="${SITE_URL}/dashboard/orders/${orderId || orderNumber}" class="button" style="background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);">View Order</a>
       </div>
       
       <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; border-radius: 0 8px 8px 0; margin-top: 20px;">
@@ -835,7 +837,8 @@ export function deliveryConfirmationTemplate(
   customerName: string,
   orderNumber: string,
   deliveredAt: string,
-  items: Array<{ name: string; quantity: number }>
+  items: Array<{ name: string; quantity: number }>,
+  orderId?: string
 ): string {
   const itemsHtml = items.map((item) => `<li style="margin-bottom: 5px;">${item.name} x ${item.quantity}</li>`).join("");
 
@@ -871,7 +874,7 @@ export function deliveryConfirmationTemplate(
       </div>
       
       <div style="text-align: center; margin-top: 25px;">
-        <a href="${SITE_URL}/dashboard/orders/${orderNumber}" class="button">View Order Details</a>
+        <a href="${SITE_URL}/dashboard/orders/${orderId || orderNumber}" class="button">View Order Details</a>
       </div>
       
       <p style="margin-top: 25px;">Thank you for shopping with us! If you have any issues with your order, please contact our support team.</p>

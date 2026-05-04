@@ -389,7 +389,8 @@ export async function POST(request: NextRequest) {
         totalTax,
         total,
         shippingAddressText,
-        estimatedDeliveryStr
+        estimatedDeliveryStr,
+        order._id.toString()
       );
 
       await sendEmail({
