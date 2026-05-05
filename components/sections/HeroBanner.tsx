@@ -13,23 +13,58 @@ import {
 } from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
 
-// Real slider images — Desktop 1500×450 · Mobile 450×300
-const SLIDES = [
+interface BannerSlide {
+  id: string;
+  image: string;
+  imageMobile?: string;
+  alt: string;
+  href: string;
+}
+
+interface HeroBannerProps {
+  banners?: BannerSlide[];
+}
+
+// Default slider images — Desktop 1500×450 · Mobile 450×300
+const DEFAULT_SLIDES: BannerSlide[] = [
   {
-    desktop: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Banner%201500x450%20-%201-qzGXrBQjpz7ZwVcspENU7uNYFMmLwZ.png",
+    id: "display-banner",
+    image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Display%20Banner%201500x450.jpg-qH4BlgbMdr3xa4HXaH5iA5zYvxZqPW.jpeg",
+    alt: "Experience Crystal-Clear Displays and Immersive Visuals",
+    href: "/category/display",
+  },
+  {
+    id: "laptops-banner",
+    image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Laptops%20Banner%201500x450-Recovered.jpg-QMLDAo6rpXnIS4BkiMXvkpOD2QUV0m.jpeg",
+    alt: "Power Meets Performance - Next-Gen laptops for Work, Gaming & Creativity",
+    href: "/category/laptop",
+  },
+  {
+    id: "storage-banner",
+    image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/storage%20Banner%201500x450.jpg-EtvfDlF2RiTTXenqrp4LgEW9Gc5P9K.jpeg",
+    alt: "Protect your Digital world with ultra-fast SSDs and high-capacity storage",
+    href: "/category/storage",
+  },
+  {
+    id: "canon-printer",
+    image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Banner%201500x450%20-%201-qzGXrBQjpz7ZwVcspENU7uNYFMmLwZ.png",
     alt: "Premium Finishes — Canon Printers",
     href: "/category/printers",
   },
   {
-    desktop: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Banner%20size%201500x450%20HP%20Laptop-JS5i33Ik5vWHv2o6GXC8sloLi8sH4f.png",
+    id: "hp-laptop",
+    image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Banner%20size%201500x450%20HP%20Laptop-JS5i33Ik5vWHv2o6GXC8sloLi8sH4f.png",
     alt: "Performance Without Limits — HP Laptops",
     href: "/category/laptop",
   },
 ];
 
-export default function HeroBanner() {
+export default function HeroBanner({ banners }: HeroBannerProps) {
   const [api, setApi] = useState<CarouselApi>();
   const [current, setCurrent] = useState(0);
+
+  // Use provided banners or default slides
+  const SLIDES = banners && banners.length > 0 ? banners : DEFAULT_SLIDES;
 
   const onSelect = useCallback(() => {
     if (!api) return;
@@ -58,7 +93,7 @@ export default function HeroBanner() {
         >
           <CarouselContent className="-ml-0">
             {SLIDES.map((slide, i) => (
-              <CarouselItem key={i} className="pl-0">
+              <CarouselItem key={slide.id} className="pl-0">
                 <Link href={slide.href} className="block w-full">
                   {/* Desktop ratio 1500:450 = 10:3 */}
                   <div
@@ -66,7 +101,7 @@ export default function HeroBanner() {
                     style={{ aspectRatio: "10 / 3" }}
                   >
                     <Image
-                      src={slide.desktop}
+                      src={slide.image}
                       alt={slide.alt}
                       fill
                       sizes="100vw"
@@ -75,13 +110,13 @@ export default function HeroBanner() {
                       unoptimized
                     />
                   </div>
-                  {/* Mobile ratio 450:300 = 3:2 — use same image, crop to top */}
+                  {/* Mobile ratio 450:300 = 3:2 — use same image or mobile image, crop to top */}
                   <div
                     className="relative w-full md:hidden"
                     style={{ aspectRatio: "3 / 2" }}
                   >
                     <Image
-                      src={slide.desktop}
+                      src={slide.imageMobile || slide.image}
                       alt={slide.alt}
                       fill
                       sizes="100vw"

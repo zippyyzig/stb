@@ -22,8 +22,10 @@ async function getBanners() {
   }
 }
 
-const positionLabels: Record<string, { label: string; color: string }> = {
-  hero: { label: "Hero", color: "bg-primary/10 text-primary" },
+const positionLabels: Record<string, { label: string; color: string; description?: string }> = {
+  hero_slider: { label: "Hero Slider", color: "bg-primary/10 text-primary", description: "1500x450 - Homepage main slider" },
+  ad_banner: { label: "Ad Banners", color: "bg-stb-info/10 text-stb-info", description: "1500x300 - Homepage ad banners" },
+  hero: { label: "Hero (Legacy)", color: "bg-chart-4/10 text-chart-4" },
   promo: { label: "Promo", color: "bg-accent/10 text-accent" },
   sidebar: { label: "Sidebar", color: "bg-chart-4/10 text-chart-4" },
   footer: { label: "Footer", color: "bg-muted text-muted-foreground" },
@@ -41,7 +43,7 @@ export default async function BannersPage() {
     return acc;
   }, {});
 
-  const positions = ["hero", "promo", "sidebar", "footer"];
+  const positions = ["hero_slider", "ad_banner", "hero", "promo", "sidebar", "footer"];
 
   return (
     <div className="flex flex-col gap-6">

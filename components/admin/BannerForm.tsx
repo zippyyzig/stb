@@ -168,7 +168,9 @@ export default function BannerForm({ banner, isEdit = false, defaultPosition = "
               className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
               required
             >
-              <option value="hero">Hero (Main Banner)</option>
+              <option value="hero">Hero (Main Banner - Legacy)</option>
+              <option value="hero_slider">Hero Slider (1500x450 - Homepage)</option>
+              <option value="ad_banner">Ad Banner (1500x300 - Homepage Ads)</option>
               <option value="promo">Promo (Promotional Section)</option>
               <option value="sidebar">Sidebar</option>
               <option value="footer">Footer</option>
@@ -261,7 +263,7 @@ export default function BannerForm({ banner, isEdit = false, defaultPosition = "
               </label>
             </div>
             <p className="mt-1 text-xs text-muted-foreground">
-              Recommended: 1920x600px for hero, 800x400px for promo
+              Hero Slider: 1500x450px | Ad Banner: 1500x300px | Promo: 800x400px
             </p>
           </div>
 

@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
 
-export type BannerPosition = "hero" | "promo" | "sidebar" | "footer";
+export type BannerPosition = "hero" | "promo" | "sidebar" | "footer" | "hero_slider" | "ad_banner";
 
 export interface IBanner extends Document {
   _id: mongoose.Types.ObjectId;
@@ -42,7 +42,7 @@ const BannerSchema = new Schema<IBanner>(
     },
     position: {
       type: String,
-      enum: ["hero", "promo", "sidebar", "footer"],
+      enum: ["hero", "promo", "sidebar", "footer", "hero_slider", "ad_banner"],
       default: "hero",
     },
     isActive: {
