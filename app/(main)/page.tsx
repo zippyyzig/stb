@@ -638,6 +638,36 @@ export default async function HomePage() {
           <MostPopularSection products={mostPopular} />
         )}
 
+        {/* Secondary Ad Banners - 4 promotional banners */}
+        <AdBannerSlider 
+          banners={[
+            {
+              id: "laptop-banner",
+              image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/laptop%20Banner.jpg-aZ74t8huDopt1RRCwikZSJznyGUZMl.jpeg",
+              alt: "High-performance portability tailored for creators, students, and professionals on the move",
+              href: "/category/laptops",
+            },
+            {
+              id: "storage-banner",
+              image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Storage%20%20Banner.jpg-Br2pDtXHqxUP0A7rMmWIwC6BKzMrRy.jpeg",
+              alt: "Secure your digital life with high-speed SSDs, massive hard drives, and reliable cloud-ready solutions",
+              href: "/category/storage",
+            },
+            {
+              id: "networking-banner",
+              image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Networking%20Banner.jpg-8TJO7lyqPmcGBoBLNeboJBiU5xTj4p.jpeg",
+              alt: "Blazing fast internet starts here - Stay connected, stay ahead",
+              href: "/category/networking",
+            },
+            {
+              id: "mobility-banner",
+              image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Mobility%20Banner.jpg-fIVom9upVU5bdAYHsa9o5xGUeVS5U1.jpeg",
+              alt: "Never run out of power - Smart, fast and portable charging solutions",
+              href: "/category/mobility",
+            },
+          ]} 
+        />
+
         {/* Promo Banner */}
         {promoBanners.length > 0 ? (
           <PromoBanner banner={promoBanners[0]} />
