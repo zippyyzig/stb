@@ -40,10 +40,10 @@ const DEFAULT_SLIDES: BannerSlide[] = [
     href: "/category/laptop",
   },
   {
-    id: "desktop-banner",
-    image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Desktop%20Banners.jpg-7DYFVA5RanX4nM5G6khejJwHVcSRei.jpeg",
-    alt: "Powerful Workstations and sleek all-in-ones",
-    href: "/category/desktop",
+    id: "storage-banner",
+    image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/storage%20Banner%201500x450.jpg-EtvfDlF2RiTTXenqrp4LgEW9Gc5P9K.jpeg",
+    alt: "Protect your Digital world with ultra-fast SSDs and high-capacity storage",
+    href: "/category/storage",
   },
   {
     id: "canon-printer",
