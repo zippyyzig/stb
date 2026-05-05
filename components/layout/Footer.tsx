@@ -12,6 +12,9 @@ import {
   CheckCircle2,
   Loader2,
   ChevronRight,
+  Facebook,
+  Instagram,
+  Linkedin,
 } from "lucide-react";
 
 const infoLinks = [
@@ -121,11 +124,41 @@ export default function Footer() {
               </div>
               +91 93539 19299
             </a>
-            <a href="mailto:sales@smarttechbazaar.com" className="flex items-center gap-2.5 text-xs text-white/70 press-active">
+            <a href="mailto:smarttechbazaar@gmail.com" className="flex items-center gap-2.5 text-xs text-white/70 press-active">
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/10">
                 <Mail className="h-3.5 w-3.5 text-primary" />
               </div>
-              sales@smarttechbazaar.com
+              smarttechbazaar@gmail.com
+            </a>
+          </div>
+          {/* Social Media Links - Mobile */}
+          <div className="mt-4 flex items-center gap-3">
+            <a 
+              href="https://www.facebook.com/profile.php?id=61588955768910" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-white/70 transition-colors hover:bg-primary hover:text-white"
+              aria-label="Follow us on Facebook"
+            >
+              <Facebook className="h-4 w-4" />
+            </a>
+            <a 
+              href="https://www.instagram.com/smarttechbazaar_india/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-white/70 transition-colors hover:bg-primary hover:text-white"
+              aria-label="Follow us on Instagram"
+            >
+              <Instagram className="h-4 w-4" />
+            </a>
+            <a 
+              href="https://www.linkedin.com/company/smarttechbazaar/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-white/70 transition-colors hover:bg-primary hover:text-white"
+              aria-label="Follow us on LinkedIn"
+            >
+              <Linkedin className="h-4 w-4" />
             </a>
           </div>
         </div>
@@ -188,8 +221,38 @@ export default function Footer() {
                 </div>
                 <div className="flex items-center gap-2 text-xs text-white/60">
                   <Mail className="h-3.5 w-3.5 shrink-0 text-primary" />
-                  <a href="mailto:sales@smarttechbazaar.com" className="hover:text-white">sales@smarttechbazaar.com</a>
+                  <a href="mailto:smarttechbazaar@gmail.com" className="hover:text-white">smarttechbazaar@gmail.com</a>
                 </div>
+              </div>
+              {/* Social Media Links - Desktop */}
+              <div className="mt-4 flex items-center gap-2">
+                <a 
+                  href="https://www.facebook.com/profile.php?id=61588955768910" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 text-white/60 transition-colors hover:bg-primary hover:text-white"
+                  aria-label="Follow us on Facebook"
+                >
+                  <Facebook className="h-4 w-4" />
+                </a>
+                <a 
+                  href="https://www.instagram.com/smarttechbazaar_india/" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 text-white/60 transition-colors hover:bg-primary hover:text-white"
+                  aria-label="Follow us on Instagram"
+                >
+                  <Instagram className="h-4 w-4" />
+                </a>
+                <a 
+                  href="https://www.linkedin.com/company/smarttechbazaar/" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 text-white/60 transition-colors hover:bg-primary hover:text-white"
+                  aria-label="Follow us on LinkedIn"
+                >
+                  <Linkedin className="h-4 w-4" />
+                </a>
               </div>
             </div>
 
