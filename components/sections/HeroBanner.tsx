@@ -40,40 +40,22 @@ const DEFAULT_SLIDES: BannerSlide[] = [
     href: "/category/laptop",
   },
   {
-    id: "cables-banner",
-    image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Cables%20Banner%20%281%29.jpg-GQ5Dy2K6xYJZcz6JSbSIsIQONBO6wm.jpeg",
-    alt: "High-Quality Data and Power Cables Engineered for Durability",
-    href: "/category/cables",
-  },
-  {
     id: "desktop-banner",
     image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Desktop%20Banners.jpg-7DYFVA5RanX4nM5G6khejJwHVcSRei.jpeg",
     alt: "Powerful Workstations and sleek all-in-ones",
     href: "/category/desktop",
   },
   {
-    id: "laptop-banner-2",
-    image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/laptop%20Banner.jpg-TwqjbAQGZk8VYLalCk5RtKU74dYn1y.jpeg",
-    alt: "High-performance portability tailored for creators, students, and professionals",
+    id: "canon-printer",
+    image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Banner%201500x450%20-%201-qzGXrBQjpz7ZwVcspENU7uNYFMmLwZ.png",
+    alt: "Premium Finishes — Canon Printers",
+    href: "/category/printers",
+  },
+  {
+    id: "hp-laptop",
+    image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Banner%20size%201500x450%20HP%20Laptop-JS5i33Ik5vWHv2o6GXC8sloLi8sH4f.png",
+    alt: "Performance Without Limits — HP Laptops",
     href: "/category/laptop",
-  },
-  {
-    id: "mobility-banner",
-    image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Mobility%20Banner.jpg-qsSE3kzvfqPmnSol5FYeIxXpl3lYsr.jpeg",
-    alt: "Never Run Out of Power - Smart, Fast & Portable Charging Solutions",
-    href: "/category/mobility",
-  },
-  {
-    id: "networking-banner",
-    image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Networking%20Banner.jpg-NKZqYH6QkdmgU8sxIvT7A5bd7JTTs8.jpeg",
-    alt: "Blazing Fast Internet Starts Here - Stay Connected. Stay Ahead",
-    href: "/category/networking",
-  },
-  {
-    id: "storage-banner",
-    image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/storage%20Banner%201500x450.jpg-EtvfDlF2RiTTXenqrp4LgEW9Gc5P9K.jpeg",
-    alt: "Protect your Digital world with ultra-fast SSDs and high-capacity storage",
-    href: "/category/storage",
   },
 ];
 
