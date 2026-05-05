@@ -13,23 +13,76 @@ import {
 } from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
 
-// Real slider images — Desktop 1500×450 · Mobile 450×300
-const SLIDES = [
+interface BannerSlide {
+  id: string;
+  image: string;
+  imageMobile?: string;
+  alt: string;
+  href: string;
+}
+
+interface HeroBannerProps {
+  banners?: BannerSlide[];
+}
+
+// Default slider images — Desktop 1500×450 · Mobile 450×300
+const DEFAULT_SLIDES: BannerSlide[] = [
   {
-    desktop: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Banner%201500x450%20-%201-qzGXrBQjpz7ZwVcspENU7uNYFMmLwZ.png",
-    alt: "Premium Finishes — Canon Printers",
-    href: "/category/printers",
+    id: "display-banner",
+    image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Display%20Banner%201500x450.jpg-qH4BlgbMdr3xa4HXaH5iA5zYvxZqPW.jpeg",
+    alt: "Experience Crystal-Clear Displays and Immersive Visuals",
+    href: "/category/display",
   },
   {
-    desktop: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Banner%20size%201500x450%20HP%20Laptop-JS5i33Ik5vWHv2o6GXC8sloLi8sH4f.png",
-    alt: "Performance Without Limits — HP Laptops",
+    id: "laptops-banner",
+    image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Laptops%20Banner%201500x450-Recovered.jpg-QMLDAo6rpXnIS4BkiMXvkpOD2QUV0m.jpeg",
+    alt: "Power Meets Performance - Next-Gen laptops for Work, Gaming & Creativity",
     href: "/category/laptop",
+  },
+  {
+    id: "cables-banner",
+    image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Cables%20Banner%20%281%29.jpg-GQ5Dy2K6xYJZcz6JSbSIsIQONBO6wm.jpeg",
+    alt: "High-Quality Data and Power Cables Engineered for Durability",
+    href: "/category/cables",
+  },
+  {
+    id: "desktop-banner",
+    image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Desktop%20Banners.jpg-7DYFVA5RanX4nM5G6khejJwHVcSRei.jpeg",
+    alt: "Powerful Workstations and sleek all-in-ones",
+    href: "/category/desktop",
+  },
+  {
+    id: "laptop-banner-2",
+    image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/laptop%20Banner.jpg-TwqjbAQGZk8VYLalCk5RtKU74dYn1y.jpeg",
+    alt: "High-performance portability tailored for creators, students, and professionals",
+    href: "/category/laptop",
+  },
+  {
+    id: "mobility-banner",
+    image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Mobility%20Banner.jpg-qsSE3kzvfqPmnSol5FYeIxXpl3lYsr.jpeg",
+    alt: "Never Run Out of Power - Smart, Fast & Portable Charging Solutions",
+    href: "/category/mobility",
+  },
+  {
+    id: "networking-banner",
+    image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Networking%20Banner.jpg-NKZqYH6QkdmgU8sxIvT7A5bd7JTTs8.jpeg",
+    alt: "Blazing Fast Internet Starts Here - Stay Connected. Stay Ahead",
+    href: "/category/networking",
+  },
+  {
+    id: "storage-banner",
+    image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/storage%20Banner%201500x450.jpg-EtvfDlF2RiTTXenqrp4LgEW9Gc5P9K.jpeg",
+    alt: "Protect your Digital world with ultra-fast SSDs and high-capacity storage",
+    href: "/category/storage",
   },
 ];
 
-export default function HeroBanner() {
+export default function HeroBanner({ banners }: HeroBannerProps) {
   const [api, setApi] = useState<CarouselApi>();
   const [current, setCurrent] = useState(0);
+
+  // Use provided banners or default slides
+  const SLIDES = banners && banners.length > 0 ? banners : DEFAULT_SLIDES;
 
   const onSelect = useCallback(() => {
     if (!api) return;
@@ -58,7 +111,7 @@ export default function HeroBanner() {
         >
           <CarouselContent className="-ml-0">
             {SLIDES.map((slide, i) => (
-              <CarouselItem key={i} className="pl-0">
+              <CarouselItem key={slide.id} className="pl-0">
                 <Link href={slide.href} className="block w-full">
                   {/* Desktop ratio 1500:450 = 10:3 */}
                   <div
@@ -66,7 +119,7 @@ export default function HeroBanner() {
                     style={{ aspectRatio: "10 / 3" }}
                   >
                     <Image
-                      src={slide.desktop}
+                      src={slide.image}
                       alt={slide.alt}
                       fill
                       sizes="100vw"
@@ -75,13 +128,13 @@ export default function HeroBanner() {
                       unoptimized
                     />
                   </div>
-                  {/* Mobile ratio 450:300 = 3:2 — use same image, crop to top */}
+                  {/* Mobile ratio 450:300 = 3:2 — use same image or mobile image, crop to top */}
                   <div
                     className="relative w-full md:hidden"
                     style={{ aspectRatio: "3 / 2" }}
                   >
                     <Image
-                      src={slide.desktop}
+                      src={slide.imageMobile || slide.image}
                       alt={slide.alt}
                       fill
                       sizes="100vw"

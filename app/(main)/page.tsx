@@ -5,6 +5,10 @@ import TopCategories from "@/components/sections/TopCategories";
 import ProductSection from "@/components/sections/ProductSection";
 import BrandsSection from "@/components/sections/BrandsSection";
 import PromoBanner from "@/components/sections/PromoBanner";
+import AdBannerSlider from "@/components/sections/AdBannerSlider";
+import BestSellersSection from "@/components/sections/BestSellersSection";
+import MostPopularSection from "@/components/sections/MostPopularSection";
+import HotBrandsSection from "@/components/sections/HotBrandsSection";
 import FeaturesSection from "@/components/sections/FeaturesSection";
 import JsonLd from "@/components/seo/JsonLd";
 import dbConnect from "@/lib/mongodb";
@@ -12,6 +16,7 @@ import Settings from "@/models/Settings";
 import Product from "@/models/Product";
 import Category from "@/models/Category";
 import Brand from "@/models/Brand";
+import Banner from "@/models/Banner";
 import { 
   generateOrganizationSchema, 
   generateWebSiteSchema, 
@@ -50,6 +55,8 @@ interface ProductData {
   itemCode?: string;
   rating?: number;
   description?: string;
+  soldCount?: number;
+  views?: number;
 }
 
 interface SectionData {
@@ -72,6 +79,224 @@ interface BrandData {
   name: string;
   logo: string;
   slug: string;
+  productCount?: number;
+}
+
+interface BannerData {
+  id: string;
+  image: string;
+  imageMobile?: string;
+  alt: string;
+  href: string;
+}
+
+// Fetch hero slider banners from database
+async function getHeroSliderBanners(): Promise<BannerData[]> {
+  try {
+    await dbConnect();
+
+    const now = new Date();
+    const banners = await Banner.find({
+      position: "hero_slider",
+      isActive: true,
+      $or: [
+        { startDate: null, endDate: null },
+        { startDate: { $lte: now }, endDate: null },
+        { startDate: null, endDate: { $gte: now } },
+        { startDate: { $lte: now }, endDate: { $gte: now } },
+      ],
+    })
+      .sort({ sortOrder: 1 })
+      .lean();
+
+    return banners.map((b) => ({
+      id: b._id.toString(),
+      image: b.image,
+      imageMobile: b.imageMobile,
+      alt: b.title || "Banner",
+      href: b.link || "/",
+    }));
+  } catch (error) {
+    console.error("Error fetching hero slider banners:", error);
+    return [];
+  }
+}
+
+// Fetch ad banners from database
+async function getAdBanners(): Promise<BannerData[]> {
+  try {
+    await dbConnect();
+
+    const now = new Date();
+    const banners = await Banner.find({
+      position: "ad_banner",
+      isActive: true,
+      $or: [
+        { startDate: null, endDate: null },
+        { startDate: { $lte: now }, endDate: null },
+        { startDate: null, endDate: { $gte: now } },
+        { startDate: { $lte: now }, endDate: { $gte: now } },
+      ],
+    })
+      .sort({ sortOrder: 1 })
+      .lean();
+
+    return banners.map((b) => ({
+      id: b._id.toString(),
+      image: b.image,
+      imageMobile: b.imageMobile,
+      alt: b.title || "Ad Banner",
+      href: b.link || "/",
+    }));
+  } catch (error) {
+    console.error("Error fetching ad banners:", error);
+    return [];
+  }
+}
+
+// Fetch promo banners from database
+async function getPromoBanners(): Promise<BannerData[]> {
+  try {
+    await dbConnect();
+
+    const now = new Date();
+    const banners = await Banner.find({
+      position: "promo",
+      isActive: true,
+      $or: [
+        { startDate: null, endDate: null },
+        { startDate: { $lte: now }, endDate: null },
+        { startDate: null, endDate: { $gte: now } },
+        { startDate: { $lte: now }, endDate: { $gte: now } },
+      ],
+    })
+      .sort({ sortOrder: 1 })
+      .limit(1)
+      .lean();
+
+    return banners.map((b) => ({
+      id: b._id.toString(),
+      image: b.image,
+      imageMobile: b.imageMobile,
+      alt: b.title || "Promo Banner",
+      href: b.link || "/",
+    }));
+  } catch (error) {
+    console.error("Error fetching promo banners:", error);
+    return [];
+  }
+}
+
+// Fetch best sellers
+async function getBestSellers(): Promise<ProductData[]> {
+  try {
+    await dbConnect();
+
+    const products = await Product.find({
+      isActive: true,
+      isBestSeller: true,
+    })
+      .populate("brand", "name logo slug")
+      .sort({ soldCount: -1 })
+      .limit(10)
+      .lean();
+
+    // If not enough best sellers, also fetch by soldCount
+    if (products.length < 10) {
+      const additionalProducts = await Product.find({
+        isActive: true,
+        _id: { $nin: products.map((p) => p._id) },
+      })
+        .populate("brand", "name logo slug")
+        .sort({ soldCount: -1 })
+        .limit(10 - products.length)
+        .lean();
+
+      products.push(...additionalProducts);
+    }
+
+    return products.map((p) => {
+      const brandObj = p.brand as { name?: string; logo?: string } | string | undefined;
+      const brandName = typeof brandObj === "object" && brandObj?.name ? brandObj.name : (typeof brandObj === "string" ? brandObj : "Generic");
+      return {
+        id: p._id.toString(),
+        name: p.name,
+        slug: p.slug,
+        image: p.images?.[0] || "https://picsum.photos/280/280",
+        secondImage: p.images?.[1],
+        priceB2C: p.priceB2C || p.mrp,
+        priceB2B: p.priceB2B || p.priceB2C || p.mrp,
+        mrp: p.mrp,
+        inStock: p.stock > 0,
+        brand: brandName,
+        rating: 0,
+        soldCount: p.soldCount || 0,
+      };
+    });
+  } catch (error) {
+    console.error("Error fetching best sellers:", error);
+    return [];
+  }
+}
+
+// Fetch most popular products (by views)
+async function getMostPopular(): Promise<ProductData[]> {
+  try {
+    await dbConnect();
+
+    const products = await Product.find({
+      isActive: true,
+    })
+      .populate("brand", "name logo slug")
+      .sort({ views: -1, isFeatured: -1 })
+      .limit(10)
+      .lean();
+
+    return products.map((p) => {
+      const brandObj = p.brand as { name?: string; logo?: string } | string | undefined;
+      const brandName = typeof brandObj === "object" && brandObj?.name ? brandObj.name : (typeof brandObj === "string" ? brandObj : "Generic");
+      return {
+        id: p._id.toString(),
+        name: p.name,
+        slug: p.slug,
+        image: p.images?.[0] || "https://picsum.photos/280/280",
+        secondImage: p.images?.[1],
+        priceB2C: p.priceB2C || p.mrp,
+        priceB2B: p.priceB2B || p.priceB2C || p.mrp,
+        mrp: p.mrp,
+        inStock: p.stock > 0,
+        brand: brandName,
+        rating: 0,
+        views: p.views || 0,
+      };
+    });
+  } catch (error) {
+    console.error("Error fetching most popular products:", error);
+    return [];
+  }
+}
+
+// Fetch hot brands (brands with most products or manually selected)
+async function getHotBrands(): Promise<BrandData[]> {
+  try {
+    await dbConnect();
+
+    const brands = await Brand.find({ isActive: true })
+      .sort({ productCount: -1, sortOrder: 1 })
+      .limit(12)
+      .lean();
+
+    return brands.map((brand) => ({
+      id: brand._id.toString(),
+      name: brand.name,
+      logo: brand.logo || `https://picsum.photos/seed/${brand.slug}/120/60`,
+      slug: brand.slug,
+      productCount: brand.productCount || 0,
+    }));
+  } catch (error) {
+    console.error("Error fetching hot brands:", error);
+    return [];
+  }
 }
 
 // Fetch categories from database (single aggregation, no N+1)
@@ -318,10 +543,26 @@ async function getHomepageSections(): Promise<SectionData[]> {
 
 export default async function HomePage() {
   // Fetch all data in parallel
-  const [productSections, categories, brands] = await Promise.all([
+  const [
+    productSections,
+    categories,
+    brands,
+    heroSliderBanners,
+    adBanners,
+    promoBanners,
+    bestSellers,
+    mostPopular,
+    hotBrands,
+  ] = await Promise.all([
     getHomepageSections(),
     getCategories(),
     getBrands(),
+    getHeroSliderBanners(),
+    getAdBanners(),
+    getPromoBanners(),
+    getBestSellers(),
+    getMostPopular(),
+    getHotBrands(),
   ]);
 
   // Schema markup for homepage
@@ -338,8 +579,8 @@ export default async function HomePage() {
         {/* Schema markup */}
         <JsonLd data={schemas} />
 
-        {/* Hero Slider with Side Banners */}
-        <HeroBanner />
+        {/* Hero Slider - 1500x450 banners */}
+        <HeroBanner banners={heroSliderBanners.length > 0 ? heroSliderBanners : undefined} />
 
         {/* Features Strip */}
         <FeaturesSection />
@@ -347,13 +588,37 @@ export default async function HomePage() {
         {/* Top Categories */}
         <TopCategories categories={categories} />
 
+        {/* Best Sellers Section */}
+        {bestSellers.length > 0 && (
+          <BestSellersSection products={bestSellers} />
+        )}
+
+        {/* First Ad Banner Slider - 1500x300 banners */}
+        {adBanners.length > 0 && (
+          <AdBannerSlider banners={adBanners} />
+        )}
+
         {/* First 2 Product Sections */}
         {productSections.slice(0, 2).map((section) => (
           <ProductSection key={section.slug} section={section} />
         ))}
 
-        {/* Promo Banners */}
-        <PromoBanner />
+        {/* Hot Brands Section */}
+        {hotBrands.length > 0 && (
+          <HotBrandsSection brands={hotBrands} />
+        )}
+
+        {/* Most Popular Section */}
+        {mostPopular.length > 0 && (
+          <MostPopularSection products={mostPopular} />
+        )}
+
+        {/* Promo Banner */}
+        {promoBanners.length > 0 ? (
+          <PromoBanner banner={promoBanners[0]} />
+        ) : (
+          <PromoBanner />
+        )}
 
         {/* Remaining Product Sections */}
         {productSections.slice(2).map((section) => (
@@ -364,7 +629,7 @@ export default async function HomePage() {
         <BrandsSection brands={brands} />
 
         {/* Show message if no products */}
-        {productSections.length === 0 && (
+        {productSections.length === 0 && bestSellers.length === 0 && mostPopular.length === 0 && (
           <div className="mx-auto max-w-7xl px-4 py-20 text-center">
             <h2 className="heading-lg mb-4">No Products Available</h2>
             <p className="body-md text-muted-foreground">

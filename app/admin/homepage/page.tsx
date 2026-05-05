@@ -365,6 +365,37 @@ export default function HomepageSettingsPage() {
         </div>
       </div>
 
+      {/* Homepage Sections Overview */}
+      <div className="mb-6 rounded-xl border border-border bg-card p-4 shadow-sm">
+        <h2 className="heading-md mb-3">Homepage Structure</h2>
+        <div className="grid gap-3 text-sm md:grid-cols-2 lg:grid-cols-3">
+          <div className="rounded-lg bg-muted/50 p-3">
+            <p className="font-semibold text-foreground">Hero Slider (1500x450)</p>
+            <p className="text-muted-foreground">Manage in <a href="/admin/banners" className="text-primary hover:underline">Banners</a> &gt; Hero Slider</p>
+          </div>
+          <div className="rounded-lg bg-muted/50 p-3">
+            <p className="font-semibold text-foreground">Ad Banners (1500x300)</p>
+            <p className="text-muted-foreground">Manage in <a href="/admin/banners" className="text-primary hover:underline">Banners</a> &gt; Ad Banners</p>
+          </div>
+          <div className="rounded-lg bg-muted/50 p-3">
+            <p className="font-semibold text-foreground">Best Sellers</p>
+            <p className="text-muted-foreground">Auto-populated from products marked as Best Seller</p>
+          </div>
+          <div className="rounded-lg bg-muted/50 p-3">
+            <p className="font-semibold text-foreground">Most Popular</p>
+            <p className="text-muted-foreground">Auto-populated by most viewed products</p>
+          </div>
+          <div className="rounded-lg bg-muted/50 p-3">
+            <p className="font-semibold text-foreground">Hot Brands</p>
+            <p className="text-muted-foreground">Auto-populated by brands with most products</p>
+          </div>
+          <div className="rounded-lg bg-muted/50 p-3">
+            <p className="font-semibold text-foreground">Product Sections</p>
+            <p className="text-muted-foreground">Configure custom sections below</p>
+          </div>
+        </div>
+      </div>
+
       {/* Sections */}
       <div className="flex flex-col gap-4">
         {sections.length === 0 ? (
