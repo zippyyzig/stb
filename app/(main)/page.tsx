@@ -4,7 +4,6 @@ import HeroBanner from "@/components/sections/HeroBanner";
 import TopCategories from "@/components/sections/TopCategories";
 import ProductSection from "@/components/sections/ProductSection";
 import BrandsSection from "@/components/sections/BrandsSection";
-import PromoBanner from "@/components/sections/PromoBanner";
 import AdBannerSlider from "@/components/sections/AdBannerSlider";
 import BestSellersSection from "@/components/sections/BestSellersSection";
 import MostPopularSection from "@/components/sections/MostPopularSection";
@@ -667,13 +666,6 @@ export default async function HomePage() {
             },
           ]} 
         />
-
-        {/* Promo Banner */}
-        {promoBanners.length > 0 ? (
-          <PromoBanner banner={promoBanners[0]} />
-        ) : (
-          <PromoBanner />
-        )}
 
         {/* Remaining Product Sections */}
         {productSections.slice(2).map((section) => (
