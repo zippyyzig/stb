@@ -2,6 +2,8 @@
 
 Use this checklist to verify everything is ready before submitting to app stores.
 
+**Last Updated:** May 2025
+
 ---
 
 ## CONFIGURATION STATUS
@@ -9,7 +11,7 @@ Use this checklist to verify everything is ready before submitting to app stores
 ### Completed
 
 - [x] `manifest.json` - PWA manifest configured with PNG icons
-- [x] `assetlinks.json` - Android App Links with SHA-256: `82:60:EA:EC:BB:...`
+- [x] `assetlinks.json` - Android App Links with SHA-256 fingerprint
 - [x] `apple-app-site-association` - iOS Universal Links with Team ID: `5TGG836W7V`
 - [x] `/api/health` - Health check endpoint working
 - [x] Splash screens - All 8 iOS splash screen sizes (PNG)
@@ -20,24 +22,26 @@ Use this checklist to verify everything is ready before submitting to app stores
 - [x] Privacy Policy page - `/privacy`
 - [x] Terms of Service page - `/terms`
 - [x] Shipping Policy page - `/shipping`
-- [x] OneSignal configured - App ID & REST API Key set
+- [x] Account Deletion page - `/dashboard/delete-account` (Apple requirement)
+- [x] OneSignal configured - App ID: `70c19aa3-9238-4543-acf1-0c564fc4af5a`
 - [x] FCM configured - Firebase Cloud Messaging for Android push
+- [x] iOS APNs configured - Apple Push Notification service in OneSignal
 - [x] Server-side push notifications - Integrated with order/ticket flows
 - [x] Native app detection - `lib/native-app.ts`
 - [x] Deep linking - URL scheme `stb://`
 - [x] App rating dialog - Prompts after 3 sessions
+- [x] Apple App Store ID - `6766469443` in `hooks/use-app-rating.ts`
 - [x] Offline page - `/offline`
 - [x] Error handling - `error.tsx`, `not-found.tsx`
 - [x] Google Sign-In - Native and web fallback
+- [x] Business contact info - Updated in `lib/site-config.ts`
+- [x] Social media links - Facebook, Instagram, LinkedIn in Footer
 
-### Pending
+### Pending (Before Production)
 
-- [ ] Apple App Store ID - Replace `__YOUR_APP_ID__` in `hooks/use-app-rating.ts`
-- [ ] iOS APNs setup - Upload `.p8` key to OneSignal
 - [ ] Production Razorpay keys - Replace test keys with live keys
 - [ ] Production NextAuth secret - Generate secure secret
 - [ ] Enable SEO indexing - Change `index: false` to `index: true`
-- [ ] Update business contact info - Real phone/email in `lib/site-config.ts`
 
 ---
 
@@ -82,6 +86,7 @@ https://smarttechbazaar.com/.well-known/apple-app-site-association → JSON resp
 https://smarttechbazaar.com/api/health                    → {"status":"ok",...}
 https://smarttechbazaar.com/privacy                       → Privacy policy page
 https://smarttechbazaar.com/terms                         → Terms page
+https://smarttechbazaar.com/dashboard/delete-account      → Account deletion (logged in)
 ```
 
 ---
@@ -115,7 +120,7 @@ https://smarttechbazaar.com/terms                         → Terms page
 - [ ] Change password
 - [ ] Manage addresses
 - [ ] Export data
-- [ ] Delete account
+- [ ] Delete account (REQUIRED by Apple)
 
 ### Support System
 
@@ -150,14 +155,14 @@ https://smarttechbazaar.com/terms                         → Terms page
 
 ### Store Listing
 
-- [ ] App name (max 30 chars)
+- [ ] App name: **Smart Tech Bazaar** (max 30 chars)
 - [ ] Short description (max 80 chars)
 - [ ] Full description (4000 chars)
 - [ ] App icon (512x512 PNG)
 - [ ] Feature graphic (1024x500 PNG)
 - [ ] Phone screenshots (min 2)
 - [ ] Tablet screenshots (if supporting)
-- [ ] Privacy policy URL
+- [ ] Privacy policy URL: `https://smarttechbazaar.com/privacy`
 - [ ] Category: Shopping
 
 ### App Content (Policy)
@@ -183,19 +188,20 @@ https://smarttechbazaar.com/terms                         → Terms page
 
 ### App Store Connect
 
-- [ ] App created with Bundle ID: `com.smarttechbazaar.app`
-- [ ] Team ID: `5TGG836W7V`
+- [x] App created with Bundle ID: `com.smarttechbazaar.app`
+- [x] Team ID: `5TGG836W7V`
+- [x] Apple App Store ID: `6766469443`
 - [ ] SKU set
 
 ### App Information
 
-- [ ] App name
-- [ ] Subtitle (max 30 chars)
+- [ ] App name: **Smart Tech Bazaar**
+- [ ] Subtitle (max 30 chars): **Tech Products & IT Solutions**
 - [ ] Description
 - [ ] Keywords (max 100 chars)
 - [ ] Category: Shopping
-- [ ] Privacy policy URL
-- [ ] Support URL
+- [ ] Privacy policy URL: `https://smarttechbazaar.com/privacy`
+- [ ] Support URL: `https://smarttechbazaar.com/about`
 
 ### Screenshots
 
@@ -212,7 +218,7 @@ https://smarttechbazaar.com/terms                         → Terms page
 
 ### Build
 
-- [ ] APNs key uploaded to OneSignal
+- [x] APNs key uploaded to OneSignal
 - [ ] `.ipa` uploaded via Transporter
 - [ ] Build processed
 - [ ] Build selected
@@ -222,6 +228,7 @@ https://smarttechbazaar.com/terms                         → Terms page
 
 - [ ] Export compliance answered (Yes - HTTPS)
 - [ ] Age rating completed
+- [ ] Account deletion available (REQUIRED)
 
 ---
 
@@ -231,7 +238,7 @@ https://smarttechbazaar.com/terms                         → Terms page
 |----------|---------------|--------|
 | Web Push | Dashboard | DONE |
 | Android (FCM) | Firebase Server Key | DONE |
-| iOS (APNs) | `.p8` key upload | PENDING |
+| iOS (APNs) | `.p8` key upload | DONE |
 
 ---
 
@@ -264,7 +271,24 @@ https://smarttechbazaar.com/terms                         → Terms page
 | Android Package | `com.smarttechbazaar.app` |
 | iOS Bundle ID | `com.smarttechbazaar.app` |
 | Apple Team ID | `5TGG836W7V` |
+| Apple App Store ID | `6766469443` |
 | OneSignal App ID | `70c19aa3-9238-4543-acf1-0c564fc4af5a` |
 | Deep Link Scheme | `stb://` |
 | Theme Color | `#E31837` |
 | Background Color | `#FFFFFF` |
+
+### Business Contact
+
+| Info | Value |
+|------|-------|
+| Email | smarttechbazaar@gmail.com |
+| Phone | +91-9353919299 |
+| Address | 2nd Floor, No. 94/1, Behind Sharda Theater, SP Road, Bangalore 560002 |
+
+### Social Media
+
+| Platform | URL |
+|----------|-----|
+| Facebook | https://www.facebook.com/profile.php?id=61588955768910 |
+| Instagram | https://www.instagram.com/smarttechbazaar_india/ |
+| LinkedIn | https://www.linkedin.com/company/smarttechbazaar/ |
