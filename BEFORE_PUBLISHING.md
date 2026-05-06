@@ -2,7 +2,7 @@
 
 This document covers every step needed to publish the Smart Tech Bazaar app to the Google Play Store and Apple App Store using Median.co as your wrapper.
 
-**Last Updated:** Based on current app configuration
+**Last Updated:** May 2025
 
 ---
 
@@ -27,7 +27,7 @@ This document covers every step needed to publish the Smart Tech Bazaar app to t
 
 | Item | File | Status |
 |------|------|--------|
-| Android App Links | `public/.well-known/assetlinks.json` | DONE - SHA-256: `82:60:EA:EC:BB:B6:62:0E:B8:AC:29:64:C6:50:12:EC:6E:9F:77:61:A4:0D:28:32:8C:A2:34:14:F2:9D:05:17` |
+| Android App Links | `public/.well-known/assetlinks.json` | DONE |
 | iOS Universal Links | `public/.well-known/apple-app-site-association` | DONE - Team ID: `5TGG836W7V` |
 | PWA Manifest | `public/manifest.json` | DONE - App ID: `com.smarttechbazaar.app` |
 | App Icons | `public/icons/` | DONE - PNG icons (192x192, 512x512) |
@@ -37,25 +37,30 @@ This document covers every step needed to publish the Smart Tech Bazaar app to t
 | Privacy Policy | `/privacy` | DONE |
 | Terms of Service | `/terms` | DONE |
 | Shipping Policy | `/shipping` | DONE |
-| Site Config | `lib/site-config.ts` | DONE |
+| Account Deletion | `/dashboard/delete-account` | DONE - Apple requirement |
+| Site Config | `lib/site-config.ts` | DONE - Updated with real business info |
 | Push Notifications (Client) | `hooks/use-push-notifications.ts` | DONE |
 | Push Notifications (Server) | `lib/push-notifications.ts` | DONE - OneSignal REST API integrated |
 | Native App Detection | `lib/native-app.ts` | DONE |
 | Deep Linking | `hooks/use-deep-linking.ts` | DONE - URL scheme: `stb://` |
 | App Rating Dialog | `components/app/AppRatingDialog.tsx` | DONE |
+| Apple App Store ID | `hooks/use-app-rating.ts` | DONE - ID: `6766469443` |
 | Offline Page | `app/offline/page.tsx` | DONE |
 | Error Handling | `app/error.tsx`, `app/not-found.tsx` | DONE |
 | robots.txt | `app/robots.ts` | DONE |
 | sitemap.xml | `app/sitemap.ts` | DONE |
+| OneSignal iOS APNs | OneSignal Dashboard | DONE |
+| OneSignal Android FCM | OneSignal Dashboard | DONE |
+| Business Contact Info | `lib/site-config.ts` | DONE |
+| Social Media Links | Footer component | DONE |
 
-### REMAINING Items
+### REMAINING Items (Before Production Launch)
 
 | Item | Status | Action Required |
 |------|--------|-----------------|
-| Apple App Store ID | PENDING | Replace `__YOUR_APP_ID__` in `hooks/use-app-rating.ts` |
 | Production Razorpay Keys | PENDING | Replace test keys with live keys |
 | SEO Indexing | DISABLED | Change `index: false` to `index: true` in `app/layout.tsx` when ready |
-| Business Contact Info | NEEDS UPDATE | Update phone/email in `lib/site-config.ts` |
+| Production NextAuth Secret | PENDING | Generate secure secret for production |
 
 ---
 
@@ -65,7 +70,7 @@ This document covers every step needed to publish the Smart Tech Bazaar app to t
 |---------|------|-----|--------|
 | Median.co | $99+/year per platform | https://median.co/pricing | Required |
 | Google Play Developer | One-time $25 | https://play.google.com/console | Required |
-| Apple Developer Program | $99/year | https://developer.apple.com/programs/ | Required |
+| Apple Developer Program | $99/year | https://developer.apple.com/programs/ | ACTIVE |
 | OneSignal | Free tier | https://onesignal.com | CONFIGURED |
 | Firebase (for Google Sign-In) | Free | https://console.firebase.google.com | CONFIGURED |
 | Razorpay | Per transaction | https://razorpay.com | CONFIGURED (test mode) |
@@ -77,7 +82,7 @@ This document covers every step needed to publish the Smart Tech Bazaar app to t
 
 ## 3. Environment Variables
 
-### Currently Configured (in `.env.example`)
+### Currently Configured
 
 ```bash
 # MongoDB
@@ -110,7 +115,7 @@ BLOB_READ_WRITE_TOKEN=vercel_blob_rw_XZtLy2nIoGQ8mDbG_... (CONFIGURED)
 
 # OneSignal Push Notifications
 ONESIGNAL_APP_ID=70c19aa3-9238-4543-acf1-0c564fc4af5a (CONFIGURED)
-ONESIGNAL_REST_API_KEY=os_v2_app_odazvi4shbcuhlhrbrle7rfpliovgz5l5lee22mcuhnhikag4oxxulsvpxhq5wx7jgieto6vokyxrdpu3sryyh72ll4zju4q2syg7hy (CONFIGURED)
+ONESIGNAL_REST_API_KEY=os_v2_app_... (CONFIGURED)
 ```
 
 ### Production Changes Required
@@ -130,23 +135,7 @@ Before going live, update these in Vercel Dashboard > Settings > Environment Var
 
 ## 4. Remaining Code Updates
 
-### 4a. Apple App Store ID (REQUIRED)
-
-**File:** `hooks/use-app-rating.ts` (Line ~104)
-
-Find:
-```typescript
-window.open("https://apps.apple.com/app/id__YOUR_APP_ID__", "_blank");
-```
-
-Replace `__YOUR_APP_ID__` with your numeric Apple App Store ID (e.g., `6504123456`).
-
-**How to get your App ID:**
-1. Go to https://appstoreconnect.apple.com
-2. Select your app
-3. Go to **App Information** — your Apple ID is shown there
-
-### 4b. Enable SEO Indexing (when ready for public)
+### 4a. Enable SEO Indexing (when ready for public)
 
 **File:** `app/layout.tsx`
 
@@ -166,34 +155,23 @@ robots: {
 }
 ```
 
-### 4c. Update Business Contact Info (RECOMMENDED)
-
-**File:** `lib/site-config.ts`
-
-Update with real business information:
-- `business.email` — Real support email
-- `business.phone` — Real phone number
-- `business.address` — Real business address
-- `business.geo` — Correct coordinates
-- `business.socialLinks` — Real social media URLs
-
 ---
 
 ## 5. OneSignal Push Notifications
 
-### Current Status: CONFIGURED
+### Current Status: FULLY CONFIGURED
 
 | Platform | Status | Notes |
 |----------|--------|-------|
-| Web Push | CONFIGURED | Working |
-| Android (FCM) | CONFIGURED | You confirmed FCM is set up |
-| iOS (APNs) | PENDING | Requires Apple Developer account |
+| Web Push | DONE | Working |
+| Android (FCM) | DONE | Firebase Cloud Messaging configured |
+| iOS (APNs) | DONE | Apple Push Notification service configured |
 
 ### OneSignal Credentials
 
 ```
 App ID: 70c19aa3-9238-4543-acf1-0c564fc4af5a
-REST API Key: os_v2_app_odazvi4shbcuhlhrbrle7rfpliovgz5l5lee22mcuhnhikag4oxxulsvpxhq5wx7jgieto6vokyxrdpu3sryyh72ll4zju4q2syg7hy
+REST API Key: (configured in environment variables)
 ```
 
 ### Server-Side Push Integration (DONE)
@@ -203,23 +181,6 @@ Push notifications are automatically sent for:
 - Order status updates (shipped, delivered, cancelled, etc.)
 - Support ticket replies
 - Support ticket resolved
-
-**Files updated:**
-- `lib/push-notifications.ts` — Core push notification service
-- `app/api/payment/verify/route.ts` — Sends push on order placed
-- `app/api/admin/orders/[id]/route.ts` — Sends push on status change
-- `app/api/admin/tickets/[id]/reply/route.ts` — Sends push on ticket reply
-- `app/api/admin/tickets/[id]/route.ts` — Sends push on ticket resolved
-
-### iOS APNs Setup (REQUIRED for iOS)
-
-1. Go to https://developer.apple.com > Certificates, Identifiers & Profiles
-2. Under **Keys**, create a new key with **Apple Push Notifications service (APNs)** enabled
-3. Download the `.p8` key file (save it securely — you can only download once)
-4. Note your **Key ID** and **Team ID** (already have: `5TGG836W7V`)
-5. In OneSignal dashboard, go to **Settings > Platforms > Apple iOS**
-6. Upload the `.p8` file and enter Key ID and Team ID
-7. Save
 
 ---
 
@@ -255,36 +216,17 @@ Push notifications are automatically sent for:
 | Custom URL Scheme | `stb` |
 | Associated Domains | `smarttechbazaar.com` |
 
-### CSS Injection (Optional)
-
-To hide the web footer in the native app:
-```css
-footer { display: none !important; }
-```
-
-### Android-Specific
-
-- Minimum Android Version: 7.0 (API 24)
-- Upload `google-services.json` from Firebase
-- SHA-256 fingerprint configured in `assetlinks.json`
-
-### iOS-Specific
-
-- Minimum iOS Version: 16.0
-- Enable Push Notifications capability
-- Enable Associated Domains capability: `applinks:smarttechbazaar.com`
-
 ---
 
 ## 7. Google Play Store Submission
 
-### 7a. Store Listing Information
+### Store Listing Information
 
 | Item | Value/Requirement |
 |------|-------------------|
 | App Name | Smart Tech Bazaar (max 30 chars) |
 | Short Description | Shop computer accessories, CCTV, printers & IT solutions (max 80 chars) |
-| Full Description | 4000 characters describing features |
+| Full Description | See App Store description below |
 | Category | Shopping |
 | Content Rating | Complete questionnaire (likely "Everyone") |
 | App Icon | 512x512 PNG — use `public/icons/icon-512x512.png` |
@@ -292,7 +234,7 @@ footer { display: none !important; }
 | Screenshots | Min 2 phone screenshots (1080x1920 or similar) |
 | Privacy Policy | `https://smarttechbazaar.com/privacy` |
 
-### 7b. Data Safety Form
+### Data Safety Form
 
 | Data Type | Collected? | Shared? |
 |-----------|------------|---------|
@@ -303,46 +245,64 @@ footer { display: none !important; }
 | Purchase history | Yes | No |
 | Device IDs | Yes | No (used for push notifications only) |
 
-### 7c. App Content
-
-- **App access:** Provide test credentials for reviewers
-- **Test account:** Create a dedicated reviewer account
-- **Target audience:** 13+ (no children's content)
-
-### 7d. Release
-
-1. Create Internal Testing track first
-2. Test on real devices
-3. Create Production release
-4. Upload `.aab` file from Median.co
-5. Submit for review (3-7 days)
-
 ---
 
 ## 8. Apple App Store Submission
 
-### 8a. App Store Connect Setup
+### App Store Connect Setup
 
 | Setting | Value |
 |---------|-------|
 | Bundle ID | `com.smarttechbazaar.app` |
 | Team ID | `5TGG836W7V` |
-| SKU | `stb-ios-001` |
+| Apple App Store ID | `6766469443` |
 | Category | Shopping (Primary), Business (Secondary) |
 | Price | Free |
 
-### 8b. App Information
+### App Information
 
 | Item | Value/Requirement |
 |------|-------------------|
 | App Name | Smart Tech Bazaar |
-| Subtitle | Computer Accessories & IT Solutions (max 30 chars) |
+| Subtitle | Tech Products & IT Solutions (max 30 chars) |
 | Keywords | computer accessories, CCTV, printers, networking, IT solutions, B2B, wholesale, India (max 100 chars) |
-| Description | Full description of features |
 | Privacy Policy URL | `https://smarttechbazaar.com/privacy` |
-| Support URL | `https://smarttechbazaar.com/contact` |
+| Support URL | `https://smarttechbazaar.com/about` |
 
-### 8c. Screenshots Required
+### App Store Description (Ready to Use)
+
+```
+Smart Tech Bazaar - Your one-stop shop for computer accessories, 
+CCTV cameras, networking equipment, printers, and IT solutions.
+
+FEATURES:
+• Browse 1000+ tech products from top brands
+• Easy checkout with multiple payment options (UPI, Cards, Net Banking)
+• Track your orders in real-time
+• Get notified about deals and order updates
+• Secure account with easy management
+• B2B wholesale pricing for businesses
+• GST invoices for all orders
+
+CATEGORIES:
+• Laptops & Desktops
+• Networking Equipment
+• CCTV & Security Systems
+• Printers & Scanners
+• Storage Solutions
+• Computer Accessories
+• And much more!
+
+Whether you're a business looking for B2B wholesale pricing or 
+an individual customer, Smart Tech Bazaar has you covered with 
+quality products and excellent service.
+
+Based in Bangalore, serving customers across India.
+
+Contact: smarttechbazaar@gmail.com | +91-9353919299
+```
+
+### Screenshots Required
 
 | Device | Size | Quantity |
 |--------|------|----------|
@@ -350,7 +310,7 @@ footer { display: none !important; }
 | iPhone 5.5" | 1242x2208 | Min 2 |
 | iPad 12.9" (if supporting) | 2048x2732 | Min 2 |
 
-### 8d. App Review Information
+### App Review Information
 
 **CRITICAL:** Apple will reject without valid test credentials.
 
@@ -358,20 +318,13 @@ footer { display: none !important; }
 - **Username:** Create test account: `appreviewer@smarttechbazaar.com`
 - **Password:** Set a secure password
 - **Notes for reviewer:**
-  > "Smart Tech Bazaar is a B2B and B2C e-commerce app for computer accessories and IT equipment. Use the provided credentials to browse products, add items to cart, and view order history. Push notifications can be enabled from the notification prompt that appears on first use."
+  > "Smart Tech Bazaar is a B2B and B2C e-commerce app for computer accessories and IT equipment. Use the provided credentials to browse products, add items to cart, and view order history. Push notifications can be enabled from the notification prompt that appears on first use. Account deletion is available at Dashboard > Security > Delete Account."
 
-### 8e. Export Compliance
+### Compliance
 
-- **Uses encryption?** YES (HTTPS)
+- **Export compliance?** YES (HTTPS)
 - **Qualifies for exemption?** YES (standard HTTPS qualifies)
-
-### 8f. Build Upload
-
-1. Median.co generates `.ipa` file
-2. Upload via **Transporter** (Mac app) or Xcode
-3. Wait for processing (15-30 minutes)
-4. Select build and submit
-5. Review time: 1-7 days
+- **Account deletion available?** YES at `/dashboard/delete-account`
 
 ---
 
@@ -390,13 +343,11 @@ footer { display: none !important; }
 - [ ] Payment (Razorpay) works
 - [ ] Order confirmation displays
 - [ ] Order history loads in dashboard
-- [ ] Order detail page shows timeline
 - [ ] Support ticket creation works
-- [ ] Support ticket replies work
 - [ ] Profile editing works
 - [ ] Address management works
 - [ ] Password change works
-- [ ] Account deletion works
+- [ ] Account deletion works (REQUIRED by Apple)
 - [ ] Data export works
 
 ### Push Notification Tests
@@ -419,13 +370,6 @@ footer { display: none !important; }
 - [ ] Offline page appears when no internet
 - [ ] App rating dialog appears after 3 sessions
 
-### Performance Tests
-
-- [ ] Pages load within 3 seconds on 4G
-- [ ] Images load without broken links
-- [ ] No console errors in production
-- [ ] App doesn't crash
-
 ---
 
 ## 10. Post-Submission
@@ -435,7 +379,6 @@ footer { display: none !important; }
 - [ ] Monitor review status daily
 - [ ] Respond to reviewer questions promptly
 - [ ] If rejected, read feedback carefully and fix specific issues
-- [ ] Do not resubmit without addressing the exact rejection reason
 
 ### Typical Review Times
 
@@ -444,21 +387,18 @@ footer { display: none !important; }
 | Google Play | 3-7 business days | 1-3 days |
 | Apple App Store | 1-7 days | 1-2 days |
 
-### Common Rejection Reasons
+### Common Rejection Reasons & How to Avoid
 
 **Google Play:**
-- Privacy policy missing or incomplete
-- Placeholder content ("Lorem ipsum")
-- App provides no value beyond website
-- Incorrect content rating
-- Undeclared permissions
+- Privacy policy missing or incomplete → You have it at `/privacy`
+- Placeholder content → All content is real
+- App provides no value beyond website → You have native features (push, deep links, rating)
 
 **Apple App Store:**
-- Missing demo account credentials
-- App is just a website wrapper with no native features
-- Broken links or placeholder content
-- Login doesn't work
-- Description doesn't match functionality
+- Missing demo account credentials → Provide test account
+- App is just a website wrapper → You have native features
+- Login doesn't work → Test thoroughly
+- No account deletion → You have it at `/dashboard/delete-account`
 
 ### Your Native Features (to mention in store listing)
 
@@ -469,20 +409,18 @@ These justify the app is not just a web wrapper:
 - App rating prompts
 - Offline handling
 - Deep linking support
-- Biometric authentication (future)
 - Camera access for reviews
 
 ---
 
 ## Quick Reference
 
-### URLs
+### Console URLs
 
 | Purpose | URL |
 |---------|-----|
 | Google Play Console | https://play.google.com/console |
 | Apple App Store Connect | https://appstoreconnect.apple.com |
-| Apple Developer | https://developer.apple.com |
 | OneSignal Dashboard | https://onesignal.com |
 | Firebase Console | https://console.firebase.google.com |
 | Vercel Dashboard | https://vercel.com/dashboard |
@@ -495,9 +433,21 @@ These justify the app is not just a web wrapper:
 | Android Package | `com.smarttechbazaar.app` |
 | iOS Bundle ID | `com.smarttechbazaar.app` |
 | Apple Team ID | `5TGG836W7V` |
+| Apple App Store ID | `6766469443` |
 | OneSignal App ID | `70c19aa3-9238-4543-acf1-0c564fc4af5a` |
 | Firebase Project | `sabkatechbazar` |
 | Deep Link Scheme | `stb://` |
+
+### Business Contact
+
+| Info | Value |
+|------|-------|
+| Email | smarttechbazaar@gmail.com |
+| Phone | +91-9353919299 |
+| Address | 2nd Floor, No. 94/1, Behind Sharda Theater, SP Road, Bangalore 560002 |
+| Facebook | https://www.facebook.com/profile.php?id=61588955768910 |
+| Instagram | https://www.instagram.com/smarttechbazaar_india/ |
+| LinkedIn | https://www.linkedin.com/company/smarttechbazaar/ |
 
 ### Key Files
 
@@ -512,4 +462,3 @@ These justify the app is not just a web wrapper:
 | `lib/push-notifications.ts` | Server-side push notifications |
 | `lib/native-app.ts` | Native app detection & features |
 | `hooks/use-app-rating.ts` | App rating prompts |
-| `.env.example` | Environment variables template |

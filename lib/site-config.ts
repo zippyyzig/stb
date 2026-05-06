@@ -11,8 +11,8 @@ export const siteConfig = {
   business: {
     name: "Smart Tech Bazaar",
     legalName: "Smart Tech Bazaar Private Limited",
-    email: "support@smarttechbazaar.com",
-    phone: "+91-1234567890",
+    email: "smarttechbazaar@gmail.com",
+    phone: "+91-9353919299",
     address: {
       streetAddress: "2nd Floor, No. 94/1, Behind Sharda Theater, SP Road",
       addressLocality: "Bangalore",
@@ -21,17 +21,15 @@ export const siteConfig = {
       addressCountry: "IN",
     },
     geo: {
-      latitude: "12.9783",
-      longitude: "77.5738",
+      latitude: "12.9716",
+      longitude: "77.5820",
     },
     openingHours: "Mo-Sa 09:00-21:00",
     priceRange: "₹₹",
     socialLinks: {
-      facebook: "https://facebook.com/smarttechbazaar",
-      twitter: "https://twitter.com/smarttechbazaar",
-      instagram: "https://instagram.com/smarttechbazaar",
-      linkedin: "https://linkedin.com/company/smarttechbazaar",
-      youtube: "https://youtube.com/smarttechbazaar",
+      facebook: "https://www.facebook.com/profile.php?id=61588955768910",
+      instagram: "https://www.instagram.com/smarttechbazaar_india/",
+      linkedin: "https://www.linkedin.com/company/smarttechbazaar/",
     },
   },
   

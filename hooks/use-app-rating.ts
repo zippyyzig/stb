@@ -93,11 +93,11 @@ export function useAppRating(): UseAppRatingReturn {
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const median = (window as any).median;
-      
+
       // Use Median.co's native rating prompt
       if (median?.appReview?.requestReview) {
         await median.appReview.requestReview();
-        
+
         // Mark as rated
         const storedStatus = localStorage.getItem(RATING_STORAGE_KEY);
         const status: RatingStatus = storedStatus ? JSON.parse(storedStatus) : {
@@ -106,22 +106,22 @@ export function useAppRating(): UseAppRatingReturn {
           sessionCount: 0,
           lastPromptedAt: null,
         };
-        
+
         status.hasRated = true;
         status.lastPromptedAt = new Date().toISOString();
         localStorage.setItem(RATING_STORAGE_KEY, JSON.stringify(status));
-        
+
         setHasRated(true);
         setCanShowRating(false);
       } else {
         // Fallback: Open store page
         const platform = getPlatform();
         if (platform === "ios") {
-          window.open("https://apps.apple.com/app/id__YOUR_APP_ID__", "_blank");
+          window.open("https://apps.apple.com/app/id6766469443", "_blank");
         } else if (platform === "android") {
           window.open("https://play.google.com/store/apps/details?id=com.smarttechbazaar.app", "_blank");
         }
-        
+
         // Update status
         const storedStatus = localStorage.getItem(RATING_STORAGE_KEY);
         const status: RatingStatus = storedStatus ? JSON.parse(storedStatus) : {
@@ -130,7 +130,7 @@ export function useAppRating(): UseAppRatingReturn {
           sessionCount: 0,
           lastPromptedAt: null,
         };
-        
+
         status.lastPromptedAt = new Date().toISOString();
         localStorage.setItem(RATING_STORAGE_KEY, JSON.stringify(status));
       }
@@ -147,10 +147,10 @@ export function useAppRating(): UseAppRatingReturn {
       sessionCount: 0,
       lastPromptedAt: null,
     };
-    
+
     status.dismissedAt = new Date().toISOString();
     localStorage.setItem(RATING_STORAGE_KEY, JSON.stringify(status));
-    
+
     setCanShowRating(false);
   }, []);
 
