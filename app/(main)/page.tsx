@@ -646,24 +646,28 @@ export default async function HomePage() {
             {
               id: "laptop-banner",
               image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/laptop%20Banner.jpg-aZ74t8huDopt1RRCwikZSJznyGUZMl.jpeg",
+              imageMobile: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/laptop%20%20%20banner%20350x150_.jpg-AwGuP9QtR6MgmqbcqnC2arsPtyY3eC.jpeg",
               alt: "High-performance portability tailored for creators, students, and professionals on the move",
               href: "/category/laptops",
             },
             {
               id: "storage-banner",
               image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Storage%20%20Banner.jpg-Br2pDtXHqxUP0A7rMmWIwC6BKzMrRy.jpeg",
+              imageMobile: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/storage%20banner%20350x150_.jpg-DNicVSoCGOpMUfiX5qaGV0FQc4ZrGh.jpeg",
               alt: "Secure your digital life with high-speed SSDs, massive hard drives, and reliable cloud-ready solutions",
               href: "/category/storage",
             },
             {
               id: "networking-banner",
               image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Networking%20Banner.jpg-8TJO7lyqPmcGBoBLNeboJBiU5xTj4p.jpeg",
+              imageMobile: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/networking%20%20banner%20450x300.jpg-vEIQvLOOncqNeM8fTFSvDwdGv49tDr.jpeg",
               alt: "Blazing fast internet starts here - Stay connected, stay ahead",
               href: "/category/networking",
             },
             {
               id: "mobility-banner",
               image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Mobility%20Banner.jpg-fIVom9upVU5bdAYHsa9o5xGUeVS5U1.jpeg",
+              imageMobile: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/mobility%20%20banner%20450x300.jpg-CnjfHcIGR2SX7s4do24sNGxE4YunNN.jpeg",
               alt: "Never run out of power - Smart, fast and portable charging solutions",
               href: "/category/mobility",
             },
