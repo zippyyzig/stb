@@ -37,8 +37,9 @@ export async function POST() {
         userId: session.user.id,
         title: "Test Notification",
         message: "Push notifications are working correctly!",
+        type: "announcement",
         data: {
-          type: "test",
+          testId: "test",
           timestamp: new Date().toISOString(),
         },
       });
