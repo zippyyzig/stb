@@ -22,7 +22,7 @@ import {
   generateLocalBusinessSchema 
 } from "@/lib/schema";
 
-// Disable caching to always fetch fresh data
+// Disable caching to always fetch fresh data from MongoDB
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
