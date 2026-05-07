@@ -13,6 +13,10 @@ import Product from "@/models/Product";
 import { siteConfig, getCanonicalUrl } from "@/lib/site-config";
 import { generateProductSchema, generateOrganizationSchema } from "@/lib/schema";
 
+// Disable caching to always fetch fresh data
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 interface ProductPageProps {
   params: Promise<{ slug: string }>;
 }

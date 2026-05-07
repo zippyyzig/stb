@@ -45,18 +45,6 @@ const DEFAULT_SLIDES: BannerSlide[] = [
     alt: "Protect your Digital world with ultra-fast SSDs and high-capacity storage",
     href: "/category/storage",
   },
-  {
-    id: "canon-printer",
-    image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Banner%201500x450%20-%201-qzGXrBQjpz7ZwVcspENU7uNYFMmLwZ.png",
-    alt: "Premium Finishes — Canon Printers",
-    href: "/category/printers",
-  },
-  {
-    id: "hp-laptop",
-    image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Banner%20size%201500x450%20HP%20Laptop-JS5i33Ik5vWHv2o6GXC8sloLi8sH4f.png",
-    alt: "Performance Without Limits — HP Laptops",
-    href: "/category/laptop",
-  },
 ];
 
 export default function HeroBanner({ banners }: HeroBannerProps) {

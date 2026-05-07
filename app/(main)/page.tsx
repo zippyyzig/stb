@@ -22,6 +22,10 @@ import {
   generateLocalBusinessSchema 
 } from "@/lib/schema";
 
+// Disable caching to always fetch fresh data
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 interface HomepageSection {
   categoryId: string;
   title: string;
@@ -598,18 +602,21 @@ export default async function HomePage() {
             {
               id: "cables-banner",
               image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Cables%20Banner%20%281%29.jpg-3QEaRBpxlFsQB5qXtVdQ7IvUlIX8YJ.jpeg",
+              imageMobile: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/cable%20%20banner%20350x150_.jpg-iOIFSa6BhKJCLhyvZjP1b09gpv9NIq.jpeg",
               alt: "High-quality data and power cables engineered for durability and lightning-fast transmission",
               href: "/category/cables",
             },
             {
               id: "desktop-banner",
               image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Desktop%20Banners.jpg-NxXCuf56a4qUEYkHIIWBsFRhr6iXXh.jpeg",
+              imageMobile: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/desktop%20banner%20350x150_.jpg-p3wezM9unLyQWyas2JFdkJRGHOt81V.jpeg",
               alt: "Powerful Workstations and sleek all-in-ones designed to anchor your home or office productivity",
               href: "/category/desktop",
             },
             {
               id: "display-banner",
               image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Display%20Banner%20%281%29.jpg-gu1oIcOl6i73BkGckGoNbiuO40Ppe2.jpeg",
+              imageMobile: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/display%20%20banner%20350x150_.jpg-mAB5Q7kUlBiFtk7Ps8vGs7f2T9Rmkc.jpeg",
               alt: "Crystal-clear monitors and immersive screens that bring every pixel to life with stunning detail",
               href: "/category/display",
             },
@@ -643,24 +650,28 @@ export default async function HomePage() {
             {
               id: "laptop-banner",
               image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/laptop%20Banner.jpg-aZ74t8huDopt1RRCwikZSJznyGUZMl.jpeg",
+              imageMobile: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/laptop%20%20%20banner%20350x150_.jpg-AwGuP9QtR6MgmqbcqnC2arsPtyY3eC.jpeg",
               alt: "High-performance portability tailored for creators, students, and professionals on the move",
               href: "/category/laptops",
             },
             {
               id: "storage-banner",
               image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Storage%20%20Banner.jpg-Br2pDtXHqxUP0A7rMmWIwC6BKzMrRy.jpeg",
+              imageMobile: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/storage%20banner%20350x150_.jpg-DNicVSoCGOpMUfiX5qaGV0FQc4ZrGh.jpeg",
               alt: "Secure your digital life with high-speed SSDs, massive hard drives, and reliable cloud-ready solutions",
               href: "/category/storage",
             },
             {
               id: "networking-banner",
               image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Networking%20Banner.jpg-8TJO7lyqPmcGBoBLNeboJBiU5xTj4p.jpeg",
+              imageMobile: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/networking%20%20%20banner%20350x150_.jpg-gD6KONCggXk5Khl9oVLVJRTInBdk59.jpeg",
               alt: "Blazing fast internet starts here - Stay connected, stay ahead",
               href: "/category/networking",
             },
             {
               id: "mobility-banner",
               image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Mobility%20Banner.jpg-fIVom9upVU5bdAYHsa9o5xGUeVS5U1.jpeg",
+              imageMobile: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/mobility%20%20%20banner%20350x150_.jpg-F8BpRF9vsdk821k7wC8DW5LPxFYX77.jpeg",
               alt: "Never run out of power - Smart, fast and portable charging solutions",
               href: "/category/mobility",
             },

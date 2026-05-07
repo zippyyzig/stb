@@ -95,7 +95,7 @@ export default function AdBannerSlider({ banners, showAsGrid = false }: AdBanner
                     </div>
                     {/* Mobile ratio — taller for better visibility */}
                     <div
-                      className="relative w-full md:hidden"
+                      className="relative w-full min-h-[150px] md:hidden"
                       style={{ aspectRatio: "16 / 5" }}
                     >
                       <Image
@@ -149,7 +149,7 @@ export default function AdBannerSlider({ banners, showAsGrid = false }: AdBanner
                   </div>
                   {/* Mobile ratio — taller for better visibility */}
                   <div
-                    className="relative w-full md:hidden"
+                    className="relative w-full min-h-[150px] md:hidden"
                     style={{ aspectRatio: "16 / 5" }}
                   >
                     <Image
