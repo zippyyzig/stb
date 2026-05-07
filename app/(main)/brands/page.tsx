@@ -12,6 +12,10 @@ import { siteConfig, getCanonicalUrl } from "@/lib/site-config";
 import { generateWebPageSchema, generateOrganizationSchema } from "@/lib/schema";
 import { Package } from "lucide-react";
 
+// Disable caching to always fetch fresh data
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export const metadata: Metadata = {
   title: "All Brands",
   description: `Browse all brands available at ${siteConfig.name}. Find products from top technology brands including HP, Dell, Lenovo, Asus, and more.`,

@@ -18,6 +18,10 @@ import {
 } from "@/lib/schema";
 import { ExternalLink } from "lucide-react";
 
+// Disable caching to always fetch fresh data
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 interface BrandPageProps {
   params: Promise<{ slug: string }>;
 }
