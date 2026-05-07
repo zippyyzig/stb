@@ -18,6 +18,7 @@ import {
   ChevronRight,
   PackageSearch,
 } from "lucide-react";
+import { useWishlist, useCart } from "@/components/providers/CartWishlistProvider";
 
 interface WishlistProduct {
   _id: string;
@@ -44,6 +45,8 @@ export default function WishlistPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [removingItems, setRemovingItems] = useState<Set<string>>(new Set());
   const [addingToCart, setAddingToCart] = useState<Set<string>>(new Set());
+  const { refresh: refreshGlobalWishlist } = useWishlist();
+  const { refresh: refreshGlobalCart } = useCart();
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -75,6 +78,8 @@ export default function WishlistPage() {
       });
       if (res.ok) {
         setItems((prev) => prev.filter((i) => i.product._id !== productId));
+        // Refresh global wishlist to update badge and hearts
+        refreshGlobalWishlist();
       }
     } catch (error) {
       console.error("Error removing from wishlist:", error);
@@ -96,6 +101,8 @@ export default function WishlistPage() {
         body: JSON.stringify({ productId, quantity: 1 }),
       });
       if (res.ok) {
+        // Refresh global cart to update badge
+        refreshGlobalCart();
         // Optionally remove from wishlist after adding to cart
         await removeFromWishlist(productId);
       }

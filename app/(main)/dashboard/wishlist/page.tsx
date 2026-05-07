@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Heart, ShoppingCart, Trash2, Loader2, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useWishlist } from "@/components/providers/CartWishlistProvider";
 
 interface WishlistProduct {
   _id: string;
@@ -27,6 +28,7 @@ export default function WishlistPage() {
   const [items, setItems] = useState<WishlistItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [removing, setRemoving] = useState<string | null>(null);
+  const { refresh: refreshGlobalWishlist } = useWishlist();
 
   const fetchWishlist = () => {
     fetch("/api/wishlist")
@@ -47,6 +49,8 @@ export default function WishlistPage() {
       });
       if (res.ok) {
         setItems((prev) => prev.filter((item) => item.product._id !== productId));
+        // Refresh global wishlist state to update badge and ProductCard hearts
+        refreshGlobalWishlist();
       }
     } finally {
       setRemoving(null);
