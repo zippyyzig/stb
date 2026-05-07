@@ -53,10 +53,11 @@ export default function ProductInfo({ product }: ProductInfoProps) {
   const [cartAdded, setCartAdded] = useState(false);
 
   const isB2B = session?.user?.isGstVerified === true;
-  const price = isB2B ? product.priceB2B : product.priceB2C;
-  const discount = product.mrp > price ? Math.round(((product.mrp - price) / product.mrp) * 100) : 0;
-  const savings = product.mrp > price ? product.mrp - price : 0;
-  const inStock = product.stock > 0;
+  const price = isB2B ? (product.priceB2B ?? 0) : (product.priceB2C ?? 0);
+  const mrp = product.mrp ?? 0;
+  const discount = mrp > price ? Math.round(((mrp - price) / mrp) * 100) : 0;
+  const savings = mrp > price ? mrp - price : 0;
+  const inStock = (product.stock ?? 0) > 0;
   const wishlisted = isInWishlist(product._id);
   const totalPrice = price * qty;
 
@@ -137,9 +138,9 @@ export default function ProductInfo({ product }: ProductInfoProps) {
           <span className="text-xl font-extrabold text-foreground md:text-3xl">
             ₹{price.toLocaleString("en-IN")}
           </span>
-          {product.mrp > price && (
+          {mrp > price && (
             <span className="pb-0.5 text-sm text-muted-foreground line-through md:text-base">
-              ₹{product.mrp.toLocaleString("en-IN")}
+              ₹{mrp.toLocaleString("en-IN")}
             </span>
           )}
         </div>

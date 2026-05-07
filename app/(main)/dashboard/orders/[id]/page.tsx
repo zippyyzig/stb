@@ -263,8 +263,8 @@ export default function OrderDetailPage() {
                 <p className="text-xs text-muted-foreground mt-0.5">SKU: {item.sku} &middot; Qty: {item.quantity}</p>
               </div>
               <div className="text-right shrink-0">
-                <p className="text-sm font-semibold text-foreground">₹{item.total.toLocaleString("en-IN")}</p>
-                <p className="text-xs text-muted-foreground">₹{item.price.toLocaleString("en-IN")} each</p>
+                <p className="text-sm font-semibold text-foreground">₹{(item.total ?? 0).toLocaleString("en-IN")}</p>
+                <p className="text-xs text-muted-foreground">₹{(item.price ?? 0).toLocaleString("en-IN")} each</p>
               </div>
             </li>
           ))}
@@ -274,16 +274,16 @@ export default function OrderDetailPage() {
         <div className="border-t border-border px-5 py-4 space-y-2 bg-muted/30">
           <div className="flex justify-between text-sm text-muted-foreground">
             <span>Subtotal</span>
-            <span>₹{order.subtotal.toLocaleString("en-IN")}</span>
+            <span>₹{(order.subtotal ?? 0).toLocaleString("en-IN")}</span>
           </div>
           <div className="flex justify-between text-sm text-muted-foreground">
             <span>Shipping</span>
-            <span>{order.shippingCost === 0 ? "Free" : `₹${order.shippingCost.toLocaleString("en-IN")}`}</span>
+            <span>{(order.shippingCost ?? 0) === 0 ? "Free" : `₹${(order.shippingCost ?? 0).toLocaleString("en-IN")}`}</span>
           </div>
-          {order.discount > 0 && (
+          {(order.discount ?? 0) > 0 && (
             <div className="flex justify-between text-sm text-green-600">
               <span>Discount</span>
-              <span>-₹{order.discount.toLocaleString("en-IN")}</span>
+              <span>-₹{(order.discount ?? 0).toLocaleString("en-IN")}</span>
             </div>
           )}
           {order.taxBreakdown ? (
@@ -291,28 +291,28 @@ export default function OrderDetailPage() {
               <>
                 <div className="flex justify-between text-sm text-muted-foreground">
                   <span>CGST (9%)</span>
-                  <span>₹{order.taxBreakdown.cgst.toLocaleString("en-IN")}</span>
+                  <span>₹{(order.taxBreakdown.cgst ?? 0).toLocaleString("en-IN")}</span>
                 </div>
                 <div className="flex justify-between text-sm text-muted-foreground">
                   <span>SGST (9%)</span>
-                  <span>₹{order.taxBreakdown.sgst.toLocaleString("en-IN")}</span>
+                  <span>₹{(order.taxBreakdown.sgst ?? 0).toLocaleString("en-IN")}</span>
                 </div>
               </>
             ) : (
               <div className="flex justify-between text-sm text-muted-foreground">
                 <span>IGST (18%)</span>
-                <span>₹{order.taxBreakdown.igst.toLocaleString("en-IN")}</span>
+                <span>₹{(order.taxBreakdown.igst ?? 0).toLocaleString("en-IN")}</span>
               </div>
             )
-          ) : order.tax > 0 && (
+          ) : (order.tax ?? 0) > 0 && (
             <div className="flex justify-between text-sm text-muted-foreground">
               <span>Tax</span>
-              <span>₹{order.tax.toLocaleString("en-IN")}</span>
+              <span>₹{(order.tax ?? 0).toLocaleString("en-IN")}</span>
             </div>
           )}
           <div className="flex justify-between text-base font-bold text-foreground border-t border-border pt-2">
             <span>Total</span>
-            <span>₹{order.total.toLocaleString("en-IN")}</span>
+            <span>₹{(order.total ?? 0).toLocaleString("en-IN")}</span>
           </div>
         </div>
       </div>

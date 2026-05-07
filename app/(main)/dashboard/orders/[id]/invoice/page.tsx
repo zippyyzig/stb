@@ -336,9 +336,9 @@ export default function InvoicePage() {
                     <td className="px-4 py-3 text-sm">{index + 1}</td>
                     <td className="px-4 py-3 text-sm font-medium">{item.name}</td>
                     <td className="px-4 py-3 text-sm font-mono text-muted-foreground">{item.sku}</td>
-                    <td className="px-4 py-3 text-sm text-right">Rs. {item.price.toLocaleString("en-IN")}</td>
+                    <td className="px-4 py-3 text-sm text-right">Rs. {(item.price ?? 0).toLocaleString("en-IN")}</td>
                     <td className="px-4 py-3 text-sm text-center">{item.quantity}</td>
-                    <td className="px-4 py-3 text-sm text-right font-medium">Rs. {item.total.toLocaleString("en-IN")}</td>
+                    <td className="px-4 py-3 text-sm text-right font-medium">Rs. {(item.total ?? 0).toLocaleString("en-IN")}</td>
                   </tr>
                 ))}
               </tbody>
@@ -350,38 +350,38 @@ export default function InvoicePage() {
             <div className="w-full max-w-xs space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Subtotal</span>
-                <span>Rs. {invoice.subtotal.toLocaleString("en-IN")}</span>
+                <span>Rs. {(invoice.subtotal ?? 0).toLocaleString("en-IN")}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Shipping</span>
-                <span>{invoice.shippingCost === 0 ? "Free" : `Rs. ${invoice.shippingCost.toLocaleString("en-IN")}`}</span>
+                <span>{(invoice.shippingCost ?? 0) === 0 ? "Free" : `Rs. ${(invoice.shippingCost ?? 0).toLocaleString("en-IN")}`}</span>
               </div>
-              {invoice.discount > 0 && (
+              {(invoice.discount ?? 0) > 0 && (
                 <div className="flex justify-between text-sm text-green-600">
                   <span>Discount</span>
-                  <span>-Rs. {invoice.discount.toLocaleString("en-IN")}</span>
+                  <span>-Rs. {(invoice.discount ?? 0).toLocaleString("en-IN")}</span>
                 </div>
               )}
-              {invoice.taxBreakdown.taxType === "INTRA" ? (
+              {invoice.taxBreakdown?.taxType === "INTRA" ? (
                 <>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">CGST (9%)</span>
-                    <span>Rs. {invoice.taxBreakdown.cgst.toLocaleString("en-IN")}</span>
+                    <span>Rs. {(invoice.taxBreakdown?.cgst ?? 0).toLocaleString("en-IN")}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">SGST (9%)</span>
-                    <span>Rs. {invoice.taxBreakdown.sgst.toLocaleString("en-IN")}</span>
+                    <span>Rs. {(invoice.taxBreakdown?.sgst ?? 0).toLocaleString("en-IN")}</span>
                   </div>
                 </>
-              ) : (
+              ) : invoice.taxBreakdown ? (
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">IGST (18%)</span>
-                  <span>Rs. {invoice.taxBreakdown.igst.toLocaleString("en-IN")}</span>
+                  <span>Rs. {(invoice.taxBreakdown?.igst ?? 0).toLocaleString("en-IN")}</span>
                 </div>
-              )}
+              ) : null}
               <div className="flex justify-between text-base font-bold border-t border-border pt-2 mt-2">
                 <span>Total</span>
-                <span className="text-primary">Rs. {invoice.total.toLocaleString("en-IN")}</span>
+                <span className="text-primary">Rs. {(invoice.total ?? 0).toLocaleString("en-IN")}</span>
               </div>
             </div>
           </div>

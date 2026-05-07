@@ -9,12 +9,13 @@ interface WishlistProduct {
   _id: string;
   name: string;
   slug: string;
-  price: number;
-  salePrice?: number;
-  images: string[];
+  priceB2C: number;
+  priceB2B: number;
+  mrp: number;
+  images?: string[];
   stock: number;
-  brand?: { name: string };
-  category?: { name: string };
+  brand?: string;
+  isActive?: boolean;
 }
 
 interface WishlistItem {
@@ -41,10 +42,8 @@ export default function WishlistPage() {
   const handleRemove = async (productId: string) => {
     setRemoving(productId);
     try {
-      const res = await fetch("/api/wishlist", {
+      const res = await fetch(`/api/wishlist?productId=${productId}`, {
         method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productId }),
       });
       if (res.ok) {
         setItems((prev) => prev.filter((item) => item.product._id !== productId));
@@ -82,16 +81,16 @@ export default function WishlistPage() {
       <p className="text-sm text-muted-foreground">{items.length} item{items.length !== 1 ? "s" : ""} saved</p>
       <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {items.map(({ product, addedAt }) => {
-          const price = product.price ?? 0;
-          const salePrice = product.salePrice ?? 0;
-          const displayPrice = salePrice > 0 && salePrice < price ? salePrice : price;
-          const hasDiscount = salePrice > 0 && salePrice < price;
-          const isOutOfStock = product.stock === 0;
+          const priceB2C = product.priceB2C ?? 0;
+          const mrp = product.mrp ?? 0;
+          const displayPrice = priceB2C > 0 ? priceB2C : mrp;
+          const hasDiscount = mrp > priceB2C && priceB2C > 0;
+          const isOutOfStock = (product.stock ?? 0) === 0;
 
           return (
             <div key={product._id} className="bg-card rounded-2xl border border-border overflow-hidden hover:shadow-md transition-shadow group press-active">
               {/* Image */}
-              <Link href={`/products/${product.slug}`} className="block relative aspect-[4/3] overflow-hidden bg-muted">
+              <Link href={`/product/${product.slug}`} className="block relative aspect-[4/3] overflow-hidden bg-muted">
                 {product.images?.[0] ? (
                   <img
                     src={product.images[0]}
@@ -112,18 +111,18 @@ export default function WishlistPage() {
 
               {/* Info */}
               <div className="p-4">
-                <Link href={`/products/${product.slug}`}>
+                <Link href={`/product/${product.slug}`}>
                   <h3 className="text-sm font-semibold text-foreground leading-snug line-clamp-2 hover:text-primary transition-colors">
                     {product.name}
                   </h3>
                 </Link>
                 {product.brand && (
-                  <p className="text-xs text-muted-foreground mt-0.5">{product.brand.name}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{product.brand}</p>
                 )}
                 <div className="flex items-center gap-2 mt-2">
                   <span className="text-base font-bold text-foreground">₹{displayPrice.toLocaleString("en-IN")}</span>
                   {hasDiscount && (
-                    <span className="text-xs text-muted-foreground line-through">₹{price.toLocaleString("en-IN")}</span>
+                    <span className="text-xs text-muted-foreground line-through">₹{mrp.toLocaleString("en-IN")}</span>
                   )}
                 </div>
                 <p className="text-[10px] text-muted-foreground mt-1">
@@ -132,7 +131,7 @@ export default function WishlistPage() {
 
                 <div className="flex gap-2 mt-3">
                   <Button asChild size="sm" className="flex-1 text-xs" disabled={isOutOfStock} variant={isOutOfStock ? "outline" : "default"}>
-                    <Link href={`/products/${product.slug}`}>
+                    <Link href={`/product/${product.slug}`}>
                       <ExternalLink className="h-3 w-3 mr-1" />
                       {isOutOfStock ? "View Product" : "Buy Now"}
                     </Link>

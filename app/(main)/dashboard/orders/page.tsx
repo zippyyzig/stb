@@ -133,7 +133,7 @@ export default function OrdersPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-bold text-foreground">
-                    ₹{order.total.toLocaleString("en-IN")}
+                    ₹{(order.total ?? 0).toLocaleString("en-IN")}
                   </span>
                   <ChevronRight className="h-4 w-4 text-muted-foreground" />
                 </div>
