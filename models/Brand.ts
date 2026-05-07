@@ -59,7 +59,7 @@ const BrandSchema = new Schema<IBrand>(
 );
 
 // Create indexes
-BrandSchema.index({ slug: 1 });
+// Note: slug and name indexes are created automatically via unique: true in the schema field definitions
 BrandSchema.index({ isActive: 1 });
 BrandSchema.index({ sortOrder: 1 });
 BrandSchema.index({ name: "text" });

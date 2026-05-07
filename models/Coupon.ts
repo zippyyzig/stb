@@ -114,7 +114,7 @@ const CouponSchema = new Schema<ICoupon>(
 );
 
 // Create indexes
-CouponSchema.index({ code: 1 });
+// Note: code index is created automatically via unique: true in the schema field definition
 CouponSchema.index({ isActive: 1, validFrom: 1, validUntil: 1 });
 
 // Virtual to check if coupon is currently valid
