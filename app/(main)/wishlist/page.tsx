@@ -188,13 +188,13 @@ export default function WishlistPage() {
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {items.map((item) => {
                 const product = item.product;
+                if (!product) return null;
                 // Users with verified GST get B2B wholesale prices
                 const isB2B = session?.user?.isGstVerified === true;
-                const price = isB2B ? product.priceB2B : product.priceB2C;
-                const discount = Math.round(
-                  ((product.mrp - price) / product.mrp) * 100
-                );
-                const inStock = product.stock > 0;
+                const price = isB2B ? (product.priceB2B ?? 0) : (product.priceB2C ?? 0);
+                const mrp = product.mrp ?? 0;
+                const discount = mrp > 0 ? Math.round(((mrp - price) / mrp) * 100) : 0;
+                const inStock = (product.stock ?? 0) > 0;
 
                 return (
                   <div
@@ -275,9 +275,9 @@ export default function WishlistPage() {
                         <span className="text-xl font-bold text-primary">
                           ₹{price.toLocaleString("en-IN")}
                         </span>
-                        {product.mrp > price && (
+                        {mrp > price && (
                           <span className="body-sm text-muted-foreground line-through">
-                            ₹{product.mrp.toLocaleString("en-IN")}
+                            ₹{mrp.toLocaleString("en-IN")}
                           </span>
                         )}
                       </div>

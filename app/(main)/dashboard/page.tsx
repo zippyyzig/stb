@@ -273,7 +273,7 @@ export default function DashboardPage() {
                       {order.status}
                     </span>
                     <span className="text-xs font-bold text-foreground">
-                      ₹{order.total.toLocaleString("en-IN")}
+                      ₹{(order.total ?? 0).toLocaleString("en-IN")}
                     </span>
                   </div>
                 </Link>

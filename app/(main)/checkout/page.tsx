@@ -987,7 +987,7 @@ export default function CheckoutPage() {
                         </p>
                       </div>
                       <span className="body-sm font-medium">
-                        ₹{item.total.toLocaleString("en-IN")}
+                        ₹{(item.total ?? 0).toLocaleString("en-IN")}
                       </span>
                     </div>
                   ))}

@@ -161,7 +161,7 @@ export default async function OrderSuccessPage({
                       <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
                     </div>
                     <p className="text-sm font-medium text-foreground">
-                      Rs. {item.total.toLocaleString("en-IN")}
+                      Rs. {(item.total ?? 0).toLocaleString("en-IN")}
                     </p>
                   </div>
                 ))}
@@ -176,21 +176,21 @@ export default async function OrderSuccessPage({
               <div className="bg-muted/30 px-6 py-4 space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Subtotal</span>
-                  <span className="text-foreground">Rs. {order.subtotal.toLocaleString("en-IN")}</span>
+                  <span className="text-foreground">Rs. {(order.subtotal ?? 0).toLocaleString("en-IN")}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Shipping</span>
                   <span className="text-foreground">
-                    {order.shippingCost === 0 ? "Free" : `Rs. ${order.shippingCost.toLocaleString("en-IN")}`}
+                    {(order.shippingCost ?? 0) === 0 ? "Free" : `Rs. ${(order.shippingCost ?? 0).toLocaleString("en-IN")}`}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Tax</span>
-                  <span className="text-foreground">Rs. {order.tax.toLocaleString("en-IN")}</span>
+                  <span className="text-foreground">Rs. {(order.tax ?? 0).toLocaleString("en-IN")}</span>
                 </div>
                 <div className="flex justify-between text-base font-bold border-t border-border pt-2 mt-2">
                   <span className="text-foreground">Total</span>
-                  <span className="text-primary">Rs. {order.total.toLocaleString("en-IN")}</span>
+                  <span className="text-primary">Rs. {(order.total ?? 0).toLocaleString("en-IN")}</span>
                 </div>
               </div>
             </div>

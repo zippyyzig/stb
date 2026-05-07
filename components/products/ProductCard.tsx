@@ -40,15 +40,16 @@ export default function ProductCard({ product }: ProductCardProps) {
   const [hovered, setHovered] = useState(false);
 
   const isB2B = session?.user?.isGstVerified === true;
-  const displayPrice = isB2B ? product.priceB2B : product.priceB2C;
+  const displayPrice = isB2B ? (product.priceB2B ?? 0) : (product.priceB2C ?? 0);
+  const mrp = product.mrp ?? 0;
   const isWishlisted = isInWishlist(product._id);
   const discount =
-    product.mrp > displayPrice
-      ? Math.round(((product.mrp - displayPrice) / product.mrp) * 100)
+    mrp > displayPrice
+      ? Math.round(((mrp - displayPrice) / mrp) * 100)
       : 0;
-  const inStock = product.stock > 0;
+  const inStock = (product.stock ?? 0) > 0;
   const rating = product.rating || 0;
-  const savings = product.mrp > displayPrice ? product.mrp - displayPrice : 0;
+  const savings = mrp > displayPrice ? mrp - displayPrice : 0;
 
   const handleAddToCart = async () => {
     if (!session) {
@@ -173,9 +174,9 @@ export default function ProductCard({ product }: ProductCardProps) {
             <span className="text-sm font-extrabold text-foreground md:text-base">
               ₹{displayPrice.toLocaleString("en-IN")}
             </span>
-            {product.mrp > displayPrice && (
+            {mrp > displayPrice && (
               <span className="text-[9px] text-muted-foreground line-through md:text-[10px]">
-                ₹{product.mrp.toLocaleString("en-IN")}
+                ₹{mrp.toLocaleString("en-IN")}
               </span>
             )}
           </div>

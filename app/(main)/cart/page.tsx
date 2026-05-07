@@ -103,9 +103,13 @@ export default function CartPage() {
 
                   <div className="divide-y divide-border">
                     {items.map((item) => {
+                      if (!item.product) return null;
                       const busy = updatingItems.has(item.product._id);
-                      const discount = item.product.mrp > item.price
-                        ? Math.round(((item.product.mrp - item.price) / item.product.mrp) * 100)
+                      const itemPrice = item.price ?? 0;
+                      const itemMrp = item.product.mrp ?? 0;
+                      const itemTotal = item.total ?? 0;
+                      const discount = itemMrp > itemPrice
+                        ? Math.round(((itemMrp - itemPrice) / itemMrp) * 100)
                         : 0;
                       return (
                         <div key={item.product._id} className={`flex gap-3 p-3 md:gap-4 md:p-4 ${busy ? "opacity-60" : ""}`}>
@@ -153,12 +157,12 @@ export default function CartPage() {
                               {/* Unit price row */}
                               <div className="flex items-baseline gap-1.5">
                                 <span className="text-sm font-extrabold text-foreground md:text-base">
-                                  ₹{item.price.toLocaleString("en-IN")}
+                                  ₹{itemPrice.toLocaleString("en-IN")}
                                 </span>
                                 {discount > 0 && (
                                   <>
                                     <span className="text-[9px] text-muted-foreground line-through md:text-[10px]">
-                                      ₹{item.product.mrp.toLocaleString("en-IN")}
+                                      ₹{itemMrp.toLocaleString("en-IN")}
                                     </span>
                                     <span className="text-[9px] font-semibold text-stb-success">{discount}% off</span>
                                   </>
@@ -184,7 +188,7 @@ export default function CartPage() {
                                   </button>
                                 </div>
                                 <span className="text-xs font-extrabold text-foreground md:text-sm">
-                                  ₹{item.total.toLocaleString("en-IN")}
+                                  ₹{itemTotal.toLocaleString("en-IN")}
                                 </span>
                               </div>
                             </div>
