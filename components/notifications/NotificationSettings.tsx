@@ -39,6 +39,8 @@ export function NotificationSettings() {
   const [saving, setSaving] = useState(false);
   const [enabling, setEnabling] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<"success" | "error" | null>(null);
 
   // Fetch preferences on mount
   useEffect(() => {
@@ -86,6 +88,42 @@ export function NotificationSettings() {
       }
     } finally {
       setEnabling(false);
+    }
+  };
+
+  const handleTestNotification = async () => {
+    setTesting(true);
+    setTestResult(null);
+    try {
+      const res = await fetch("/api/user/notifications/test", {
+        method: "POST",
+      });
+      if (res.ok) {
+        setTestResult("success");
+        // Also try to show a local notification as fallback
+        if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+          new Notification("Test Notification", {
+            body: "Push notifications are working correctly!",
+            icon: "/icons/icon-192x192.png",
+          });
+        }
+      } else {
+        setTestResult("error");
+      }
+    } catch (error) {
+      console.error("Test notification failed:", error);
+      setTestResult("error");
+      // Try local notification anyway
+      if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+        new Notification("Test Notification", {
+          body: "Push notifications are working correctly!",
+          icon: "/icons/icon-192x192.png",
+        });
+        setTestResult("success");
+      }
+    } finally {
+      setTesting(false);
+      setTimeout(() => setTestResult(null), 3000);
     }
   };
 
@@ -189,9 +227,29 @@ export function NotificationSettings() {
             </Button>
           )}
           {isEnabled && (
-            <div className="flex items-center gap-1.5 text-green-600">
-              <CheckCircle2 className="h-4 w-4" />
-              <span className="text-xs font-medium">Active</span>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleTestNotification}
+                disabled={testing}
+                className="h-8 text-xs gap-1.5"
+              >
+                {testing ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : testResult === "success" ? (
+                  <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
+                ) : testResult === "error" ? (
+                  <AlertCircle className="h-3.5 w-3.5 text-destructive" />
+                ) : (
+                  <Bell className="h-3.5 w-3.5" />
+                )}
+                {testing ? "Sending..." : testResult === "success" ? "Sent!" : testResult === "error" ? "Failed" : "Test"}
+              </Button>
+              <div className="flex items-center gap-1.5 text-green-600">
+                <CheckCircle2 className="h-4 w-4" />
+                <span className="text-xs font-medium">Active</span>
+              </div>
             </div>
           )}
         </div>

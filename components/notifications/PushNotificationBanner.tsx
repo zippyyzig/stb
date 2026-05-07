@@ -40,6 +40,8 @@ export function PushNotificationBanner() {
         await registerDevice();
         // Banner will auto-hide since isEnabled will become true
       }
+    } catch (error) {
+      console.error("Error enabling push notifications:", error);
     } finally {
       setRequesting(false);
     }
