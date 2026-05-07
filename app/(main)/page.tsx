@@ -660,14 +660,14 @@ export default async function HomePage() {
             {
               id: "networking-banner",
               image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Networking%20Banner.jpg-8TJO7lyqPmcGBoBLNeboJBiU5xTj4p.jpeg",
-              imageMobile: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/networking%20%20banner%20450x300.jpg-vEIQvLOOncqNeM8fTFSvDwdGv49tDr.jpeg",
+              imageMobile: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/networking%20%20%20banner%20350x150_.jpg-gD6KONCggXk5Khl9oVLVJRTInBdk59.jpeg",
               alt: "Blazing fast internet starts here - Stay connected, stay ahead",
               href: "/category/networking",
             },
             {
               id: "mobility-banner",
               image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Mobility%20Banner.jpg-fIVom9upVU5bdAYHsa9o5xGUeVS5U1.jpeg",
-              imageMobile: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/mobility%20%20banner%20450x300.jpg-CnjfHcIGR2SX7s4do24sNGxE4YunNN.jpeg",
+              imageMobile: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/mobility%20%20%20banner%20350x150_.jpg-F8BpRF9vsdk821k7wC8DW5LPxFYX77.jpeg",
               alt: "Never run out of power - Smart, fast and portable charging solutions",
               href: "/category/mobility",
             },
