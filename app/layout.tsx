@@ -5,6 +5,7 @@ import { CartWishlistProvider } from "@/components/providers/CartWishlistProvide
 import { NativeAppProvider } from "@/components/providers/NativeAppProvider";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://smarttechbazaar.com"),
   title: {
     default: "Smart Tech Bazaar - Computer Accessories, CCTV & IT Solutions",
     template: "%s | Smart Tech Bazaar",
