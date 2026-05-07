@@ -320,10 +320,6 @@ export default function Footer() {
                   </div>
                 ))}
               </div>
-              <div className="mt-4 rounded border border-white/10 bg-white/5 p-3">
-                <p className="text-[9px] font-medium uppercase tracking-wider text-white/40">GSTIN</p>
-                <p className="mt-1 font-mono text-xs text-white/70">29AABCU9603R1ZM</p>
-              </div>
             </div>
           </div>
         </div>
