@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useCallback, useMemo, ReactNode } from "react";
+import { createContext, useContext, useCallback, useMemo, ReactNode, useState } from "react";
 import useSWR from "swr";
 import { useSession } from "next-auth/react";
 
@@ -59,10 +59,11 @@ interface CartWishlistContextType {
   cartCount: number;
   cartTotal: number;
   isCartLoading: boolean;
-  addToCart: (productId: string, quantity?: number) => Promise<boolean>;
-  updateCartQuantity: (productId: string, quantity: number) => Promise<boolean>;
-  removeFromCart: (productId: string) => Promise<boolean>;
-  clearCart: () => Promise<boolean>;
+  isCartMutating: boolean;
+  addToCart: (productId: string, quantity?: number) => Promise<{ success: boolean; error?: string }>;
+  updateCartQuantity: (productId: string, quantity: number) => Promise<{ success: boolean; error?: string }>;
+  removeFromCart: (productId: string) => Promise<{ success: boolean; error?: string }>;
+  clearCart: () => Promise<{ success: boolean; error?: string }>;
   refreshCart: () => void;
   
   // Wishlist
@@ -78,14 +79,28 @@ interface CartWishlistContextType {
 
 const CartWishlistContext = createContext<CartWishlistContextType | null>(null);
 
-// Fetcher function
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
+// Fetcher function with cache-busting for mobile apps
+const fetcher = async (url: string) => {
+  const cacheBuster = `_t=${Date.now()}`;
+  const separator = url.includes("?") ? "&" : "?";
+  const response = await fetch(`${url}${separator}${cacheBuster}`, {
+    headers: {
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+      "Pragma": "no-cache",
+    },
+  });
+  if (!response.ok) {
+    throw new Error("Network response was not ok");
+  }
+  return response.json();
+};
 
 export function CartWishlistProvider({ children }: { children: ReactNode }) {
   const { data: session, status } = useSession();
   const isAuthenticated = status === "authenticated";
+  const [isCartMutating, setIsCartMutating] = useState(false);
 
-  // Cart SWR
+  // Cart SWR with better config for mobile
   const {
     data: cartData,
     mutate: mutateCart,
@@ -96,11 +111,16 @@ export function CartWishlistProvider({ children }: { children: ReactNode }) {
     {
       revalidateOnFocus: true,
       revalidateOnReconnect: true,
-      dedupingInterval: 2000,
+      revalidateOnMount: true,
+      dedupingInterval: 1000,
+      focusThrottleInterval: 3000,
+      errorRetryCount: 3,
+      // Don't use stale data - always fetch fresh
+      revalidateIfStale: true,
     }
   );
 
-  // Wishlist SWR
+  // Wishlist SWR with better config for mobile
   const {
     data: wishlistData,
     mutate: mutateWishlist,
@@ -111,7 +131,11 @@ export function CartWishlistProvider({ children }: { children: ReactNode }) {
     {
       revalidateOnFocus: true,
       revalidateOnReconnect: true,
-      dedupingInterval: 2000,
+      revalidateOnMount: true,
+      dedupingInterval: 1000,
+      focusThrottleInterval: 3000,
+      errorRetryCount: 3,
+      revalidateIfStale: true,
     }
   );
 
@@ -140,94 +164,221 @@ export function CartWishlistProvider({ children }: { children: ReactNode }) {
     [wishlistData]
   );
 
-  // Add to cart
+  // Add to cart with optimistic update and better error handling
   const addToCart = useCallback(
-    async (productId: string, quantity = 1): Promise<boolean> => {
-      if (!isAuthenticated) return false;
+    async (productId: string, quantity = 1): Promise<{ success: boolean; error?: string }> => {
+      if (!isAuthenticated) {
+        return { success: false, error: "Please login to add items to cart" };
+      }
+      
+      setIsCartMutating(true);
+      
+      // Optimistic update - increment cart count immediately
+      const previousData = cartData;
+      if (cartData) {
+        const existingItem = cartData.items.find(item => item.product._id === productId);
+        if (existingItem) {
+          // Update existing item quantity optimistically
+          mutateCart({
+            ...cartData,
+            items: cartData.items.map(item =>
+              item.product._id === productId
+                ? { ...item, quantity: item.quantity + quantity }
+                : item
+            ),
+          }, false);
+        } else {
+          // For new items, just show loading state - we'll get real data from server
+        }
+      }
       
       try {
         const res = await fetch("/api/cart", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            "Cache-Control": "no-cache",
+          },
           body: JSON.stringify({ productId, quantity }),
         });
 
+        const data = await res.json();
+
         if (res.ok) {
+          // Revalidate to get actual server data
           await mutateCart();
-          return true;
+          setIsCartMutating(false);
+          return { success: true };
         }
-        return false;
-      } catch {
-        return false;
+        
+        // Revert optimistic update on error
+        if (previousData) {
+          mutateCart(previousData, false);
+        }
+        setIsCartMutating(false);
+        return { success: false, error: data.error || "Failed to add item to cart" };
+      } catch (error) {
+        // Revert optimistic update on error
+        if (previousData) {
+          mutateCart(previousData, false);
+        }
+        setIsCartMutating(false);
+        console.error("Add to cart error:", error);
+        return { success: false, error: "Network error. Please try again." };
       }
     },
-    [isAuthenticated, mutateCart]
+    [isAuthenticated, mutateCart, cartData]
   );
 
-  // Update cart quantity
+  // Update cart quantity with optimistic update
   const updateCartQuantity = useCallback(
-    async (productId: string, quantity: number): Promise<boolean> => {
-      if (!isAuthenticated) return false;
+    async (productId: string, quantity: number): Promise<{ success: boolean; error?: string }> => {
+      if (!isAuthenticated) {
+        return { success: false, error: "Please login" };
+      }
+
+      setIsCartMutating(true);
+      const previousData = cartData;
+      
+      // Optimistic update
+      if (cartData) {
+        mutateCart({
+          ...cartData,
+          items: cartData.items.map(item =>
+            item.product._id === productId
+              ? { ...item, quantity, total: item.price * quantity }
+              : item
+          ),
+        }, false);
+      }
 
       try {
         const res = await fetch("/api/cart", {
           method: "PUT",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            "Cache-Control": "no-cache",
+          },
           body: JSON.stringify({ productId, quantity }),
         });
 
+        const data = await res.json();
+
         if (res.ok) {
           await mutateCart();
-          return true;
+          setIsCartMutating(false);
+          return { success: true };
         }
-        return false;
-      } catch {
-        return false;
+        
+        // Revert on error
+        if (previousData) {
+          mutateCart(previousData, false);
+        }
+        setIsCartMutating(false);
+        return { success: false, error: data.error || "Failed to update quantity" };
+      } catch (error) {
+        if (previousData) {
+          mutateCart(previousData, false);
+        }
+        setIsCartMutating(false);
+        console.error("Update cart error:", error);
+        return { success: false, error: "Network error. Please try again." };
       }
     },
-    [isAuthenticated, mutateCart]
+    [isAuthenticated, mutateCart, cartData]
   );
 
-  // Remove from cart
+  // Remove from cart with optimistic update
   const removeFromCart = useCallback(
-    async (productId: string): Promise<boolean> => {
-      if (!isAuthenticated) return false;
+    async (productId: string): Promise<{ success: boolean; error?: string }> => {
+      if (!isAuthenticated) {
+        return { success: false, error: "Please login" };
+      }
+
+      setIsCartMutating(true);
+      const previousData = cartData;
+      
+      // Optimistic update - remove item immediately
+      if (cartData) {
+        mutateCart({
+          ...cartData,
+          items: cartData.items.filter(item => item.product._id !== productId),
+        }, false);
+      }
 
       try {
         const res = await fetch(`/api/cart?productId=${productId}`, {
           method: "DELETE",
+          headers: {
+            "Cache-Control": "no-cache",
+          },
         });
 
         if (res.ok) {
           await mutateCart();
-          return true;
+          setIsCartMutating(false);
+          return { success: true };
         }
-        return false;
-      } catch {
-        return false;
+        
+        // Revert on error
+        if (previousData) {
+          mutateCart(previousData, false);
+        }
+        setIsCartMutating(false);
+        return { success: false, error: "Failed to remove item" };
+      } catch (error) {
+        if (previousData) {
+          mutateCart(previousData, false);
+        }
+        setIsCartMutating(false);
+        console.error("Remove from cart error:", error);
+        return { success: false, error: "Network error. Please try again." };
       }
     },
-    [isAuthenticated, mutateCart]
+    [isAuthenticated, mutateCart, cartData]
   );
 
-  // Clear cart
-  const clearCart = useCallback(async (): Promise<boolean> => {
-    if (!isAuthenticated) return false;
+  // Clear cart with optimistic update
+  const clearCart = useCallback(async (): Promise<{ success: boolean; error?: string }> => {
+    if (!isAuthenticated) {
+      return { success: false, error: "Please login" };
+    }
+
+    setIsCartMutating(true);
+    const previousData = cartData;
+    
+    // Optimistic update - clear immediately
+    mutateCart({ items: [], total: 0, isB2B: cartData?.isB2B || false }, false);
 
     try {
       const res = await fetch("/api/cart", {
         method: "DELETE",
+        headers: {
+          "Cache-Control": "no-cache",
+        },
       });
 
       if (res.ok) {
         await mutateCart();
-        return true;
+        setIsCartMutating(false);
+        return { success: true };
       }
-      return false;
-    } catch {
-      return false;
+      
+      // Revert on error
+      if (previousData) {
+        mutateCart(previousData, false);
+      }
+      setIsCartMutating(false);
+      return { success: false, error: "Failed to clear cart" };
+    } catch (error) {
+      if (previousData) {
+        mutateCart(previousData, false);
+      }
+      setIsCartMutating(false);
+      console.error("Clear cart error:", error);
+      return { success: false, error: "Network error. Please try again." };
     }
-  }, [isAuthenticated, mutateCart]);
+  }, [isAuthenticated, mutateCart, cartData]);
 
   // Add to wishlist
   const addToWishlist = useCallback(
@@ -303,6 +454,7 @@ export function CartWishlistProvider({ children }: { children: ReactNode }) {
       cartCount,
       cartTotal,
       isCartLoading,
+      isCartMutating,
       addToCart,
       updateCartQuantity,
       removeFromCart,
@@ -323,6 +475,7 @@ export function CartWishlistProvider({ children }: { children: ReactNode }) {
       cartCount,
       cartTotal,
       isCartLoading,
+      isCartMutating,
       addToCart,
       updateCartQuantity,
       removeFromCart,
@@ -361,6 +514,7 @@ export function useCart() {
     cartCount,
     cartTotal,
     isCartLoading,
+    isCartMutating,
     addToCart,
     updateCartQuantity,
     removeFromCart,
@@ -373,6 +527,7 @@ export function useCart() {
     cartCount,
     cartTotal,
     isLoading: isCartLoading,
+    isMutating: isCartMutating,
     addToCart,
     updateQuantity: updateCartQuantity,
     removeItem: removeFromCart,

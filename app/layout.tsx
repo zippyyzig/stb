@@ -76,6 +76,10 @@ export const metadata: Metadata = {
     "apple-mobile-web-app-title": "STB",
     "msapplication-TileColor": "#E31837",
     "msapplication-tap-highlight": "no",
+    // Cache control for mobile apps
+    "Cache-Control": "no-cache, no-store, must-revalidate",
+    "Pragma": "no-cache",
+    "Expires": "0",
   },
 };
 
@@ -99,6 +103,8 @@ export default function RootLayout({
   return (
     <html lang="en" className="bg-background">
       <head>
+        {/* Version meta tag for cache busting in mobile apps */}
+        <meta name="app-version" content={process.env.VERCEL_GIT_COMMIT_SHA || "1.0.0"} />
         {/* Preconnect to external resources */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />

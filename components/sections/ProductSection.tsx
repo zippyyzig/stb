@@ -13,7 +13,7 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import { useCart, useWishlist } from "@/components/providers/CartWishlistProvider";
-import { Heart, ShoppingCart, Star, Loader2, ChevronRight } from "lucide-react";
+import { Heart, ShoppingCart, Star, Loader2, ChevronRight, Check, AlertCircle } from "lucide-react";
 
 interface Product {
   id: string;
@@ -53,6 +53,8 @@ function SectionProductCard({ product }: { product: Product }) {
   const { isInWishlist, toggle: toggleWishlist, isLoading: wishlistLoading } = useWishlist();
 
   const [addingToCart, setAddingToCart] = useState(false);
+  const [addedToCart, setAddedToCart] = useState(false);
+  const [cartError, setCartError] = useState<string | null>(null);
   const [hovered, setHovered] = useState(false);
 
   const isB2B = session?.user?.isGstVerified === true;
@@ -64,9 +66,31 @@ function SectionProductCard({ product }: { product: Product }) {
   const rating = product.rating || 0;
 
   const handleCart = async () => {
-    if (!session) { router.push(`/auth/login?callbackUrl=/product/${product.slug}`); return; }
+    if (!session) { 
+      router.push(`/auth/login?callbackUrl=/product/${product.slug}`); 
+      return; 
+    }
+    
+    setCartError(null);
+    setAddedToCart(false);
     setAddingToCart(true);
-    try { await addToCart(product.id, 1); } finally { setAddingToCart(false); }
+    
+    try {
+      const result = await addToCart(product.id, 1);
+      
+      if (result.success) {
+        setAddedToCart(true);
+        setTimeout(() => setAddedToCart(false), 2000);
+      } else {
+        setCartError(result.error || "Failed to add");
+        setTimeout(() => setCartError(null), 3000);
+      }
+    } catch {
+      setCartError("Something went wrong");
+      setTimeout(() => setCartError(null), 3000);
+    } finally {
+      setAddingToCart(false);
+    }
   };
 
   const handleWishlist = async (e: React.MouseEvent) => {
@@ -172,14 +196,31 @@ function SectionProductCard({ product }: { product: Product }) {
           </div>
         </div>
 
+        {/* Error message */}
+        {cartError && (
+          <div className="mt-2 flex items-center gap-1 rounded-lg bg-red-50 px-2 py-1.5 text-[10px] text-red-600">
+            <AlertCircle className="h-3 w-3 shrink-0" />
+            <span className="line-clamp-1">{cartError}</span>
+          </div>
+        )}
+
         {/* Add to Cart */}
         <button
           onClick={handleCart}
           disabled={!product.inStock || addingToCart}
-          className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl bg-primary py-3 text-xs font-bold text-white transition-colors hover:bg-stb-red-dark disabled:cursor-not-allowed disabled:opacity-40 press-active"
+          className={`mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl py-3 text-xs font-bold text-white transition-all press-active ${
+            addedToCart
+              ? "bg-stb-success"
+              : "bg-primary hover:bg-stb-red-dark disabled:cursor-not-allowed disabled:opacity-40"
+          }`}
         >
           {addingToCart ? (
             <Loader2 className="h-3 w-3 animate-spin" />
+          ) : addedToCart ? (
+            <>
+              <Check className="h-3 w-3" />
+              Added!
+            </>
           ) : (
             <>
               <ShoppingCart className="h-3 w-3" />
