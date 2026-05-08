@@ -27,7 +27,7 @@ interface NotificationPreferences {
 
 export function NotificationSettings() {
   const { isNativeApp, platform, isReady } = useNativeApp();
-  const { isSupported, isEnabled, requestPermission, registerDevice } = usePushNotifications();
+  const { isSupported, isEnabled, requestPermission, registerDevice, recheckStatus } = usePushNotifications();
   const [preferences, setPreferences] = useState<NotificationPreferences>({
     orderUpdates: true,
     promotions: true,
@@ -80,12 +80,21 @@ export function NotificationSettings() {
   };
 
   const handleEnableNotifications = async () => {
+    console.log("[v0] NotificationSettings: handleEnableNotifications clicked");
     setEnabling(true);
     try {
       const granted = await requestPermission();
+      console.log("[v0] Permission granted:", granted);
       if (granted) {
-        await registerDevice();
+        const token = await registerDevice();
+        console.log("[v0] Device registered, token:", token);
+        // Recheck status after a moment
+        setTimeout(() => {
+          recheckStatus();
+        }, 1500);
       }
+    } catch (error) {
+      console.error("[v0] Enable notifications error:", error);
     } finally {
       setEnabling(false);
     }

@@ -1,16 +1,18 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Bell, X, Loader2 } from "lucide-react";
+import { Bell, X, Loader2, CheckCircle, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNativeApp } from "@/components/providers/NativeAppProvider";
 import { usePushNotifications } from "@/hooks/use-push-notifications";
 
 export function PushNotificationBanner() {
   const { isNativeApp, isReady } = useNativeApp();
-  const { isSupported, isEnabled, isLoading, requestPermission, registerDevice } = usePushNotifications();
+  const { isSupported, isEnabled, isLoading, requestPermission, registerDevice, recheckStatus } = usePushNotifications();
   const [dismissed, setDismissed] = useState(false);
   const [requesting, setRequesting] = useState(false);
+  const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Check if banner was previously dismissed
   useEffect(() => {
@@ -33,15 +35,35 @@ export function PushNotificationBanner() {
   }
 
   const handleEnable = async () => {
+    console.log("[v0] PushNotificationBanner: handleEnable clicked");
     setRequesting(true);
+    setStatus("idle");
+    setErrorMessage(null);
+    
     try {
+      console.log("[v0] Requesting permission...");
       const granted = await requestPermission();
+      console.log("[v0] Permission result:", granted);
+      
       if (granted) {
-        await registerDevice();
-        // Banner will auto-hide since isEnabled will become true
+        console.log("[v0] Registering device...");
+        const token = await registerDevice();
+        console.log("[v0] Device token:", token);
+        
+        setStatus("success");
+        
+        // Recheck status after a moment
+        setTimeout(() => {
+          recheckStatus();
+        }, 1500);
+      } else {
+        setStatus("error");
+        setErrorMessage("Permission not granted. Please enable notifications in your device settings.");
       }
     } catch (error) {
-      console.error("Error enabling push notifications:", error);
+      console.error("[v0] Error enabling push notifications:", error);
+      setStatus("error");
+      setErrorMessage(error instanceof Error ? error.message : "Failed to enable notifications");
     } finally {
       setRequesting(false);
     }
@@ -51,6 +73,25 @@ export function PushNotificationBanner() {
     setDismissed(true);
     localStorage.setItem("push_banner_dismissed", "true");
   };
+
+  // Show success message
+  if (status === "success") {
+    return (
+      <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-4 animate-fade-in">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-green-100 flex items-center justify-center shrink-0">
+            <CheckCircle className="h-5 w-5 text-green-600" />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-sm font-semibold text-green-800">Notifications Enabled!</h3>
+            <p className="text-xs text-green-600 mt-0.5">
+              {"You'll"} receive updates about your orders and deals.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-primary/10 border border-primary/20 rounded-xl p-4 mb-4 animate-fade-in">
@@ -65,6 +106,15 @@ export function PushNotificationBanner() {
           <p className="text-xs text-muted-foreground mt-0.5">
             Get instant updates about your orders, exclusive deals, and important announcements.
           </p>
+          
+          {/* Error message */}
+          {status === "error" && errorMessage && (
+            <div className="flex items-center gap-1.5 mt-2 text-xs text-red-600">
+              <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+              <span>{errorMessage}</span>
+            </div>
+          )}
+          
           <div className="flex items-center gap-2 mt-3">
             <Button
               size="sm"
@@ -73,11 +123,16 @@ export function PushNotificationBanner() {
               className="h-8 text-xs gap-1.5"
             >
               {requesting ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Enabling...
+                </>
               ) : (
-                <Bell className="h-3.5 w-3.5" />
+                <>
+                  <Bell className="h-3.5 w-3.5" />
+                  Enable Notifications
+                </>
               )}
-              Enable Notifications
             </Button>
             <Button
               variant="ghost"

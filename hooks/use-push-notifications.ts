@@ -4,7 +4,8 @@ import { useState, useEffect, useCallback } from "react";
 import { 
   isMedianApp, 
   requestNotificationPermission,
-  registerForPushNotifications 
+  registerForPushNotifications,
+  checkOneSignalSubscription 
 } from "@/lib/native-app";
 
 interface PushNotificationState {
@@ -18,6 +19,7 @@ interface PushNotificationState {
 interface UsePushNotificationsReturn extends PushNotificationState {
   requestPermission: () => Promise<boolean>;
   registerDevice: () => Promise<string | null>;
+  recheckStatus: () => Promise<void>;
 }
 
 export function usePushNotifications(): UsePushNotificationsReturn {
@@ -30,52 +32,74 @@ export function usePushNotifications(): UsePushNotificationsReturn {
   });
 
   // Check initial support and permission status
-  useEffect(() => {
-    const checkStatus = async () => {
-      try {
-        // Check if we're in Median app or if browser supports notifications
-        const inMedianApp = isMedianApp();
-        const hasNotificationAPI = typeof Notification !== "undefined";
-        const isSupported = inMedianApp || hasNotificationAPI;
+  const checkStatus = useCallback(async () => {
+    try {
+      // Check if we're in Median app or if browser supports notifications
+      const inMedianApp = isMedianApp();
+      const hasNotificationAPI = typeof Notification !== "undefined";
+      const isSupported = inMedianApp || hasNotificationAPI;
 
-        let isEnabled = false;
-        
-        if (inMedianApp) {
-          // In Median app, check OneSignal status if available
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const median = (window as any).median;
-          if (median?.onesignal?.getPermissionStatus) {
-            const status = await median.onesignal.getPermissionStatus();
-            isEnabled = status === "granted" || status === true;
-          }
-        } else if (hasNotificationAPI) {
-          isEnabled = Notification.permission === "granted";
-        }
+      console.log("[v0] Push notification check - isMedianApp:", inMedianApp, "hasNotificationAPI:", hasNotificationAPI);
 
-        setState(prev => ({
-          ...prev,
-          isSupported,
-          isEnabled,
-          isLoading: false,
-        }));
-      } catch (error) {
-        setState(prev => ({
-          ...prev,
-          isLoading: false,
-          error: (error as Error).message,
-        }));
+      let isEnabled = false;
+      
+      if (inMedianApp) {
+        // Use our helper function to check OneSignal subscription
+        isEnabled = await checkOneSignalSubscription();
+        console.log("[v0] OneSignal subscription status:", isEnabled);
+      } else if (hasNotificationAPI) {
+        isEnabled = Notification.permission === "granted";
       }
-    };
 
-    checkStatus();
+      setState(prev => ({
+        ...prev,
+        isSupported,
+        isEnabled,
+        isLoading: false,
+      }));
+    } catch (error) {
+      console.error("[v0] Push notification status check error:", error);
+      setState(prev => ({
+        ...prev,
+        isLoading: false,
+        error: (error as Error).message,
+      }));
+    }
   }, []);
+
+  useEffect(() => {
+    // Small delay to ensure Median SDK is fully loaded
+    const timer = setTimeout(() => {
+      checkStatus();
+    }, 500);
+    
+    return () => clearTimeout(timer);
+  }, [checkStatus]);
 
   // Request permission
   const requestPermission = useCallback(async (): Promise<boolean> => {
+    console.log("[v0] requestPermission called in hook");
     setState(prev => ({ ...prev, isLoading: true, error: null }));
     
     try {
       const granted = await requestNotificationPermission();
+      console.log("[v0] Permission request result:", granted);
+      
+      // Recheck status after requesting permission
+      if (granted) {
+        // Give some time for the subscription to register
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        const isSubscribed = await checkOneSignalSubscription();
+        console.log("[v0] Post-permission subscription check:", isSubscribed);
+        
+        setState(prev => ({
+          ...prev,
+          isEnabled: isSubscribed || granted,
+          isLoading: false,
+        }));
+        
+        return isSubscribed || granted;
+      }
       
       setState(prev => ({
         ...prev,
@@ -85,6 +109,7 @@ export function usePushNotifications(): UsePushNotificationsReturn {
       
       return granted;
     } catch (error) {
+      console.error("[v0] Permission request error:", error);
       setState(prev => ({
         ...prev,
         isLoading: false,
@@ -138,6 +163,7 @@ export function usePushNotifications(): UsePushNotificationsReturn {
     ...state,
     requestPermission,
     registerDevice,
+    recheckStatus: checkStatus,
   };
 }
 
