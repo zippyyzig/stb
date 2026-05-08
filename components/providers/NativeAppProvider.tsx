@@ -81,18 +81,30 @@ export function NativeAppProvider({ children }: NativeAppProviderProps) {
       setBadgeCount(0);
     }
 
-    // Handle visibility change for app resume
+    // Handle visibility change for app resume - force SWR revalidation
     const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible" && nativeApp) {
-        // App resumed - could refresh data here
-        // This is a good place to check for new notifications
+      if (document.visibilityState === "visible") {
+        // App resumed - trigger SWR revalidation by dispatching a custom event
+        // This ensures cart/wishlist data is fresh after app comes from background
+        window.dispatchEvent(new Event("app-resumed"));
+        
+        // Force focus event to trigger SWR revalidateOnFocus
+        window.dispatchEvent(new Event("focus"));
       }
     };
 
+    // Handle app coming back online
+    const handleOnline = () => {
+      window.dispatchEvent(new Event("app-resumed"));
+      window.dispatchEvent(new Event("focus"));
+    };
+
     document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("online", handleOnline);
 
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("online", handleOnline);
     };
   }, []);
 

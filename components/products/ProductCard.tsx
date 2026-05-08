@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useCart, useWishlist } from "@/components/providers/CartWishlistProvider";
-import { Heart, ShoppingCart, Star, Loader2 } from "lucide-react";
+import { Heart, ShoppingCart, Star, Loader2, Check, AlertCircle } from "lucide-react";
 
 interface Product {
   _id: string;
@@ -37,6 +37,8 @@ export default function ProductCard({ product }: ProductCardProps) {
   const { isInWishlist, toggle: toggleWishlist, isLoading: isWishlistLoading } = useWishlist();
 
   const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [addedToCart, setAddedToCart] = useState(false);
+  const [cartError, setCartError] = useState<string | null>(null);
   const [hovered, setHovered] = useState(false);
 
   const isB2B = session?.user?.isGstVerified === true;
@@ -56,9 +58,28 @@ export default function ProductCard({ product }: ProductCardProps) {
       router.push(`/auth/login?callbackUrl=/product/${product.slug}`);
       return;
     }
+    
+    // Reset states
+    setCartError(null);
+    setAddedToCart(false);
     setIsAddingToCart(true);
+    
     try {
-      await addToCart(product._id, 1);
+      const result = await addToCart(product._id, 1);
+      
+      if (result.success) {
+        setAddedToCart(true);
+        // Reset success state after 2 seconds
+        setTimeout(() => setAddedToCart(false), 2000);
+      } else {
+        setCartError(result.error || "Failed to add to cart");
+        // Clear error after 3 seconds
+        setTimeout(() => setCartError(null), 3000);
+      }
+    } catch (error) {
+      console.error("Add to cart error:", error);
+      setCartError("Something went wrong");
+      setTimeout(() => setCartError(null), 3000);
     } finally {
       setIsAddingToCart(false);
     }
@@ -198,14 +219,31 @@ export default function ProductCard({ product }: ProductCardProps) {
           </div>
         </div>
 
+        {/* Error message */}
+        {cartError && (
+          <div className="mt-2 flex items-center gap-1 rounded-lg bg-red-50 px-2 py-1.5 text-[10px] text-red-600">
+            <AlertCircle className="h-3 w-3 shrink-0" />
+            <span className="line-clamp-1">{cartError}</span>
+          </div>
+        )}
+
         {/* Add to Cart button */}
         <button
           onClick={handleAddToCart}
           disabled={!inStock || isAddingToCart}
-          className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl bg-primary py-3 text-xs font-bold text-white transition-colors hover:bg-stb-red-dark disabled:cursor-not-allowed disabled:opacity-40 press-active"
+          className={`mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl py-3 text-xs font-bold text-white transition-all press-active ${
+            addedToCart
+              ? "bg-stb-success"
+              : "bg-primary hover:bg-stb-red-dark disabled:cursor-not-allowed disabled:opacity-40"
+          }`}
         >
           {isAddingToCart ? (
             <Loader2 className="h-3 w-3 animate-spin" />
+          ) : addedToCart ? (
+            <>
+              <Check className="h-3 w-3" />
+              Added!
+            </>
           ) : (
             <>
               <ShoppingCart className="h-3 w-3" />

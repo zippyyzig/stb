@@ -7,13 +7,28 @@ import Product from "@/models/Product";
 import User from "@/models/User";
 import { validateObjectId, validateQuantity } from "@/lib/validation";
 
+// Disable caching for cart API - critical for mobile apps
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+// Helper to add no-cache headers to responses
+function withNoCacheHeaders(response: NextResponse): NextResponse {
+  response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0");
+  response.headers.set("Pragma", "no-cache");
+  response.headers.set("Expires", "0");
+  response.headers.set("Surrogate-Control", "no-store");
+  return response;
+}
+
 // GET user's cart
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
 
     if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return withNoCacheHeaders(
+        NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      );
     }
 
     await dbConnect();
@@ -24,7 +39,9 @@ export async function GET() {
     });
 
     if (!cart) {
-      return NextResponse.json({ items: [], total: 0, isB2B: false });
+      return withNoCacheHeaders(
+        NextResponse.json({ items: [], total: 0, isB2B: false })
+      );
     }
 
     // Get user's GST verification status for pricing
@@ -59,12 +76,16 @@ export async function GET() {
 
     const total = items.reduce((sum: number, item: { total: number }) => sum + item.total, 0);
 
-    return NextResponse.json({ items, total, isB2B });
+    return withNoCacheHeaders(
+      NextResponse.json({ items, total, isB2B })
+    );
   } catch (error) {
     console.error("Error fetching cart:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch cart" },
-      { status: 500 }
+    return withNoCacheHeaders(
+      NextResponse.json(
+        { error: "Failed to fetch cart" },
+        { status: 500 }
+      )
     );
   }
 }
@@ -75,32 +96,40 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return withNoCacheHeaders(
+        NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      );
     }
 
     const { productId, quantity = 1 } = await request.json();
 
     if (!productId) {
-      return NextResponse.json(
-        { error: "Product ID is required" },
-        { status: 400 }
+      return withNoCacheHeaders(
+        NextResponse.json(
+          { error: "Product ID is required" },
+          { status: 400 }
+        )
       );
     }
 
     // Validate product ID format to prevent injection
     if (!validateObjectId(productId)) {
-      return NextResponse.json(
-        { error: "Invalid product ID format" },
-        { status: 400 }
+      return withNoCacheHeaders(
+        NextResponse.json(
+          { error: "Invalid product ID format" },
+          { status: 400 }
+        )
       );
     }
 
     // Validate quantity
     const qtyValidation = validateQuantity(quantity);
     if (!qtyValidation.valid) {
-      return NextResponse.json(
-        { error: qtyValidation.error },
-        { status: 400 }
+      return withNoCacheHeaders(
+        NextResponse.json(
+          { error: qtyValidation.error },
+          { status: 400 }
+        )
       );
     }
 
@@ -109,16 +138,20 @@ export async function POST(request: NextRequest) {
     // Check if product exists and has stock
     const product = await Product.findById(productId);
     if (!product) {
-      return NextResponse.json(
-        { error: "Product not found" },
-        { status: 404 }
+      return withNoCacheHeaders(
+        NextResponse.json(
+          { error: "Product not found" },
+          { status: 404 }
+        )
       );
     }
 
     if (product.stock < quantity) {
-      return NextResponse.json(
-        { error: "Insufficient stock" },
-        { status: 400 }
+      return withNoCacheHeaders(
+        NextResponse.json(
+          { error: "Insufficient stock" },
+          { status: 400 }
+        )
       );
     }
 
@@ -140,9 +173,11 @@ export async function POST(request: NextRequest) {
         // Update quantity
         const newQuantity = existingItem.quantity + quantity;
         if (newQuantity > product.stock) {
-          return NextResponse.json(
-            { error: "Cannot add more than available stock" },
-            { status: 400 }
+          return withNoCacheHeaders(
+            NextResponse.json(
+              { error: "Cannot add more than available stock" },
+              { status: 400 }
+            )
           );
         }
         existingItem.quantity = newQuantity;
@@ -154,12 +189,16 @@ export async function POST(request: NextRequest) {
       await cart.save();
     }
 
-    return NextResponse.json({ message: "Item added to cart", cart });
+    return withNoCacheHeaders(
+      NextResponse.json({ message: "Item added to cart", cart })
+    );
   } catch (error) {
     console.error("Error adding to cart:", error);
-    return NextResponse.json(
-      { error: "Failed to add item to cart" },
-      { status: 500 }
+    return withNoCacheHeaders(
+      NextResponse.json(
+        { error: "Failed to add item to cart" },
+        { status: 500 }
+      )
     );
   }
 }
@@ -170,31 +209,39 @@ export async function PUT(request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return withNoCacheHeaders(
+        NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      );
     }
 
     const { productId, quantity } = await request.json();
 
     if (!productId || quantity === undefined) {
-      return NextResponse.json(
-        { error: "Product ID and quantity are required" },
-        { status: 400 }
+      return withNoCacheHeaders(
+        NextResponse.json(
+          { error: "Product ID and quantity are required" },
+          { status: 400 }
+        )
       );
     }
 
     // Validate product ID format
     if (!validateObjectId(productId)) {
-      return NextResponse.json(
-        { error: "Invalid product ID format" },
-        { status: 400 }
+      return withNoCacheHeaders(
+        NextResponse.json(
+          { error: "Invalid product ID format" },
+          { status: 400 }
+        )
       );
     }
 
     // Validate quantity (allow 0 for removal, but check upper bound)
     if (typeof quantity !== "number" || isNaN(quantity) || quantity < 0 || quantity > 1000) {
-      return NextResponse.json(
-        { error: "Invalid quantity" },
-        { status: 400 }
+      return withNoCacheHeaders(
+        NextResponse.json(
+          { error: "Invalid quantity" },
+          { status: 400 }
+        )
       );
     }
 
@@ -203,7 +250,9 @@ export async function PUT(request: NextRequest) {
     const cart = await Cart.findOne({ user: session.user.id });
 
     if (!cart) {
-      return NextResponse.json({ error: "Cart not found" }, { status: 404 });
+      return withNoCacheHeaders(
+        NextResponse.json({ error: "Cart not found" }, { status: 404 })
+      );
     }
 
     if (quantity <= 0) {
@@ -215,9 +264,11 @@ export async function PUT(request: NextRequest) {
       // Update quantity
       const product = await Product.findById(productId);
       if (!product || product.stock < quantity) {
-        return NextResponse.json(
-          { error: "Insufficient stock" },
-          { status: 400 }
+        return withNoCacheHeaders(
+          NextResponse.json(
+            { error: "Insufficient stock" },
+            { status: 400 }
+          )
         );
       }
 
@@ -231,12 +282,16 @@ export async function PUT(request: NextRequest) {
 
     await cart.save();
 
-    return NextResponse.json({ message: "Cart updated", cart });
+    return withNoCacheHeaders(
+      NextResponse.json({ message: "Cart updated", cart })
+    );
   } catch (error) {
     console.error("Error updating cart:", error);
-    return NextResponse.json(
-      { error: "Failed to update cart" },
-      { status: 500 }
+    return withNoCacheHeaders(
+      NextResponse.json(
+        { error: "Failed to update cart" },
+        { status: 500 }
+      )
     );
   }
 }
@@ -247,7 +302,9 @@ export async function DELETE(request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return withNoCacheHeaders(
+        NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      );
     }
 
     const { searchParams } = new URL(request.url);
@@ -255,9 +312,11 @@ export async function DELETE(request: NextRequest) {
 
     // If productId is provided, validate it
     if (productId && !validateObjectId(productId)) {
-      return NextResponse.json(
-        { error: "Invalid product ID format" },
-        { status: 400 }
+      return withNoCacheHeaders(
+        NextResponse.json(
+          { error: "Invalid product ID format" },
+          { status: 400 }
+        )
       );
     }
 
@@ -266,7 +325,9 @@ export async function DELETE(request: NextRequest) {
     const cart = await Cart.findOne({ user: session.user.id });
 
     if (!cart) {
-      return NextResponse.json({ error: "Cart not found" }, { status: 404 });
+      return withNoCacheHeaders(
+        NextResponse.json({ error: "Cart not found" }, { status: 404 })
+      );
     }
 
     if (productId) {
@@ -275,17 +336,23 @@ export async function DELETE(request: NextRequest) {
         (item: { product: { toString: () => string } }) => item.product.toString() !== productId
       );
       await cart.save();
-      return NextResponse.json({ message: "Item removed from cart" });
+      return withNoCacheHeaders(
+        NextResponse.json({ message: "Item removed from cart" })
+      );
     } else {
       // Clear entire cart
       await Cart.deleteOne({ user: session.user.id });
-      return NextResponse.json({ message: "Cart cleared" });
+      return withNoCacheHeaders(
+        NextResponse.json({ message: "Cart cleared" })
+      );
     }
   } catch (error) {
     console.error("Error deleting from cart:", error);
-    return NextResponse.json(
-      { error: "Failed to delete from cart" },
-      { status: 500 }
+    return withNoCacheHeaders(
+      NextResponse.json(
+        { error: "Failed to delete from cart" },
+        { status: 500 }
+      )
     );
   }
 }

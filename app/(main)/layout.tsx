@@ -1,4 +1,5 @@
 import { AppRatingDialog } from "@/components/app/AppRatingDialog";
+import { UpdateBanner } from "@/components/ui/update-banner";
 
 export default function MainLayout({
   children,
@@ -7,6 +8,7 @@ export default function MainLayout({
 }) {
   return (
     <>
+      <UpdateBanner />
       {children}
       <AppRatingDialog />
     </>

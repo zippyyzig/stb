@@ -28,13 +28,23 @@ export default function CartPage() {
 
   const updateQuantity = async (productId: string, qty: number) => {
     setUpdatingItems((p) => new Set(p).add(productId));
-    try { await providerUpdateQty(productId, qty); }
+    try { 
+      const result = await providerUpdateQty(productId, qty);
+      if (!result.success) {
+        console.error("Update quantity failed:", result.error);
+      }
+    }
     finally { setUpdatingItems((p) => { const n = new Set(p); n.delete(productId); return n; }); }
   };
 
   const removeItem = async (productId: string) => {
     setUpdatingItems((p) => new Set(p).add(productId));
-    try { await providerRemoveItem(productId); }
+    try { 
+      const result = await providerRemoveItem(productId);
+      if (!result.success) {
+        console.error("Remove item failed:", result.error);
+      }
+    }
     finally { setUpdatingItems((p) => { const n = new Set(p); n.delete(productId); return n; }); }
   };
 
