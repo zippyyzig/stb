@@ -242,9 +242,16 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Use correct price based on user type (B2B gets wholesale pricing) - ensure valid numbers
-      const priceB2C = Number(product.priceB2C) || 0;
-      const priceB2B = Number(product.priceB2B) || 0;
+      // Use correct price based on user type (B2B gets wholesale pricing) - ensure valid numbers with MRP fallbacks
+      // This must match the cart API pricing logic for consistency
+      const rawMrp = Number(product.mrp) || 0;
+      const rawPriceB2C = Number(product.priceB2C) || 0;
+      const rawPriceB2B = Number(product.priceB2B) || 0;
+      
+      // Apply fallbacks: if price is 0, use MRP as fallback
+      const priceB2C = rawPriceB2C > 0 ? rawPriceB2C : rawMrp;
+      const priceB2B = rawPriceB2B > 0 ? rawPriceB2B : (rawPriceB2C > 0 ? rawPriceB2C : rawMrp);
+      
       const price = isB2B ? priceB2B : priceB2C;
       const quantity = Number(item.quantity) || 1;
       const itemTotal = price * quantity;

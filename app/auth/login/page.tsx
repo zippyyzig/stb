@@ -74,8 +74,11 @@ function LoginForm() {
       // Check if we're in a Median.co native app - use native SDK
       if (isNativeApp) {
         try {
+          console.log("[v0] Starting native Google Sign-In...");
           const nativeResult = await nativeGoogleSignIn();
+          
           if (nativeResult) {
+            console.log("[v0] Native result received, signing in with NextAuth...");
             // Use the native result to sign in with NextAuth
             const signInResult = await signIn("google-firebase", {
               email: nativeResult.email,
@@ -84,22 +87,28 @@ function LoginForm() {
               avatar: nativeResult.picture || null,
               redirect: false,
             });
+            
             if (signInResult?.error) {
+              console.error("[v0] NextAuth sign-in error:", signInResult.error);
               setErrorMessage(signInResult.error);
             } else {
+              console.log("[v0] Sign-in successful, redirecting...");
               router.push(callbackUrl);
               router.refresh();
             }
             return;
           }
+          
           // If native login returns null, the Social Login plugin may not be enabled
           // Do NOT fall back to Firebase popup in native apps - it will open external browser
+          console.warn("[v0] Native Google Sign-In returned null - plugin may not be configured");
           setErrorMessage("Google Sign-In is not available. Please use email/password to sign in, or try again later.");
           return;
         } catch (nativeError) {
-          console.error("Native Google sign-in error:", nativeError);
-          // Show a user-friendly error instead of falling back to web popup
-          setErrorMessage("Google Sign-In failed. Please use email/password to sign in.");
+          console.error("[v0] Native Google sign-in error:", nativeError);
+          // Show the actual error message from native SDK
+          const errorMsg = nativeError instanceof Error ? nativeError.message : "Google Sign-In failed";
+          setErrorMessage(errorMsg);
           return;
         }
       }
