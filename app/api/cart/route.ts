@@ -36,7 +36,7 @@ export async function GET() {
     const cart = await Cart.findOne({ user: session.user.id }).populate({
       path: "items.product",
       select: "name slug images priceB2C priceB2B mrp stock brand",
-    });
+    }).lean();
 
     if (!cart) {
       return withNoCacheHeaders(
@@ -45,7 +45,7 @@ export async function GET() {
     }
 
     // Get user's GST verification status for pricing
-    const user = await User.findById(session.user.id);
+    const user = await User.findById(session.user.id).lean();
     const isB2B = user?.isGstVerified === true;
     
     type PopulatedCartItem = {
@@ -69,10 +69,13 @@ export async function GET() {
       (item) => item.product !== null
     );
 
-    // If there were invalid items, clean up the cart
+    // If there were invalid items, clean up the cart using atomic update
     if (validItems.length !== cart.items.length) {
-      cart.items = validItems;
-      await cart.save();
+      const validProductIds = validItems.map(item => item.product!._id);
+      await Cart.findOneAndUpdate(
+        { user: session.user.id },
+        { $pull: { items: { product: { $nin: validProductIds } } } }
+      );
     }
 
     const items = validItems.map((item) => {
@@ -83,9 +86,16 @@ export async function GET() {
       const mrp = Number(product.mrp) || 0;
       const price = isB2B ? priceB2B : priceB2C;
       const quantity = Number(item.quantity) || 1;
+      // Ensure _id is a string (lean() returns ObjectId objects)
+      const productId = typeof product._id === 'string' ? product._id : product._id.toString();
       return {
         product: {
-          ...product,
+          _id: productId,
+          name: product.name,
+          slug: product.slug,
+          images: product.images,
+          brand: product.brand,
+          stock: Number(product.stock) || 0,
           priceB2C,
           priceB2B,
           mrp,
