@@ -80,14 +80,22 @@ export async function GET() {
 
     const items = validItems.map((item) => {
       const product = item.product!; // We've filtered out nulls above
-      // Ensure prices are valid numbers, defaulting to 0 if null/undefined/NaN
-      const priceB2C = Number(product.priceB2C) || 0;
-      const priceB2B = Number(product.priceB2B) || 0;
-      const mrp = Number(product.mrp) || 0;
+      
+      // Ensure prices are valid numbers, with MRP fallbacks (consistent with homepage logic)
+      const rawMrp = Number(product.mrp) || 0;
+      const rawPriceB2C = Number(product.priceB2C) || 0;
+      const rawPriceB2B = Number(product.priceB2B) || 0;
+      
+      // Apply fallbacks: if price is 0, use MRP as fallback
+      const mrp = rawMrp;
+      const priceB2C = rawPriceB2C > 0 ? rawPriceB2C : rawMrp;
+      const priceB2B = rawPriceB2B > 0 ? rawPriceB2B : (rawPriceB2C > 0 ? rawPriceB2C : rawMrp);
+      
       const price = isB2B ? priceB2B : priceB2C;
       const quantity = Number(item.quantity) || 1;
       // Ensure _id is a string (lean() returns ObjectId objects)
       const productId = typeof product._id === 'string' ? product._id : product._id.toString();
+      
       return {
         product: {
           _id: productId,

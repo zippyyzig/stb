@@ -111,10 +111,18 @@ export function getPricingInfo(
   const customerType = getCustomerType(isGstVerified);
   const showBothPrices = canSeeBothPrices(role);
   
-  const priceB2C = Number(product.priceB2C) || 0;
-  const priceB2B = Number(product.priceB2B) || 0;
-  const mrp = Number(product.mrp) || 0;
-  const displayPrice = getDisplayPrice(product.priceB2C, product.priceB2B, customerType);
+  // Get raw values and ensure they are valid numbers
+  const rawMrp = Number(product.mrp) || 0;
+  const rawPriceB2C = Number(product.priceB2C) || 0;
+  const rawPriceB2B = Number(product.priceB2B) || 0;
+  
+  // Apply fallbacks: if price is 0, use MRP as fallback (same logic as homepage)
+  const mrp = rawMrp;
+  const priceB2C = rawPriceB2C > 0 ? rawPriceB2C : rawMrp;
+  const priceB2B = rawPriceB2B > 0 ? rawPriceB2B : (rawPriceB2C > 0 ? rawPriceB2C : rawMrp);
+  
+  // Get display price based on customer type
+  const displayPrice = customerType === "B2B" ? priceB2B : priceB2C;
   
   const result: PricingInfo = {
     displayPrice,
