@@ -73,29 +73,38 @@ function LoginForm() {
     try {
       // Check if we're in a Median.co native app - use native SDK
       if (isNativeApp) {
-        const nativeResult = await nativeGoogleSignIn();
-        if (nativeResult) {
-          // Use the native result to sign in with NextAuth
-          const signInResult = await signIn("google-firebase", {
-            email: nativeResult.email,
-            name: nativeResult.name,
-            googleId: nativeResult.userId,
-            avatar: nativeResult.picture || null,
-            redirect: false,
-          });
-          if (signInResult?.error) {
-            setErrorMessage(signInResult.error);
-          } else {
-            router.push(callbackUrl);
-            router.refresh();
+        try {
+          const nativeResult = await nativeGoogleSignIn();
+          if (nativeResult) {
+            // Use the native result to sign in with NextAuth
+            const signInResult = await signIn("google-firebase", {
+              email: nativeResult.email,
+              name: nativeResult.name,
+              googleId: nativeResult.userId,
+              avatar: nativeResult.picture || null,
+              redirect: false,
+            });
+            if (signInResult?.error) {
+              setErrorMessage(signInResult.error);
+            } else {
+              router.push(callbackUrl);
+              router.refresh();
+            }
+            return;
           }
+          // If native login returns null, the Social Login plugin may not be enabled
+          // Do NOT fall back to Firebase popup in native apps - it will open external browser
+          setErrorMessage("Google Sign-In is not available. Please use email/password to sign in, or try again later.");
+          return;
+        } catch (nativeError) {
+          console.error("Native Google sign-in error:", nativeError);
+          // Show a user-friendly error instead of falling back to web popup
+          setErrorMessage("Google Sign-In failed. Please use email/password to sign in.");
           return;
         }
-        // If native login returns null but we're in native app, 
-        // the plugin might not be configured - fall through to web method
       }
       
-      // Web browser fallback - use Firebase popup
+      // Web browser only - use Firebase popup (safe in browsers, not in native webviews)
       const result = await signInWithPopup(auth, googleProvider);
       const user = result.user;
       const signInResult = await signIn("google-firebase", {

@@ -97,28 +97,38 @@ export default function RegisterPage() {
     try {
       // Check if we're in a Median.co native app - use native SDK
       if (isNativeApp) {
-        const nativeResult = await nativeGoogleSignIn();
-        if (nativeResult) {
-          // Use the native result to sign in with NextAuth
-          const signInResult = await signIn("google-firebase", {
-            email: nativeResult.email,
-            name: nativeResult.name,
-            googleId: nativeResult.userId,
-            avatar: nativeResult.picture || null,
-            redirect: false,
-          });
-          if (signInResult?.error) {
-            setErrorMessage(signInResult.error);
-          } else {
-            router.push("/auth/onboarding");
-            router.refresh();
+        try {
+          const nativeResult = await nativeGoogleSignIn();
+          if (nativeResult) {
+            // Use the native result to sign in with NextAuth
+            const signInResult = await signIn("google-firebase", {
+              email: nativeResult.email,
+              name: nativeResult.name,
+              googleId: nativeResult.userId,
+              avatar: nativeResult.picture || null,
+              redirect: false,
+            });
+            if (signInResult?.error) {
+              setErrorMessage(signInResult.error);
+            } else {
+              router.push("/auth/onboarding");
+              router.refresh();
+            }
+            return;
           }
+          // If native login returns null, the Social Login plugin may not be enabled
+          // Do NOT fall back to Firebase popup in native apps - it will open external browser
+          setErrorMessage("Google Sign-Up is not available. Please use email/password to create your account.");
+          return;
+        } catch (nativeError) {
+          console.error("Native Google sign-in error:", nativeError);
+          // Show a user-friendly error instead of falling back to web popup
+          setErrorMessage("Google Sign-Up failed. Please use email/password to create your account.");
           return;
         }
-        // If native login returns null, fall through to web method
       }
       
-      // Web browser fallback - use Firebase popup
+      // Web browser only - use Firebase popup (safe in browsers, not in native webviews)
       const result = await signInWithPopup(auth, googleProvider);
       const user = result.user;
       const signInResult = await signIn("google-firebase", {
