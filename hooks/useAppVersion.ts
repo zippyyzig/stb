@@ -1,118 +1,108 @@
 "use client";
 
-import { useEffect, useCallback, useState } from "react";
+import { useEffect, useCallback, useState, useRef } from "react";
+
+const STORAGE_KEY = "stb_app_version";
+const CHECK_INTERVAL = 10 * 60 * 1000; // 10 minutes
 
 /**
  * Hook to detect when a new version of the app is available.
- * This is especially important for mobile app wrappers that aggressively cache content.
- * 
- * How it works:
- * 1. On mount, it checks for a version meta tag in the document head
- * 2. Periodically (every 5 minutes) checks if the server has a newer version
- * 3. When the app comes back from background, it also checks
- * 4. If a new version is detected, returns updateAvailable: true
+ * Uses localStorage to persist the last known version and compare with current.
  */
 export function useAppVersion() {
-  const [currentVersion, setCurrentVersion] = useState<string | null>(null);
-  const [serverVersion, setServerVersion] = useState<string | null>(null);
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
+  const hasChecked = useRef(false);
 
-  // Get current version from meta tag
-  useEffect(() => {
-    if (typeof document !== "undefined") {
-      const meta = document.querySelector('meta[name="app-version"]');
-      if (meta) {
-        const version = meta.getAttribute("content");
-        setCurrentVersion(version);
-      }
-    }
+  // Get the current version from the page's meta tag
+  const getCurrentVersion = useCallback((): string | null => {
+    if (typeof document === "undefined") return null;
+    const meta = document.querySelector('meta[name="app-version"]');
+    return meta?.getAttribute("content") || null;
   }, []);
 
-  // Check for updates
-  const checkForUpdate = useCallback(async () => {
-    if (isChecking) return;
+  // Check if there's a new version available
+  const checkForUpdate = useCallback(() => {
+    if (typeof window === "undefined" || hasChecked.current) return;
+    
+    const currentVersion = getCurrentVersion();
+    if (!currentVersion) return;
+    
+    const storedVersion = localStorage.getItem(STORAGE_KEY);
+    
+    // If no stored version, this is first visit - store current and don't show banner
+    if (!storedVersion) {
+      localStorage.setItem(STORAGE_KEY, currentVersion);
+      hasChecked.current = true;
+      return;
+    }
+    
+    // Compare versions - if different, show update banner
+    if (storedVersion !== currentVersion) {
+      setUpdateAvailable(true);
+    }
+    
+    hasChecked.current = true;
+  }, [getCurrentVersion]);
+
+  // Refresh and update stored version
+  const refresh = useCallback(() => {
+    if (typeof window === "undefined") return;
     
     setIsChecking(true);
-    try {
-      // Fetch the homepage with cache-busting to get the latest version
-      const response = await fetch("/?_check=version", {
-        method: "HEAD",
-        headers: {
-          "Cache-Control": "no-cache",
-          "Pragma": "no-cache",
-        },
+    
+    const currentVersion = getCurrentVersion();
+    if (currentVersion) {
+      // Update stored version to current before reloading
+      localStorage.setItem(STORAGE_KEY, currentVersion);
+    }
+    
+    // Clear service worker caches
+    if ("caches" in window) {
+      caches.keys().then((names) => {
+        Promise.all(names.map((name) => caches.delete(name)));
       });
-      
-      const newVersion = response.headers.get("X-App-Version");
-      
-      if (newVersion) {
-        setServerVersion(newVersion);
-        
-        if (currentVersion && newVersion !== currentVersion) {
-          setUpdateAvailable(true);
-        }
-      }
-    } catch (error) {
-      console.error("Failed to check for updates:", error);
-    } finally {
-      setIsChecking(false);
     }
-  }, [currentVersion, isChecking]);
+    
+    // Clear the update available state
+    setUpdateAvailable(false);
+    
+    // Force hard reload
+    window.location.href = window.location.href.split("?")[0] + "?_refresh=" + Date.now();
+  }, [getCurrentVersion]);
 
-  // Force refresh the page
-  const refresh = useCallback(() => {
-    if (typeof window !== "undefined") {
-      // Clear any cached data
-      if ("caches" in window) {
-        caches.keys().then((names) => {
-          names.forEach((name) => {
-            caches.delete(name);
-          });
-        });
-      }
-      
-      // Force reload without cache
-      window.location.reload();
+  // Dismiss the update banner without refreshing (stores current version)
+  const dismissUpdate = useCallback(() => {
+    const currentVersion = getCurrentVersion();
+    if (currentVersion) {
+      localStorage.setItem(STORAGE_KEY, currentVersion);
     }
-  }, []);
+    setUpdateAvailable(false);
+  }, [getCurrentVersion]);
 
-  // Set up periodic checks and visibility change listener
+  // Initial check on mount
   useEffect(() => {
-    // Check on mount
-    const initialCheck = setTimeout(checkForUpdate, 5000);
-    
-    // Check periodically (every 5 minutes)
-    const interval = setInterval(checkForUpdate, 5 * 60 * 1000);
-    
-    // Check when app resumes from background
-    const handleAppResumed = () => {
+    // Delay check to ensure page is fully loaded
+    const timer = setTimeout(checkForUpdate, 2000);
+    return () => clearTimeout(timer);
+  }, [checkForUpdate]);
+
+  // Periodic check for updates
+  useEffect(() => {
+    const interval = setInterval(() => {
+      hasChecked.current = false;
       checkForUpdate();
-    };
+    }, CHECK_INTERVAL);
     
-    // Check when coming back online
-    const handleOnline = () => {
-      checkForUpdate();
-    };
-    
-    window.addEventListener("app-resumed", handleAppResumed);
-    window.addEventListener("online", handleOnline);
-    
-    return () => {
-      clearTimeout(initialCheck);
-      clearInterval(interval);
-      window.removeEventListener("app-resumed", handleAppResumed);
-      window.removeEventListener("online", handleOnline);
-    };
+    return () => clearInterval(interval);
   }, [checkForUpdate]);
 
   return {
-    currentVersion,
-    serverVersion,
     updateAvailable,
     isChecking,
-    checkForUpdate,
     refresh,
+    dismissUpdate,
+    checkForUpdate,
   };
 }
 

@@ -35,35 +35,35 @@ export function PushNotificationBanner() {
   }
 
   const handleEnable = async () => {
-    console.log("[v0] PushNotificationBanner: handleEnable clicked");
     setRequesting(true);
     setStatus("idle");
     setErrorMessage(null);
     
     try {
-      console.log("[v0] Requesting permission...");
       const granted = await requestPermission();
-      console.log("[v0] Permission result:", granted);
       
       if (granted) {
-        console.log("[v0] Registering device...");
-        const token = await registerDevice();
-        console.log("[v0] Device token:", token);
-        
+        // Try to register device
+        await registerDevice();
         setStatus("success");
         
-        // Recheck status after a moment
+        // Recheck status after a moment to confirm
         setTimeout(() => {
           recheckStatus();
-        }, 1500);
+        }, 2000);
       } else {
+        // Permission was not granted - could be denied or the subscription failed
         setStatus("error");
-        setErrorMessage("Permission not granted. Please enable notifications in your device settings.");
+        setErrorMessage(
+          "Could not enable notifications. Please check that notifications are enabled in your device settings, then try again."
+        );
       }
     } catch (error) {
-      console.error("[v0] Error enabling push notifications:", error);
+      console.error("Error enabling push notifications:", error);
       setStatus("error");
-      setErrorMessage(error instanceof Error ? error.message : "Failed to enable notifications");
+      setErrorMessage(
+        "Something went wrong. Please make sure notifications are enabled in your device settings."
+      );
     } finally {
       setRequesting(false);
     }

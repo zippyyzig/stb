@@ -123,8 +123,6 @@ export async function registerForPushNotifications(): Promise<string | null> {
 
 // Request push notification permission for Median app
 export async function requestNotificationPermission(): Promise<boolean> {
-  console.log("[v0] requestNotificationPermission called, isMedianApp:", isMedianApp());
-  
   if (!isMedianApp()) {
     // For web, use standard Notification API
     if (typeof Notification !== "undefined") {
@@ -137,68 +135,99 @@ export async function requestNotificationPermission(): Promise<boolean> {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const median = (window as any).median;
-    console.log("[v0] Median object:", !!median);
-    console.log("[v0] OneSignal available:", !!median?.onesignal);
     
-    // Method 1: Use onesignal.optIn() - this is the correct method for Median v6+
-    if (median?.onesignal?.optIn) {
-      console.log("[v0] Using onesignal.optIn()");
+    if (!median?.onesignal) {
+      console.warn("OneSignal not available in Median app");
+      return false;
+    }
+    
+    // For Median.co apps, we need to:
+    // 1. First check if already subscribed
+    // 2. If not, trigger the native permission prompt + subscription
+    
+    // Check current subscription status first
+    const alreadySubscribed = await checkOneSignalSubscription();
+    if (alreadySubscribed) {
+      return true;
+    }
+    
+    // Method 1: Use onesignal.optIn() - this opts the user into push notifications
+    // This is the primary method for Median apps
+    if (median.onesignal.optIn) {
       return new Promise((resolve) => {
+        let resolved = false;
+        
         median.onesignal.optIn({
-          callback: (result: { success?: boolean; subscribed?: boolean }) => {
-            console.log("[v0] optIn callback result:", result);
+          callback: (result: { success?: boolean; subscribed?: boolean; error?: string }) => {
+            if (resolved) return;
+            resolved = true;
+            
+            if (result?.error) {
+              console.error("OneSignal optIn error:", result.error);
+              resolve(false);
+              return;
+            }
+            
             resolve(result?.success === true || result?.subscribed === true);
           }
         });
-        // Timeout fallback - assume success if no callback within 10s
-        setTimeout(() => {
-          console.log("[v0] optIn timeout - checking subscription status");
-          checkOneSignalSubscription().then(resolve);
-        }, 10000);
+        
+        // Timeout fallback
+        setTimeout(async () => {
+          if (resolved) return;
+          resolved = true;
+          // Check if subscription was successful
+          const isSubscribed = await checkOneSignalSubscription();
+          resolve(isSubscribed);
+        }, 8000);
       });
     }
     
-    // Method 2: Use promptForPushNotificationsWithUserResponse (iOS style)
-    if (median?.onesignal?.promptForPushNotificationsWithUserResponse) {
-      console.log("[v0] Using promptForPushNotificationsWithUserResponse");
+    // Method 2: Use register which should trigger permission + subscription
+    if (median.onesignal.register) {
+      return new Promise((resolve) => {
+        let resolved = false;
+        
+        median.onesignal.register({
+          callback: (result: { oneSignalUserId?: string; error?: string }) => {
+            if (resolved) return;
+            resolved = true;
+            
+            if (result?.error) {
+              console.error("OneSignal register error:", result.error);
+              resolve(false);
+              return;
+            }
+            
+            resolve(!!result?.oneSignalUserId);
+          }
+        });
+        
+        setTimeout(async () => {
+          if (resolved) return;
+          resolved = true;
+          const isSubscribed = await checkOneSignalSubscription();
+          resolve(isSubscribed);
+        }, 8000);
+      });
+    }
+    
+    // Method 3: iOS specific - prompt for permission
+    if (median.onesignal.promptForPushNotificationsWithUserResponse) {
       return new Promise((resolve) => {
         median.onesignal.promptForPushNotificationsWithUserResponse({
           callback: (accepted: boolean) => {
-            console.log("[v0] promptForPush callback:", accepted);
             resolve(accepted);
           }
         });
-        setTimeout(() => resolve(false), 10000);
+        setTimeout(() => resolve(false), 8000);
       });
     }
     
-    // Method 3: Use onesignal.requestPermission
-    if (median?.onesignal?.requestPermission) {
-      console.log("[v0] Using onesignal.requestPermission");
-      return new Promise((resolve) => {
-        median.onesignal.requestPermission({
-          callback: (result: { status?: string; granted?: boolean }) => {
-            console.log("[v0] requestPermission callback:", result);
-            resolve(result?.granted === true || result?.status === "granted");
-          }
-        });
-        setTimeout(() => resolve(false), 10000);
-      });
-    }
-    
-    // Method 4: Legacy promptPermission
-    if (median?.onesignal?.promptPermission) {
-      console.log("[v0] Using legacy promptPermission");
-      await median.onesignal.promptPermission();
-      // Check subscription status after prompt
-      const isSubscribed = await checkOneSignalSubscription();
-      return isSubscribed;
-    }
-    
-    console.warn("[v0] No OneSignal permission method available");
+    console.warn("No suitable OneSignal method found");
     return false;
   } catch (error) {
-    console.error("[v0] Failed to request notification permission:", error);
+    console.error("Failed to request notification permission:", error);
   }
   return false;
 }
@@ -211,16 +240,54 @@ export async function checkOneSignalSubscription(): Promise<boolean> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const median = (window as any).median;
     
-    // Method 1: getPermissionStatus
-    if (median?.onesignal?.getPermissionStatus) {
+    if (!median?.onesignal) return false;
+    
+    // Method 1: Use onesignal.info() - most reliable
+    if (median.onesignal.info) {
       return new Promise((resolve) => {
+        let resolved = false;
+        
+        median.onesignal.info({
+          callback: (info: { 
+            subscribed?: boolean; 
+            oneSignalUserId?: string;
+            hasPermission?: boolean;
+            pushToken?: string;
+          }) => {
+            if (resolved) return;
+            resolved = true;
+            
+            // User is subscribed if they have a userId or are marked as subscribed
+            const isSubscribed = info?.subscribed === true || 
+                                 !!info?.oneSignalUserId || 
+                                 !!info?.pushToken;
+            resolve(isSubscribed);
+          }
+        });
+        
+        setTimeout(() => {
+          if (!resolved) {
+            resolved = true;
+            resolve(false);
+          }
+        }, 3000);
+      });
+    }
+    
+    // Method 2: getPermissionStatus
+    if (median.onesignal.getPermissionStatus) {
+      return new Promise((resolve) => {
+        let resolved = false;
+        
         median.onesignal.getPermissionStatus({
           callback: (status: { status?: string; subscribed?: boolean; granted?: boolean } | string | boolean) => {
-            console.log("[v0] getPermissionStatus result:", status);
+            if (resolved) return;
+            resolved = true;
+            
             if (typeof status === "boolean") {
               resolve(status);
             } else if (typeof status === "string") {
-              resolve(status === "granted" || status === "authorized");
+              resolve(status === "granted" || status === "authorized" || status === "subscribed");
             } else if (typeof status === "object") {
               resolve(status?.subscribed === true || status?.granted === true || status?.status === "granted");
             } else {
@@ -228,24 +295,17 @@ export async function checkOneSignalSubscription(): Promise<boolean> {
             }
           }
         });
-        setTimeout(() => resolve(false), 3000);
-      });
-    }
-    
-    // Method 2: Use info to check subscription
-    if (median?.onesignal?.info) {
-      return new Promise((resolve) => {
-        median.onesignal.info({
-          callback: (info: { subscribed?: boolean; oneSignalUserId?: string }) => {
-            console.log("[v0] OneSignal info:", info);
-            resolve(info?.subscribed === true || !!info?.oneSignalUserId);
+        
+        setTimeout(() => {
+          if (!resolved) {
+            resolved = true;
+            resolve(false);
           }
-        });
-        setTimeout(() => resolve(false), 3000);
+        }, 3000);
       });
     }
   } catch (error) {
-    console.error("[v0] Failed to check OneSignal subscription:", error);
+    console.error("Failed to check OneSignal subscription:", error);
   }
   return false;
 }

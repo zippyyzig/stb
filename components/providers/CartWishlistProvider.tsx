@@ -88,6 +88,8 @@ const fetcher = async (url: string) => {
       "Cache-Control": "no-cache, no-store, must-revalidate",
       "Pragma": "no-cache",
     },
+    // Disable browser cache completely
+    cache: "no-store",
   });
   if (!response.ok) {
     throw new Error("Network response was not ok");
@@ -100,7 +102,7 @@ export function CartWishlistProvider({ children }: { children: ReactNode }) {
   const isAuthenticated = status === "authenticated";
   const [isCartMutating, setIsCartMutating] = useState(false);
 
-  // Cart SWR with better config for mobile
+  // Cart SWR with better config for mobile - using key that changes to force refetch
   const {
     data: cartData,
     mutate: mutateCart,
@@ -112,11 +114,14 @@ export function CartWishlistProvider({ children }: { children: ReactNode }) {
       revalidateOnFocus: true,
       revalidateOnReconnect: true,
       revalidateOnMount: true,
-      dedupingInterval: 1000,
-      focusThrottleInterval: 3000,
+      dedupingInterval: 500,
+      focusThrottleInterval: 2000,
       errorRetryCount: 3,
-      // Don't use stale data - always fetch fresh
       revalidateIfStale: true,
+      // Keep previous data while fetching new data
+      keepPreviousData: true,
+      // Refresh in background every 30 seconds
+      refreshInterval: 30000,
     }
   );
 
@@ -132,10 +137,12 @@ export function CartWishlistProvider({ children }: { children: ReactNode }) {
       revalidateOnFocus: true,
       revalidateOnReconnect: true,
       revalidateOnMount: true,
-      dedupingInterval: 1000,
-      focusThrottleInterval: 3000,
+      dedupingInterval: 500,
+      focusThrottleInterval: 2000,
       errorRetryCount: 3,
       revalidateIfStale: true,
+      keepPreviousData: true,
+      refreshInterval: 30000,
     }
   );
 
