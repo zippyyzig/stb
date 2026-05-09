@@ -25,6 +25,8 @@ const nextConfig: NextConfig = {
   },
   // Headers for cache control - especially important for mobile app wrappers
   async headers() {
+    const appVersion = process.env.VERCEL_GIT_COMMIT_SHA || Date.now().toString();
+    
     return [
       {
         // API routes should never be cached
@@ -42,15 +44,23 @@ const nextConfig: NextConfig = {
             key: "Expires",
             value: "0",
           },
+          {
+            key: "X-App-Version",
+            value: appVersion,
+          },
         ],
       },
       {
-        // Add cache versioning for static assets
-        source: "/:path*",
+        // HTML pages should revalidate frequently for mobile apps
+        source: "/((?!_next|api).*)",
         headers: [
           {
             key: "X-App-Version",
-            value: process.env.VERCEL_GIT_COMMIT_SHA || Date.now().toString(),
+            value: appVersion,
+          },
+          {
+            key: "Cache-Control",
+            value: "no-cache, must-revalidate",
           },
         ],
       },
