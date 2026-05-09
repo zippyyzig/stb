@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
 import Order from "@/models/Order";
+import { logAdminAction } from "@/lib/activity-logger";
 
 // GET all orders (admin)
 export async function GET(request: NextRequest) {
@@ -179,6 +180,18 @@ export async function POST(request: NextRequest) {
     const result = await Order.updateMany(
       { _id: { $in: orderIds } },
       { $set: { ...updateData, updatedAt: new Date() } }
+    );
+
+    // Log activity
+    await logAdminAction(
+      session.user.id,
+      session.user.name || "Admin",
+      session.user.role as "admin" | "super_admin",
+      "other",
+      `Bulk ${action} on ${result.modifiedCount} orders`,
+      "order",
+      undefined,
+      { action, orderCount: result.modifiedCount, data }
     );
 
     return NextResponse.json({

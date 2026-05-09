@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
 import Category from "@/models/Category";
 import Product from "@/models/Product";
+import { logAdminAction } from "@/lib/activity-logger";
 
 // GET all categories (admin)
 export async function GET(request: NextRequest) {
@@ -104,6 +105,18 @@ export async function POST(request: NextRequest) {
       slug,
       parent: data.parent || null,
     });
+
+    // Log activity
+    await logAdminAction(
+      session.user.id,
+      session.user.name || "Admin",
+      session.user.role as "admin" | "super_admin",
+      "category_created",
+      `Created category: ${data.name}`,
+      "category",
+      category._id.toString(),
+      { categoryName: data.name, slug }
+    );
 
     return NextResponse.json(
       { message: "Category created successfully", category },

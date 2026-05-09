@@ -11,6 +11,7 @@ import { sendEmail } from "@/lib/email";
 import { orderStatusUpdateTemplate, refundProcessedTemplate, shippingNotificationTemplate, deliveryConfirmationTemplate } from "@/lib/email-templates";
 import { validateObjectId, sanitizeString } from "@/lib/validation";
 import { sendOrderStatusNotification } from "@/lib/push-notifications";
+import { logAdminAction } from "@/lib/activity-logger";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -291,6 +292,18 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         });
       }
     }
+
+    // Log activity
+    await logAdminAction(
+      session.user.id,
+      session.user.name || "Admin",
+      session.user.role as "admin" | "super_admin",
+      "other",
+      `Updated order: ${order.orderNumber}${data.status ? ` - Status: ${data.status}` : ""}`,
+      "order",
+      id,
+      { orderNumber: order.orderNumber, previousStatus, newStatus: data.status, data }
+    );
 
     return NextResponse.json({
       message: "Order updated successfully",
