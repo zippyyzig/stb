@@ -42,14 +42,17 @@ export default function ProductCard({ product }: ProductCardProps) {
   const [hovered, setHovered] = useState(false);
 
   const isB2B = session?.user?.isGstVerified === true;
-  const displayPrice = isB2B ? (product.priceB2B ?? 0) : (product.priceB2C ?? 0);
-  const mrp = product.mrp ?? 0;
+  // Ensure we have valid numbers - sometimes data comes as strings from DB
+  const priceB2C = Number(product.priceB2C) || 0;
+  const priceB2B = Number(product.priceB2B) || 0;
+  const displayPrice = isB2B ? priceB2B : priceB2C;
+  const mrp = Number(product.mrp) || 0;
   const isWishlisted = isInWishlist(product._id);
   const discount =
     mrp > displayPrice
       ? Math.round(((mrp - displayPrice) / mrp) * 100)
       : 0;
-  const inStock = (product.stock ?? 0) > 0;
+  const inStock = (Number(product.stock) || 0) > 0;
   const rating = product.rating || 0;
   const savings = mrp > displayPrice ? mrp - displayPrice : 0;
 

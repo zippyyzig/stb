@@ -58,8 +58,11 @@ function SectionProductCard({ product }: { product: Product }) {
   const [hovered, setHovered] = useState(false);
 
   const isB2B = session?.user?.isGstVerified === true;
-  const price = isB2B ? (product.priceB2B ?? 0) : (product.priceB2C ?? 0);
-  const mrp = product.mrp ?? 0;
+  // Ensure we have valid numbers - sometimes data comes as strings from DB
+  const priceB2C = Number(product.priceB2C) || 0;
+  const priceB2B = Number(product.priceB2B) || 0;
+  const price = isB2B ? priceB2B : priceB2C;
+  const mrp = Number(product.mrp) || 0;
   const discount = mrp > price ? Math.round(((mrp - price) / mrp) * 100) : 0;
   const savings = mrp > price ? mrp - price : 0;
   const wishlisted = isInWishlist(product.id);

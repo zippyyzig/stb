@@ -268,12 +268,13 @@ export async function PUT(request: NextRequest) {
     }
 
     if (quantity <= 0) {
-      // Remove item from cart
-      cart.items = cart.items.filter(
-        (item: { product: { toString: () => string } }) => item.product.toString() !== productId
+      // Remove item from cart using atomic $pull
+      await Cart.findOneAndUpdate(
+        { user: session.user.id },
+        { $pull: { items: { product: productId } } }
       );
     } else {
-      // Update quantity
+      // Update quantity - check stock first
       const product = await Product.findById(productId);
       if (!product || product.stock < quantity) {
         return withNoCacheHeaders(
@@ -284,18 +285,15 @@ export async function PUT(request: NextRequest) {
         );
       }
 
-      const item = cart.items.find(
-        (item: { product: { toString: () => string } }) => item.product.toString() === productId
+      // Use atomic update with $set on specific array element
+      await Cart.findOneAndUpdate(
+        { user: session.user.id, "items.product": productId },
+        { $set: { "items.$.quantity": quantity } }
       );
-      if (item) {
-        item.quantity = quantity;
-      }
     }
 
-    await cart.save();
-
     return withNoCacheHeaders(
-      NextResponse.json({ message: "Cart updated", cart })
+      NextResponse.json({ message: "Cart updated" })
     );
   } catch (error) {
     console.error("Error updating cart:", error);
@@ -334,20 +332,20 @@ export async function DELETE(request: NextRequest) {
 
     await dbConnect();
 
-    const cart = await Cart.findOne({ user: session.user.id });
-
-    if (!cart) {
-      return withNoCacheHeaders(
-        NextResponse.json({ error: "Cart not found" }, { status: 404 })
-      );
-    }
-
     if (productId) {
-      // Remove specific item
-      cart.items = cart.items.filter(
-        (item: { product: { toString: () => string } }) => item.product.toString() !== productId
+      // Remove specific item using atomic $pull operation to avoid version conflicts
+      const result = await Cart.findOneAndUpdate(
+        { user: session.user.id },
+        { $pull: { items: { product: productId } } },
+        { new: true }
       );
-      await cart.save();
+
+      if (!result) {
+        return withNoCacheHeaders(
+          NextResponse.json({ error: "Cart not found" }, { status: 404 })
+        );
+      }
+
       return withNoCacheHeaders(
         NextResponse.json({ message: "Item removed from cart" })
       );
