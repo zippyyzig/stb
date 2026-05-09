@@ -74,11 +74,16 @@ function LoginForm() {
       // Check if we're in a Median.co native app - use native SDK
       if (isNativeApp) {
         try {
-          console.log("[v0] Starting native Google Sign-In...");
+          console.log("[Median] Starting native Google Sign-In from login page...");
           const nativeResult = await nativeGoogleSignIn();
           
           if (nativeResult) {
-            console.log("[v0] Native result received, signing in with NextAuth...");
+            console.log("[Median] Native result received:", { 
+              email: nativeResult.email, 
+              name: nativeResult.name,
+              hasUserId: !!nativeResult.userId 
+            });
+            
             // Use the native result to sign in with NextAuth
             const signInResult = await signIn("google-firebase", {
               email: nativeResult.email,
@@ -89,10 +94,10 @@ function LoginForm() {
             });
             
             if (signInResult?.error) {
-              console.error("[v0] NextAuth sign-in error:", signInResult.error);
+              console.error("[Median] NextAuth sign-in error:", signInResult.error);
               setErrorMessage(signInResult.error);
             } else {
-              console.log("[v0] Sign-in successful, redirecting...");
+              console.log("[Median] Sign-in successful, redirecting to:", callbackUrl);
               router.push(callbackUrl);
               router.refresh();
             }
@@ -100,15 +105,19 @@ function LoginForm() {
           }
           
           // If native login returns null, the Social Login plugin may not be enabled
-          // Do NOT fall back to Firebase popup in native apps - it will open external browser
-          console.warn("[v0] Native Google Sign-In returned null - plugin may not be configured");
-          setErrorMessage("Google Sign-In is not available. Please use email/password to sign in, or try again later.");
+          console.warn("[Median] Native Google Sign-In returned null - plugin not configured");
+          setErrorMessage("Google Sign-In is not available in the app. Please use email/password, or try the website.");
           return;
         } catch (nativeError) {
-          console.error("[v0] Native Google sign-in error:", nativeError);
+          console.error("[Median] Native Google sign-in error:", nativeError);
           // Show the actual error message from native SDK
           const errorMsg = nativeError instanceof Error ? nativeError.message : "Google Sign-In failed";
-          setErrorMessage(errorMsg);
+          // Don't show "cancelled" as an error - user intentionally cancelled
+          if (errorMsg.toLowerCase().includes("cancel")) {
+            setErrorMessage("");
+          } else {
+            setErrorMessage(errorMsg);
+          }
           return;
         }
       }

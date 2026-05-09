@@ -529,10 +529,9 @@ const GOOGLE_WEB_CLIENT_ID =
  * On Android, Median requires the Web Client ID to be passed so it can
  * exchange the auth code for an ID token server-side.
  *
- * @param callbackUrl - Optional server-side redirect URL for token exchange
  * @returns Promise with user data or null if not in native app
  */
-export function nativeGoogleSignIn(callbackUrl?: string): Promise<GoogleLoginResult | null> {
+export function nativeGoogleSignIn(): Promise<GoogleLoginResult | null> {
   return new Promise((resolve, reject) => {
     if (!isMedianApp()) {
       // Not in native app — caller should fall back to Firebase web popup
@@ -544,13 +543,14 @@ export function nativeGoogleSignIn(callbackUrl?: string): Promise<GoogleLoginRes
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const median = (window as any).median;
       
+      // Check for socialLogin plugin availability
       if (!median?.socialLogin?.google?.login) {
-        console.warn("Median Social Login plugin not available");
+        console.warn("[Median] Social Login plugin not available - check Median.co dashboard");
         resolve(null);
         return;
       }
 
-      // Timeout for the callback (30 seconds)
+      // Timeout for the callback (45 seconds to allow for user interaction)
       let timeoutId: ReturnType<typeof setTimeout> | null = null;
       let resolved = false;
 
@@ -559,48 +559,64 @@ export function nativeGoogleSignIn(callbackUrl?: string): Promise<GoogleLoginRes
           clearTimeout(timeoutId);
           timeoutId = null;
         }
+        // Clean up the global callback
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        delete (window as any).googleLoginCallback;
+        delete (window as any).median_google_callback;
       };
 
-      // Set up the callback that Median will invoke with the sign-in result
+      // Set up the callback function BEFORE calling login
+      // Median.co invokes this function by name after authentication completes
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (window as any).googleLoginCallback = (result: any) => {
+      (window as any).median_google_callback = (result: any) => {
         if (resolved) return;
         resolved = true;
         cleanup();
         
-        console.log("[v0] Native Google Sign-In result:", JSON.stringify(result, null, 2));
+        console.log("[Median] Google Sign-In callback received:", JSON.stringify(result, null, 2));
+        
+        // Check for cancellation
+        if (result?.error === "canceled" || result?.cancelled || result?.canceled) {
+          reject(new Error("Sign-in was cancelled"));
+          return;
+        }
         
         // Check for error in result
-        if (result && "error" in result) {
-          const errorMsg = result.message || result.error || "Google Sign-In failed";
-          console.error("[v0] Native Google Sign-In error:", errorMsg);
+        if (result && ("error" in result || result?.status === "error")) {
+          const errorMsg = result.message || result.errorMessage || result.error || "Google Sign-In failed";
+          console.error("[Median] Google Sign-In error:", errorMsg);
           reject(new Error(errorMsg));
           return;
         }
         
-        // Check if we got valid user data - Median may return different field names
-        // Handle both possible field naming conventions
+        // Parse user data - Median SDK may return different field naming conventions
+        // Common field names from Google Sign-In via Median
         const userData: GoogleLoginResult = {
-          idToken: result.idToken || result.id_token || "",
+          idToken: result.idToken || result.id_token || result.token || "",
           accessToken: result.accessToken || result.access_token || "",
-          email: result.email || "",
-          name: result.name || result.displayName || result.givenName || "",
-          givenName: result.givenName || result.given_name,
-          familyName: result.familyName || result.family_name,
-          picture: result.picture || result.photoUrl || result.photo_url || result.imageUrl,
-          userId: result.userId || result.user_id || result.id || result.sub || "",
+          email: result.email || result.userEmail || "",
+          name: result.name || result.displayName || result.userName || 
+                (result.givenName ? `${result.givenName} ${result.familyName || ""}`.trim() : ""),
+          givenName: result.givenName || result.given_name || result.firstName,
+          familyName: result.familyName || result.family_name || result.lastName,
+          picture: result.picture || result.photoUrl || result.photo_url || 
+                   result.imageUrl || result.avatar || result.profilePicture,
+          userId: result.userId || result.user_id || result.id || result.sub || 
+                  result.googleId || result.uid || "",
         };
         
         // Validate essential fields
-        if (!userData.email || !userData.userId) {
-          console.error("[v0] Native Google Sign-In missing essential data:", userData);
-          reject(new Error("Google Sign-In returned incomplete data. Please try again."));
+        if (!userData.email) {
+          console.error("[Median] Google Sign-In missing email:", userData);
+          reject(new Error("Google Sign-In did not return an email address. Please try again."));
           return;
         }
         
-        console.log("[v0] Native Google Sign-In success:", { email: userData.email, name: userData.name });
+        // If no userId, use email as fallback identifier
+        if (!userData.userId) {
+          userData.userId = userData.email;
+        }
+        
+        console.log("[Median] Google Sign-In success:", { email: userData.email, name: userData.name });
         resolve(userData);
       };
 
@@ -609,27 +625,22 @@ export function nativeGoogleSignIn(callbackUrl?: string): Promise<GoogleLoginRes
         if (resolved) return;
         resolved = true;
         cleanup();
-        console.error("[v0] Native Google Sign-In timeout");
+        console.error("[Median] Google Sign-In timeout after 45s");
         reject(new Error("Google Sign-In timed out. Please try again."));
-      }, 30000);
+      }, 45000);
 
-      console.log("[v0] Initiating native Google Sign-In with clientId:", GOOGLE_WEB_CLIENT_ID);
+      console.log("[Median] Initiating Google Sign-In with Web Client ID:", GOOGLE_WEB_CLIENT_ID);
       
-      if (callbackUrl) {
-        // Server-side redirect mode — Median posts token to your server
-        median.socialLogin.google.login({
-          clientId: GOOGLE_WEB_CLIENT_ID,
-          redirectUri: callbackUrl,
-        });
-      } else {
-        // JavaScript callback mode — result returned directly to the page
-        median.socialLogin.google.login({
-          clientId: GOOGLE_WEB_CLIENT_ID,
-          callback: "googleLoginCallback",
-        });
-      }
+      // Call the Median Social Login API
+      // Using JavaScript callback mode - result returned directly to the page
+      // The callback name MUST be a string that references a global function
+      median.socialLogin.google.login({
+        clientId: GOOGLE_WEB_CLIENT_ID,
+        callback: "median_google_callback",
+      });
+      
     } catch (error) {
-      console.error("[v0] Native Google Sign-In failed:", error);
+      console.error("[Median] Native Google Sign-In exception:", error);
       reject(error);
     }
   });
