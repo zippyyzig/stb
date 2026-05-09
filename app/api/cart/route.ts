@@ -59,15 +59,27 @@ export async function GET() {
         mrp: number;
         stock: number;
         brand?: string;
-      };
+      } | null;
       quantity: number;
       addedAt: Date;
     };
 
-    const items = (cart.items as unknown as PopulatedCartItem[]).map((item) => {
-      const price = isB2B ? item.product.priceB2B : item.product.priceB2C;
+    // Filter out items where product was deleted (null) and map to response format
+    const validItems = (cart.items as unknown as PopulatedCartItem[]).filter(
+      (item) => item.product !== null
+    );
+
+    // If there were invalid items, clean up the cart
+    if (validItems.length !== cart.items.length) {
+      cart.items = validItems;
+      await cart.save();
+    }
+
+    const items = validItems.map((item) => {
+      const product = item.product!; // We've filtered out nulls above
+      const price = isB2B ? product.priceB2B : product.priceB2C;
       return {
-        product: item.product,
+        product,
         quantity: item.quantity,
         price,
         total: price * item.quantity,
