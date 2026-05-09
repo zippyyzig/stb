@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
 
     const [tickets, total, statusCounts] = await Promise.all([
       Ticket.find(query)
-        .populate("customer", "name email")
+        .populate("user", "name email")
         .populate("assignedTo", "name email")
         .populate("order", "orderNumber")
         .sort({ createdAt: -1 })
@@ -86,8 +86,14 @@ export async function GET(request: NextRequest) {
       closed: statusCounts.find((s) => s._id === "closed")?.count || 0,
     };
 
+    // Map 'user' field to 'customer' for frontend compatibility
+    const ticketsWithCustomer = tickets.map((ticket) => ({
+      ...ticket,
+      customer: ticket.user, // Frontend expects 'customer' field
+    }));
+
     return NextResponse.json({
-      tickets,
+      tickets: ticketsWithCustomer,
       total,
       page,
       totalPages: Math.ceil(total / limit),

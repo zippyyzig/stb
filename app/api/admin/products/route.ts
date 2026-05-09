@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
 import Product from "@/models/Product";
+import { logAdminAction } from "@/lib/activity-logger";
 
 // GET all products (admin)
 export async function GET(request: NextRequest) {
@@ -71,6 +72,18 @@ export async function POST(request: NextRequest) {
       ...data,
       slug: finalSlug,
     });
+
+    // Log activity
+    await logAdminAction(
+      session.user.id,
+      session.user.name || "Admin",
+      session.user.role as "admin" | "super_admin",
+      "product_created",
+      `Created product: ${data.name}`,
+      "product",
+      product._id.toString(),
+      { productName: data.name, slug: finalSlug }
+    );
 
     return NextResponse.json(
       { message: "Product created successfully", product },

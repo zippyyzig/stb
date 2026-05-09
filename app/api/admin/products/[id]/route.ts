@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
 import Product from "@/models/Product";
+import { logAdminAction } from "@/lib/activity-logger";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -60,6 +61,18 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
+    // Log activity
+    await logAdminAction(
+      session.user.id,
+      session.user.name || "Admin",
+      session.user.role as "admin" | "super_admin",
+      "product_updated",
+      `Updated product: ${product.name}`,
+      "product",
+      id,
+      { productName: product.name }
+    );
+
     return NextResponse.json({
       message: "Product updated successfully",
       product,
@@ -90,6 +103,18 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     if (!product) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
+
+    // Log activity
+    await logAdminAction(
+      session.user.id,
+      session.user.name || "Admin",
+      session.user.role as "admin" | "super_admin",
+      "product_deleted",
+      `Deleted product: ${product.name}`,
+      "product",
+      id,
+      { productName: product.name }
+    );
 
     return NextResponse.json({ message: "Product deleted successfully" });
   } catch (error) {

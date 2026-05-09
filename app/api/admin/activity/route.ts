@@ -25,12 +25,13 @@ export async function GET(request: NextRequest) {
 
     const query: Record<string, unknown> = {};
 
+    // Map frontend filter names to model field names
     if (action && action !== "all") {
-      query.action = action;
+      query.activityType = action;
     }
 
     if (resource && resource !== "all") {
-      query.resource = resource;
+      query.entityType = resource;
     }
 
     if (userId && userId !== "all") {
@@ -39,7 +40,7 @@ export async function GET(request: NextRequest) {
 
     const skip = (page - 1) * limit;
 
-    const [activities, total] = await Promise.all([
+    const [rawActivities, total] = await Promise.all([
       ActivityLog.find(query)
         .populate("user", "name email role")
         .sort({ createdAt: -1 })
@@ -49,11 +50,24 @@ export async function GET(request: NextRequest) {
       ActivityLog.countDocuments(query),
     ]);
 
-    // Get unique actions and resources for filters
-    const [actions, resources] = await Promise.all([
-      ActivityLog.distinct("action"),
-      ActivityLog.distinct("resource"),
+    // Get unique activityTypes and entityTypes for filters
+    const [activityTypes, entityTypes] = await Promise.all([
+      ActivityLog.distinct("activityType"),
+      ActivityLog.distinct("entityType"),
     ]);
+
+    // Transform activities to match frontend expected format
+    const activities = rawActivities.map((activity) => ({
+      _id: activity._id,
+      user: activity.user,
+      action: activity.activityType, // Map activityType to action for frontend
+      resource: activity.entityType || "system", // Map entityType to resource for frontend
+      resourceId: activity.entityId?.toString(),
+      details: activity.description,
+      metadata: activity.metadata,
+      ipAddress: activity.ipAddress,
+      createdAt: activity.createdAt,
+    }));
 
     return NextResponse.json({
       activities,
@@ -61,8 +75,8 @@ export async function GET(request: NextRequest) {
       page,
       totalPages: Math.ceil(total / limit),
       filters: {
-        actions,
-        resources,
+        actions: activityTypes.filter(Boolean), // Filter out null/undefined
+        resources: entityTypes.filter(Boolean),
       },
     });
   } catch (error) {
