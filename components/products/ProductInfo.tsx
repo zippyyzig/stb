@@ -17,6 +17,7 @@ import {
   Loader2,
   Zap,
 } from "lucide-react";
+import { getPricingInfo, formatPrice } from "@/lib/pricing";
 
 interface ProductInfoProps {
   product: {
@@ -52,14 +53,10 @@ export default function ProductInfo({ product }: ProductInfoProps) {
   const [addingCart, setAddingCart] = useState(false);
   const [cartAdded, setCartAdded] = useState(false);
 
-  const isB2B = session?.user?.isGstVerified === true;
-  // Ensure we have valid numbers - sometimes data comes as strings from DB
-  const priceB2C = Number(product.priceB2C) || 0;
-  const priceB2B = Number(product.priceB2B) || 0;
-  const price = isB2B ? priceB2B : priceB2C;
-  const mrp = Number(product.mrp) || 0;
-  const discount = mrp > price ? Math.round(((mrp - price) / mrp) * 100) : 0;
-  const savings = mrp > price ? mrp - price : 0;
+  // Use centralized pricing logic
+  const pricing = getPricingInfo(product, session);
+  const { displayPrice: price, mrp, discount, savings, isB2B, canSeeBothPrices, priceB2B, priceB2C } = pricing;
+  
   const inStock = (Number(product.stock) || 0) > 0;
   const wishlisted = isInWishlist(product._id);
   const totalPrice = price * qty;
@@ -137,28 +134,61 @@ export default function ProductInfo({ product }: ProductInfoProps) {
 
       {/* ── Price block ─────────────────────────────────────────────── */}
       <div className="rounded-xl border border-border bg-[#FAFAFA] p-3 md:p-4">
-        <div className="flex items-end gap-2.5">
-          <span className="text-xl font-extrabold text-foreground md:text-3xl">
-            ₹{price.toLocaleString("en-IN")}
-          </span>
-          {mrp > price && (
-            <span className="pb-0.5 text-sm text-muted-foreground line-through md:text-base">
-              ₹{mrp.toLocaleString("en-IN")}
-            </span>
-          )}
-        </div>
-        <div className="mt-1 flex flex-wrap items-center gap-2">
-          {savings > 0 && (
-            <span className="text-[11px] font-semibold text-stb-success md:text-xs">
-              You save ₹{savings.toLocaleString("en-IN")} ({discount}%)
-            </span>
-          )}
-          {isB2B && (
-            <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[9px] font-semibold text-blue-700 md:text-[10px]">
-              B2B Price
-            </span>
-          )}
-        </div>
+        {/* Admin view: Show both B2B and B2C prices */}
+        {canSeeBothPrices ? (
+          <div className="space-y-2">
+            <div className="flex items-center gap-3">
+              <div className="flex items-end gap-1.5">
+                <span className="text-xs font-semibold text-blue-700">B2B:</span>
+                <span className="text-xl font-extrabold text-foreground md:text-2xl">
+                  {formatPrice(priceB2B)}
+                </span>
+              </div>
+              <div className="flex items-end gap-1.5">
+                <span className="text-xs font-semibold text-green-700">B2C:</span>
+                <span className="text-lg font-bold text-muted-foreground md:text-xl">
+                  {formatPrice(priceB2C)}
+                </span>
+              </div>
+            </div>
+            {mrp > (priceB2C ?? 0) && (
+              <span className="text-sm text-muted-foreground line-through">
+                MRP: {formatPrice(mrp)}
+              </span>
+            )}
+            <div className="flex items-center gap-2">
+              <span className="rounded-full bg-purple-50 px-2 py-0.5 text-[9px] font-semibold text-purple-700 md:text-[10px]">
+                Admin View
+              </span>
+            </div>
+          </div>
+        ) : (
+          /* Customer view */
+          <>
+            <div className="flex items-end gap-2.5">
+              <span className="text-xl font-extrabold text-foreground md:text-3xl">
+                {formatPrice(price)}
+              </span>
+              {mrp > price && (
+                <span className="pb-0.5 text-sm text-muted-foreground line-through md:text-base">
+                  {formatPrice(mrp)}
+                </span>
+              )}
+            </div>
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              {savings > 0 && (
+                <span className="text-[11px] font-semibold text-stb-success md:text-xs">
+                  You save {formatPrice(savings)} ({discount}%)
+                </span>
+              )}
+              {isB2B && (
+                <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[9px] font-semibold text-blue-700 md:text-[10px]">
+                  B2B Price
+                </span>
+              )}
+            </div>
+          </>
+        )}
         <p className="mt-1 text-[10px] text-muted-foreground md:text-[11px]">Inclusive of all taxes</p>
       </div>
 
@@ -181,7 +211,7 @@ export default function ProductInfo({ product }: ProductInfoProps) {
       </div>
       {qty > 1 && (
         <p className="text-[10px] text-muted-foreground md:text-[11px]">
-          Total: <span className="font-bold text-foreground">₹{totalPrice.toLocaleString("en-IN")}</span>
+          Total: <span className="font-bold text-foreground">{formatPrice(totalPrice)}</span>
         </p>
       )}
 

@@ -169,9 +169,12 @@ export async function POST(request: NextRequest) {
     for (const item of items) {
       const product = products.find(p => p._id.toString() === item.productId);
       if (product) {
-        // Use correct price based on user type
-        const price = isB2B ? product.priceB2B : product.priceB2C;
-        subtotal += price * item.quantity;
+        // Use correct price based on user type - ensure valid numbers
+        const priceB2C = Number(product.priceB2C) || 0;
+        const priceB2B = Number(product.priceB2B) || 0;
+        const price = isB2B ? priceB2B : priceB2C;
+        const quantity = Number(item.quantity) || 1;
+        subtotal += price * quantity;
       }
     }
 

@@ -8,7 +8,8 @@ import Link from "next/link";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { useCart } from "@/components/providers/CartWishlistProvider";
-import { Minus, Plus, Trash2, ShoppingBag, ArrowRight, Loader2, ChevronRight, ShieldCheck, Truck } from "lucide-react";
+import { Minus, Plus, Trash2, ShoppingBag, ArrowRight, Loader2, ChevronRight, ShieldCheck } from "lucide-react";
+import { formatPrice, canSeeBothPrices } from "@/lib/pricing";
 
 export default function CartPage() {
   const { data: session, status } = useSession();
@@ -17,8 +18,9 @@ export default function CartPage() {
   const [updatingItems, setUpdatingItems] = useState<Set<string>>(new Set());
 
   const items = cart?.items || [];
-  const total = cartTotal;
+  const total = cartTotal ?? 0;
   const isB2B = cart?.isB2B || false;
+  const isAdmin = canSeeBothPrices(session?.user?.role);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -115,9 +117,11 @@ export default function CartPage() {
                     {items.map((item) => {
                       if (!item.product) return null;
                       const busy = updatingItems.has(item.product._id);
-                      const itemPrice = item.price ?? 0;
-                      const itemMrp = item.product.mrp ?? 0;
-                      const itemTotal = item.total ?? 0;
+                      const itemPrice = Number(item.price) || 0;
+                      const itemMrp = Number(item.product.mrp) || 0;
+                      const itemTotal = Number(item.total) || 0;
+                      const itemPriceB2B = Number(item.product.priceB2B) || 0;
+                      const itemPriceB2C = Number(item.product.priceB2C) || 0;
                       const discount = itemMrp > itemPrice
                         ? Math.round(((itemMrp - itemPrice) / itemMrp) * 100)
                         : 0;
@@ -165,19 +169,31 @@ export default function CartPage() {
                             {/* Price + qty row — two stacked sub-rows on mobile */}
                             <div className="mt-auto flex min-w-0 flex-col gap-1.5">
                               {/* Unit price row */}
-                              <div className="flex items-baseline gap-1.5">
-                                <span className="text-sm font-extrabold text-foreground md:text-base">
-                                  ₹{itemPrice.toLocaleString("en-IN")}
-                                </span>
-                                {discount > 0 && (
-                                  <>
-                                    <span className="text-[9px] text-muted-foreground line-through md:text-[10px]">
-                                      ₹{itemMrp.toLocaleString("en-IN")}
-                                    </span>
-                                    <span className="text-[9px] font-semibold text-stb-success">{discount}% off</span>
-                                  </>
-                                )}
-                              </div>
+                              {isAdmin ? (
+                                /* Admin view: show both prices */
+                                <div className="flex flex-wrap items-baseline gap-2">
+                                  <span className="text-[9px] font-semibold text-blue-700">B2B: {formatPrice(itemPriceB2B)}</span>
+                                  <span className="text-[9px] font-semibold text-green-700">B2C: {formatPrice(itemPriceB2C)}</span>
+                                </div>
+                              ) : (
+                                /* Customer view */
+                                <div className="flex items-baseline gap-1.5">
+                                  <span className="text-sm font-extrabold text-foreground md:text-base">
+                                    {formatPrice(itemPrice)}
+                                  </span>
+                                  {discount > 0 && (
+                                    <>
+                                      <span className="text-[9px] text-muted-foreground line-through md:text-[10px]">
+                                        {formatPrice(itemMrp)}
+                                      </span>
+                                      <span className="text-[9px] font-semibold text-stb-success">{discount}% off</span>
+                                    </>
+                                  )}
+                                  {isB2B && (
+                                    <span className="text-[8px] font-semibold text-blue-700 bg-blue-50 px-1 py-0.5 rounded">B2B</span>
+                                  )}
+                                </div>
+                              )}
                               {/* Qty + line total row */}
                               <div className="flex items-center justify-between gap-2">
                                 <div className="flex items-center overflow-hidden rounded-xl border border-border">
@@ -198,7 +214,7 @@ export default function CartPage() {
                                   </button>
                                 </div>
                                 <span className="text-xs font-extrabold text-foreground md:text-sm">
-                                  ₹{itemTotal.toLocaleString("en-IN")}
+                                  {formatPrice(itemTotal)}
                                 </span>
                               </div>
                             </div>
@@ -219,7 +235,7 @@ export default function CartPage() {
                   <div className="p-4 space-y-3">
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Subtotal ({items.length} items)</span>
-                      <span className="font-semibold">₹{total.toLocaleString("en-IN")}</span>
+                      <span className="font-semibold">{formatPrice(total)}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Delivery</span>
@@ -231,7 +247,7 @@ export default function CartPage() {
                     </div>
                     <div className="border-t border-border pt-3 flex justify-between">
                       <span className="font-bold text-foreground">Total</span>
-                      <span className="text-lg font-extrabold text-primary">₹{total.toLocaleString("en-IN")}</span>
+                      <span className="text-lg font-extrabold text-primary">{formatPrice(total)}</span>
                     </div>
                     <Link
                       href="/checkout"
@@ -262,8 +278,8 @@ export default function CartPage() {
           style={{ bottom: "calc(64px + env(safe-area-inset-bottom, 0px))" }}
         >
           <div>
-            <p className="text-[10px] text-muted-foreground">{items.length} item{items.length !== 1 ? "s" : ""}</p>
-            <p className="text-base font-extrabold text-foreground">₹{total.toLocaleString("en-IN")}</p>
+            <p className="text-[10px] text-muted-foreground">{items.length} item{items.length !== 1 ? "s" : ""}{isB2B ? " (B2B)" : ""}</p>
+            <p className="text-base font-extrabold text-foreground">{formatPrice(total)}</p>
           </div>
           <Link
             href="/checkout"

@@ -242,9 +242,12 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Use correct price based on user type (B2B gets wholesale pricing)
-      const price = isB2B ? product.priceB2B : product.priceB2C;
-      const itemTotal = price * item.quantity;
+      // Use correct price based on user type (B2B gets wholesale pricing) - ensure valid numbers
+      const priceB2C = Number(product.priceB2C) || 0;
+      const priceB2B = Number(product.priceB2B) || 0;
+      const price = isB2B ? priceB2B : priceB2C;
+      const quantity = Number(item.quantity) || 1;
+      const itemTotal = price * quantity;
       subtotal += itemTotal;
 
       validatedItems.push({
@@ -252,7 +255,7 @@ export async function POST(request: NextRequest) {
         name: product.name,
         sku: product.sku,
         price: price,
-        quantity: item.quantity,
+        quantity: quantity,
         total: itemTotal,
       });
     }
