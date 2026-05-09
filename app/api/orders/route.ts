@@ -170,9 +170,12 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Use SERVER-SIDE price based on user type (B2B vs B2C)
-      const price = isB2B ? product.priceB2B : product.priceB2C;
-      const itemTotal = price * item.quantity;
+      // Use SERVER-SIDE price based on user type (B2B vs B2C) - ensure valid numbers
+      const priceB2C = Number(product.priceB2C) || 0;
+      const priceB2B = Number(product.priceB2B) || 0;
+      const price = isB2B ? priceB2B : priceB2C;
+      const quantity = Number(item.quantity) || 1;
+      const itemTotal = price * quantity;
       subtotal += itemTotal;
 
       orderItems.push({
@@ -181,7 +184,7 @@ export async function POST(request: NextRequest) {
         sku: product.sku || "N/A",
         image: product.images?.[0] || "",
         price: price,
-        quantity: item.quantity,
+        quantity: quantity,
         total: itemTotal,
       });
     }

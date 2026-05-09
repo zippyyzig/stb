@@ -157,7 +157,7 @@ export default function CheckoutPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [items, setItems] = useState<CartItem[]>([]);
-  const [total, setTotal] = useState(0);
+  const [total, setTotal] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
@@ -261,10 +261,13 @@ export default function CheckoutPage() {
       }
 
       setItems(data.items);
-      setTotal(data.total);
+      // Ensure total is a valid number, fallback to 0 if null/undefined
+      const cartTotal = Number(data.total) || 0;
+      setTotal(cartTotal);
+      setIsB2B(data.isB2B || false);
 
       // Set shipping based on total
-      if (data.total >= 5000) {
+      if (cartTotal >= 5000) {
         setShippingCost(0);
       }
     } catch (error) {
@@ -622,9 +625,10 @@ export default function CheckoutPage() {
     );
   }
 
-  // Calculate totals including tax
-  const taxAmount = taxBreakdown?.totalTax || 0;
-  const grandTotal = total + shippingCost + taxAmount;
+  // Calculate totals including tax - ensure all values are valid numbers
+  const safeTotal = total ?? 0;
+  const taxAmount = taxBreakdown?.totalTax ?? 0;
+  const grandTotal = safeTotal + shippingCost + taxAmount;
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -1000,7 +1004,7 @@ export default function CheckoutPage() {
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Subtotal</span>
                     <span className="font-medium">
-                      ₹{total.toLocaleString("en-IN")}
+                      ₹{(total ?? 0).toLocaleString("en-IN")}
                     </span>
                   </div>
                   <div className="flex justify-between">
@@ -1079,9 +1083,9 @@ export default function CheckoutPage() {
                     </div>
                   )}
 
-                  {total < 5000 && (
+                  {(total ?? 0) < 5000 && (
                     <p className="body-sm text-muted-foreground">
-                      Add ₹{(5000 - total).toLocaleString("en-IN")} more for
+                      Add ₹{(5000 - (total ?? 0)).toLocaleString("en-IN")} more for
                       free shipping
                     </p>
                   )}

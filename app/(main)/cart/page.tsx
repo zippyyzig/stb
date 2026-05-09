@@ -17,7 +17,7 @@ export default function CartPage() {
   const [updatingItems, setUpdatingItems] = useState<Set<string>>(new Set());
 
   const items = cart?.items || [];
-  const total = cartTotal;
+  const total = cartTotal ?? 0;
   const isB2B = cart?.isB2B || false;
 
   useEffect(() => {

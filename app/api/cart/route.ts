@@ -77,16 +77,26 @@ export async function GET() {
 
     const items = validItems.map((item) => {
       const product = item.product!; // We've filtered out nulls above
-      const price = isB2B ? product.priceB2B : product.priceB2C;
+      // Ensure prices are valid numbers, defaulting to 0 if null/undefined/NaN
+      const priceB2C = Number(product.priceB2C) || 0;
+      const priceB2B = Number(product.priceB2B) || 0;
+      const mrp = Number(product.mrp) || 0;
+      const price = isB2B ? priceB2B : priceB2C;
+      const quantity = Number(item.quantity) || 1;
       return {
-        product,
-        quantity: item.quantity,
+        product: {
+          ...product,
+          priceB2C,
+          priceB2B,
+          mrp,
+        },
+        quantity,
         price,
-        total: price * item.quantity,
+        total: price * quantity,
       };
     });
 
-    const total = items.reduce((sum: number, item: { total: number }) => sum + item.total, 0);
+    const total = items.reduce((sum: number, item: { total: number }) => sum + (item.total || 0), 0);
 
     return withNoCacheHeaders(
       NextResponse.json({ items, total, isB2B })
