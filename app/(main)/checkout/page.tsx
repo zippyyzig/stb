@@ -14,6 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { OfflineAlert } from "@/components/ui/offline-alert";
 import { useNetworkStatus } from "@/hooks/useNetworkStatus";
 import { isRunningInMobileApp, getMobilePlatform, vibrate } from "@/lib/mobile-utils";
+import { formatPrice, canSeeBothPrices } from "@/lib/pricing";
 import {
   ChevronRight,
   Loader2,
@@ -173,6 +174,9 @@ export default function CheckoutPage() {
   const [failedOrderId, setFailedOrderId] = useState<string | null>(null);
   const [paymentAttempts, setPaymentAttempts] = useState(0);
   const [isB2B, setIsB2B] = useState(false);
+  
+  // Check if user is admin (can see both prices)
+  const isAdmin = canSeeBothPrices(session?.user?.role);
   
   // Tax breakdown state
   const [taxBreakdown, setTaxBreakdown] = useState<TaxBreakdown | null>(null);
@@ -991,7 +995,7 @@ export default function CheckoutPage() {
                         </p>
                       </div>
                       <span className="body-sm font-medium">
-                        ₹{(item.total ?? 0).toLocaleString("en-IN")}
+                        {formatPrice(item.total ?? 0)}
                       </span>
                     </div>
                   ))}
@@ -1004,7 +1008,7 @@ export default function CheckoutPage() {
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Subtotal</span>
                     <span className="font-medium">
-                      ₹{(total ?? 0).toLocaleString("en-IN")}
+                      {formatPrice(total ?? 0)}
                     </span>
                   </div>
                   <div className="flex justify-between">
@@ -1016,12 +1020,24 @@ export default function CheckoutPage() {
                     >
                       {shippingCost === 0
                         ? "FREE"
-                        : `₹${shippingCost.toLocaleString("en-IN")}`}
+                        : formatPrice(shippingCost)}
                     </span>
                   </div>
 
+                  {/* Admin View Indicator */}
+                  {isAdmin && (
+                    <div className="rounded-lg border border-purple-200 bg-purple-50 p-2.5">
+                      <div className="flex items-center gap-2">
+                        <ShieldCheck className="h-4 w-4 text-purple-600" />
+                        <span className="text-xs font-medium text-purple-700">
+                          Admin View - Showing {isB2B ? "B2B" : "B2C"} Prices
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
                   {/* B2B Pricing Indicator */}
-                  {isB2B && (
+                  {isB2B && !isAdmin && (
                     <div className="rounded-lg border border-green-200 bg-green-50 p-2.5">
                       <div className="flex items-center gap-2">
                         <CheckCircle2 className="h-4 w-4 text-green-600" />
@@ -1085,7 +1101,7 @@ export default function CheckoutPage() {
 
                   {(total ?? 0) < 5000 && (
                     <p className="body-sm text-muted-foreground">
-                      Add ₹{(5000 - (total ?? 0)).toLocaleString("en-IN")} more for
+                      Add {formatPrice(5000 - (total ?? 0))} more for
                       free shipping
                     </p>
                   )}

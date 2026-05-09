@@ -3,12 +3,13 @@ import Image from "next/image";
 import dbConnect from "@/lib/mongodb";
 import Product from "@/models/Product";
 import Category from "@/models/Category";
-import { Plus, Search, Edit, Trash2, Eye, Filter } from "lucide-react";
+import { Plus, Search, Edit, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import DeleteProductButton from "@/components/admin/DeleteProductButton";
 import ProductImportExport from "@/components/admin/ProductImportExport";
+import { formatPrice } from "@/lib/pricing";
 
 interface ProductsPageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -216,10 +217,10 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
                       {product.category?.name || "-"}
                     </td>
                     <td className="px-4 py-3 text-right font-medium">
-                      ₹{product.priceB2C.toLocaleString("en-IN")}
+                      {formatPrice(product.priceB2C)}
                     </td>
-                    <td className="px-4 py-3 text-right font-medium text-stb-success">
-                      ₹{product.priceB2B.toLocaleString("en-IN")}
+                    <td className="px-4 py-3 text-right font-medium text-blue-600">
+                      {formatPrice(product.priceB2B)}
                     </td>
                     <td className="px-4 py-3 text-center">
                       <span

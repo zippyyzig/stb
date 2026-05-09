@@ -6,6 +6,7 @@ import { Search, Package, AlertTriangle, TrendingUp, IndianRupee, History } from
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import StockAdjustButton from "@/components/admin/StockAdjustButton";
+import { formatPrice } from "@/lib/pricing";
 
 interface InventoryPageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -125,7 +126,7 @@ export default async function InventoryPage({ searchParams }: InventoryPageProps
     },
     {
       title: "Inventory Value",
-      value: `₹${stats.totalValue.toLocaleString("en-IN")}`,
+      value: formatPrice(stats.totalValue),
       icon: IndianRupee,
       color: "bg-accent",
       wide: true,
@@ -329,7 +330,7 @@ export default async function InventoryPage({ searchParams }: InventoryPageProps
                       </Badge>
                     </td>
                     <td className="px-4 py-3 text-right font-medium">
-                      ₹{(product.stock * product.priceB2C).toLocaleString("en-IN")}
+                      {formatPrice((product.stock || 0) * (product.priceB2C || 0))}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-2">

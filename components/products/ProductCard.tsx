@@ -7,6 +7,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useCart, useWishlist } from "@/components/providers/CartWishlistProvider";
 import { Heart, ShoppingCart, Star, Loader2, Check, AlertCircle } from "lucide-react";
+import { getPricingInfo, formatPrice } from "@/lib/pricing";
 
 interface Product {
   _id: string;
@@ -41,20 +42,13 @@ export default function ProductCard({ product }: ProductCardProps) {
   const [cartError, setCartError] = useState<string | null>(null);
   const [hovered, setHovered] = useState(false);
 
-  const isB2B = session?.user?.isGstVerified === true;
-  // Ensure we have valid numbers - sometimes data comes as strings from DB
-  const priceB2C = Number(product.priceB2C) || 0;
-  const priceB2B = Number(product.priceB2B) || 0;
-  const displayPrice = isB2B ? priceB2B : priceB2C;
-  const mrp = Number(product.mrp) || 0;
+  // Use centralized pricing logic
+  const pricing = getPricingInfo(product, session);
+  const { displayPrice, mrp, discount, savings, isB2B, canSeeBothPrices, priceB2B, priceB2C } = pricing;
+  
   const isWishlisted = isInWishlist(product._id);
-  const discount =
-    mrp > displayPrice
-      ? Math.round(((mrp - displayPrice) / mrp) * 100)
-      : 0;
   const inStock = (Number(product.stock) || 0) > 0;
   const rating = product.rating || 0;
-  const savings = mrp > displayPrice ? mrp - displayPrice : 0;
 
   const handleAddToCart = async () => {
     if (!session) {
@@ -194,20 +188,51 @@ export default function ProductCard({ product }: ProductCardProps) {
 
         {/* Price block */}
         <div className="mt-2 space-y-0.5">
-          <div className="flex items-baseline gap-1.5">
-            <span className="text-sm font-extrabold text-foreground md:text-base">
-              ₹{displayPrice.toLocaleString("en-IN")}
-            </span>
-            {mrp > displayPrice && (
-              <span className="text-[9px] text-muted-foreground line-through md:text-[10px]">
-                ₹{mrp.toLocaleString("en-IN")}
-              </span>
-            )}
-          </div>
+          {/* Admin view: Show both B2B and B2C prices */}
+          {canSeeBothPrices ? (
+            <div className="space-y-1">
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-[9px] font-semibold text-blue-700 md:text-[10px]">B2B:</span>
+                <span className="text-sm font-extrabold text-foreground md:text-base">
+                  {formatPrice(priceB2B)}
+                </span>
+              </div>
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-[9px] font-semibold text-green-700 md:text-[10px]">B2C:</span>
+                <span className="text-sm font-bold text-muted-foreground md:text-base">
+                  {formatPrice(priceB2C)}
+                </span>
+              </div>
+              {mrp > (priceB2C ?? 0) && (
+                <span className="text-[9px] text-muted-foreground line-through md:text-[10px]">
+                  MRP: {formatPrice(mrp)}
+                </span>
+              )}
+            </div>
+          ) : (
+            /* Customer view: Show appropriate price based on B2B/B2C status */
+            <>
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-sm font-extrabold text-foreground md:text-base">
+                  {formatPrice(displayPrice)}
+                </span>
+                {mrp > displayPrice && (
+                  <span className="text-[9px] text-muted-foreground line-through md:text-[10px]">
+                    {formatPrice(mrp)}
+                  </span>
+                )}
+              </div>
+              {isB2B && (
+                <span className="inline-block rounded-full bg-blue-50 px-1.5 py-0.5 text-[8px] font-semibold text-blue-700">
+                  B2B Price
+                </span>
+              )}
+            </>
+          )}
           <div className="flex items-center justify-between">
-            {savings > 0 ? (
+            {savings > 0 && !canSeeBothPrices ? (
               <span className="text-[9px] font-medium text-stb-success md:text-[10px]">
-                Save ₹{savings.toLocaleString("en-IN")}
+                Save {formatPrice(savings)}
               </span>
             ) : (
               <span />
