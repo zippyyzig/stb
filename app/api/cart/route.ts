@@ -50,7 +50,7 @@ export async function GET() {
     
     type PopulatedCartItem = {
       product: {
-        _id: string;
+        _id: string | { toString(): string };
         name: string;
         slug: string;
         images?: string[];
