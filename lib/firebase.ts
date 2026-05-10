@@ -15,11 +15,11 @@ const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0
 const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
 
-// Web Client ID — used by Android native Google Sign-In (Median.co Social Login plugin)
-// This MUST match the Web OAuth 2.0 Client ID in Google Cloud Console
+// Web Client ID — used by Firebase web popup sign-in
+// For Android native (Median.co), use the Android Client ID separately
 googleProvider.setCustomParameters({
   client_id: process.env.NEXT_PUBLIC_GOOGLE_WEB_CLIENT_ID || 
-    "393630939714-ccgciu2tmtf7me0souh2vt7a1ctqe1bf.apps.googleusercontent.com",
+    "393630939714-kv9uopvubdai15ob74tn0s6ppdd4jip4.apps.googleusercontent.com",
 });
 
 export { app, auth, googleProvider };

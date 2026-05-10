@@ -517,11 +517,12 @@ export interface SocialLoginError {
   message?: string;
 }
 
-// Web Client ID for Google Sign-In (Android & Web OAuth)
-// Must match the Web OAuth 2.0 Client ID in Google Cloud Console for the Firebase project
-const GOOGLE_WEB_CLIENT_ID =
-  (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_GOOGLE_WEB_CLIENT_ID) ||
-  "393630939714-ccgciu2tmtf7me0souh2vt7a1ctqe1bf.apps.googleusercontent.com";
+// Android Client ID for Google Sign-In via Median.co Social Login plugin
+// This MUST be the Android OAuth 2.0 Client ID from Google Cloud Console
+// (NOT the Web Client ID - Median native SDK uses the Android client)
+const GOOGLE_ANDROID_CLIENT_ID =
+  (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_GOOGLE_ANDROID_CLIENT_ID) ||
+  "393630939714-kv9uopvubdai15ob74tn0s6ppdd4jip4.apps.googleusercontent.com";
 
 // Track if a Google Sign-In is currently in progress to prevent duplicate calls
 let googleSignInInProgress = false;
@@ -700,13 +701,13 @@ export function nativeGoogleSignIn(): Promise<GoogleLoginResult | null> {
         reject(new Error("Google Sign-In timed out. Please try again."));
       }, 60000);
 
-      console.log("[Median] Calling median.socialLogin.google.login with clientId:", GOOGLE_WEB_CLIENT_ID);
+      console.log("[Median] Calling median.socialLogin.google.login with clientId:", GOOGLE_ANDROID_CLIENT_ID);
       
       // Call the Median Social Login API
       // MUST pass clientId to avoid "legacy mode" error
       // The clientId should be the Web OAuth 2.0 Client ID from Google Cloud Console
       median.socialLogin.google.login({
-        clientId: GOOGLE_WEB_CLIENT_ID,
+        clientId: GOOGLE_ANDROID_CLIENT_ID,
         callback: handleMedianGoogleCallback,
       });
       

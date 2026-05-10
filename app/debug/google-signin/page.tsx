@@ -73,7 +73,11 @@ export default function GoogleSignInDebugPage() {
   };
 
   const handleDirectCall = () => {
-    addLog("Testing direct call WITHOUT clientId...");
+    // Android Client ID from Google Cloud Console
+    const GOOGLE_ANDROID_CLIENT_ID = "393630939714-kv9uopvubdai15ob74tn0s6ppdd4jip4.apps.googleusercontent.com";
+    
+    addLog("Testing with Android Client ID...");
+    addLog(`Client ID: ${GOOGLE_ANDROID_CLIENT_ID}`);
     
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -89,9 +93,10 @@ export default function GoogleSignInDebugPage() {
         addLog(`Callback received: ${JSON.stringify(response)}`);
       };
       
-      addLog("Calling with callback only (no clientId)...");
+      addLog("Calling with Android clientId...");
       
       median.socialLogin.google.login({
+        clientId: GOOGLE_ANDROID_CLIENT_ID,
         callback: (window as any).testGoogleCallback,
       });
       
@@ -137,17 +142,16 @@ export default function GoogleSignInDebugPage() {
         <h1 className="mb-4 text-2xl font-bold">Google Sign-In Debug</h1>
         
         <div className="mb-4 rounded-lg bg-yellow-50 border border-yellow-200 p-4">
-          <h2 className="font-semibold text-yellow-800 mb-2">Legacy Mode Error Fix</h2>
+          <h2 className="font-semibold text-yellow-800 mb-2">Median.co Configuration</h2>
           <p className="text-sm text-yellow-700 mb-2">
-            The &quot;legacy mode&quot; error means Google Sign-In is not properly configured in your Median.co dashboard.
+            Android Client ID: <code className="bg-yellow-100 px-1 text-xs break-all">393630939714-kv9uopvubdai15ob74tn0s6ppdd4jip4.apps.googleusercontent.com</code>
           </p>
           <ol className="text-xs text-yellow-700 list-decimal ml-4 space-y-1">
             <li>Go to <strong>Median.co Dashboard</strong> → Your App → <strong>Native Plugins</strong> → <strong>Social Login</strong></li>
             <li>Enable <strong>Google Sign-In</strong></li>
-            <li>For Android: Add your <strong>Web Client ID</strong> from Google Cloud Console</li>
-            <li>For Android: Add the <strong>SHA-1 fingerprint</strong> of your signing key</li>
-            <li>For iOS: Add your <strong>iOS Client ID</strong> and <strong>URL Scheme</strong></li>
-            <li>Rebuild the app in Median after saving changes</li>
+            <li>Add the <strong>Android Client ID</strong> above</li>
+            <li>Add the <strong>SHA-1 fingerprint</strong> of your app signing key</li>
+            <li><strong>Rebuild the app</strong> in Median after saving</li>
           </ol>
         </div>
         
@@ -174,7 +178,7 @@ export default function GoogleSignInDebugPage() {
             onClick={handleDirectCall}
             className="rounded-lg bg-green-600 px-4 py-2 text-white hover:bg-green-700"
           >
-            Test No ClientId
+            Test Android ID
           </button>
           
           <button
