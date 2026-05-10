@@ -523,6 +523,9 @@ const GOOGLE_WEB_CLIENT_ID =
   (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_GOOGLE_WEB_CLIENT_ID) ||
   "393630939714-ccgciu2tmtf7me0souh2vt7a1ctqe1bf.apps.googleusercontent.com";
 
+// Track if a Google Sign-In is currently in progress to prevent duplicate calls
+let googleSignInInProgress = false;
+
 /**
  * Native Google Sign-In using Median.co's Social Login plugin.
  * Uses the native Google SDK — no external browser, no redirect issues.
@@ -543,6 +546,13 @@ export function nativeGoogleSignIn(): Promise<GoogleLoginResult | null> {
       return;
     }
 
+    // Prevent duplicate sign-in attempts (this fixes the double account picker issue)
+    if (googleSignInInProgress) {
+      console.warn("[Median] Google Sign-In already in progress, ignoring duplicate call");
+      resolve(null);
+      return;
+    }
+
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const median = (window as any).median;
@@ -554,63 +564,109 @@ export function nativeGoogleSignIn(): Promise<GoogleLoginResult | null> {
         return;
       }
 
+      // Mark sign-in as in progress
+      googleSignInInProgress = true;
+
       // Timeout for the callback (60 seconds to allow for user interaction)
       let timeoutId: ReturnType<typeof setTimeout> | null = null;
       let resolved = false;
 
       const cleanup = () => {
+        googleSignInInProgress = false;
         if (timeoutId) {
           clearTimeout(timeoutId);
           timeoutId = null;
         }
         // Clean up the global callback
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        delete (window as any).gonative_google_login_callback;
+        delete (window as any).median_google_login_callback;
       };
 
-      // Set up the callback function BEFORE calling login
-      // Median/GoNative invokes this function by name after authentication completes
+      // Define the callback function that will handle the response
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (window as any).gonative_google_login_callback = (result: any) => {
-        if (resolved) return;
+      const handleGoogleLoginResult = (result: any) => {
+        if (resolved) {
+          console.log("[Median] Ignoring duplicate callback - already resolved");
+          return;
+        }
         resolved = true;
         cleanup();
         
         console.log("[Median] Google Sign-In callback received:", JSON.stringify(result, null, 2));
         
-        // Check for cancellation
-        if (result?.error === "canceled" || result?.cancelled || result?.canceled) {
+        // Check for cancellation - handle various cancellation response formats
+        if (result?.error === "canceled" || 
+            result?.error === "cancelled" ||
+            result?.cancelled === true || 
+            result?.canceled === true ||
+            result?.error?.toLowerCase?.()?.includes("cancel")) {
+          console.log("[Median] User cancelled Google Sign-In");
           reject(new Error("Sign-in was cancelled"));
           return;
         }
         
         // Check for error in result
-        if (result && ("error" in result || result?.status === "error")) {
+        if (result && (result.error || result?.status === "error")) {
           const errorMsg = result.message || result.errorMessage || result.error || "Google Sign-In failed";
           console.error("[Median] Google Sign-In error:", errorMsg);
           reject(new Error(errorMsg));
           return;
         }
         
-        // Parse user data - Median SDK may return different field naming conventions
-        // Common field names from Google Sign-In via Median
+        // According to Median docs, Google returns: { idToken: "token string", type: "google" }
+        // But may also include additional user info depending on SDK version
+        const idToken = result.idToken || result.id_token || result.token || result.credential || "";
+        
+        // Try to extract email from the response or decode from idToken
+        let email = result.email || result.userEmail || "";
+        let name = result.name || result.displayName || result.userName || "";
+        let givenName = result.givenName || result.given_name || result.firstName || "";
+        let familyName = result.familyName || result.family_name || result.lastName || "";
+        let picture = result.picture || result.photoUrl || result.photo_url || 
+                     result.imageUrl || result.avatar || result.profilePicture || "";
+        let userId = result.userId || result.user_id || result.id || result.sub || 
+                    result.googleId || result.uid || "";
+        
+        // If we have an idToken but no email, we need to decode the JWT
+        // The idToken is a JWT that contains the user's info
+        if (idToken && !email) {
+          try {
+            // Decode JWT payload (base64)
+            const parts = idToken.split(".");
+            if (parts.length >= 2) {
+              const payload = JSON.parse(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/")));
+              console.log("[Median] Decoded JWT payload:", payload);
+              email = payload.email || email;
+              name = payload.name || name;
+              givenName = payload.given_name || givenName;
+              familyName = payload.family_name || familyName;
+              picture = payload.picture || picture;
+              userId = payload.sub || userId;
+            }
+          } catch (decodeError) {
+            console.warn("[Median] Failed to decode idToken:", decodeError);
+          }
+        }
+        
+        // Build full name if we have given/family name but no display name
+        if (!name && (givenName || familyName)) {
+          name = `${givenName} ${familyName}`.trim();
+        }
+        
         const userData: GoogleLoginResult = {
-          idToken: result.idToken || result.id_token || result.token || "",
+          idToken,
           accessToken: result.accessToken || result.access_token || "",
-          email: result.email || result.userEmail || "",
-          name: result.name || result.displayName || result.userName || 
-                (result.givenName ? `${result.givenName} ${result.familyName || ""}`.trim() : ""),
-          givenName: result.givenName || result.given_name || result.firstName,
-          familyName: result.familyName || result.family_name || result.lastName,
-          picture: result.picture || result.photoUrl || result.photo_url || 
-                   result.imageUrl || result.avatar || result.profilePicture,
-          userId: result.userId || result.user_id || result.id || result.sub || 
-                  result.googleId || result.uid || "",
+          email,
+          name,
+          givenName,
+          familyName,
+          picture,
+          userId,
         };
         
         // Validate essential fields
         if (!userData.email) {
-          console.error("[Median] Google Sign-In missing email:", userData);
+          console.error("[Median] Google Sign-In missing email. Full result:", result);
           reject(new Error("Google Sign-In did not return an email address. Please try again."));
           return;
         }
@@ -624,6 +680,11 @@ export function nativeGoogleSignIn(): Promise<GoogleLoginResult | null> {
         resolve(userData);
       };
 
+      // Register the callback globally BEFORE calling login
+      // Median calls this function by name after authentication completes
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (window as any).median_google_login_callback = handleGoogleLoginResult;
+
       // Set timeout
       timeoutId = setTimeout(() => {
         if (resolved) return;
@@ -633,24 +694,16 @@ export function nativeGoogleSignIn(): Promise<GoogleLoginResult | null> {
         reject(new Error("Google Sign-In timed out. Please try again."));
       }, 60000);
 
-      console.log("[Median] Initiating Google Sign-In with Web Client ID:", GOOGLE_WEB_CLIENT_ID);
+      console.log("[Median] Initiating Google Sign-In...");
       
-      // Call the Median Social Login API
-      // Try without clientId first (let the plugin use its configured credentials)
-      // This avoids the "legacy mode" error when the clientId doesn't match plugin config
-      try {
-        median.socialLogin.google.login({
-          callback: "gonative_google_login_callback",
-        });
-      } catch {
-        // If that fails, try with the clientId
-        median.socialLogin.google.login({
-          clientId: GOOGLE_WEB_CLIENT_ID,
-          callback: "gonative_google_login_callback",
-        });
-      }
+      // Call the Median Social Login API with the callback function name
+      // According to Median docs, callback should be the NAME of the global function as a string
+      median.socialLogin.google.login({
+        callback: "median_google_login_callback",
+      });
       
     } catch (error) {
+      googleSignInInProgress = false;
       console.error("[Median] Native Google Sign-In exception:", error);
       reject(error);
     }
