@@ -1,8 +1,10 @@
 import type { Metadata, Viewport } from "next";
+import { Suspense } from "react";
 import "./globals.css";
 import SessionProvider from "@/components/providers/SessionProvider";
 import { CartWishlistProvider } from "@/components/providers/CartWishlistProvider";
 import { NativeAppProvider } from "@/components/providers/NativeAppProvider";
+import { LoadingBar } from "@/components/ui/LoadingBar";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://smarttechbazaar.com"),
@@ -90,8 +92,9 @@ export const viewport: Viewport = {
   ],
   width: "device-width",
   initialScale: 1,
-  maximumScale: 5,
-  userScalable: true,
+  maximumScale: 1,
+  minimumScale: 1,
+  userScalable: false,
   viewportFit: "cover",
 };
 
@@ -151,6 +154,9 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-screen">
+        <Suspense fallback={null}>
+          <LoadingBar />
+        </Suspense>
         <SessionProvider>
           <CartWishlistProvider>
             <NativeAppProvider>{children}</NativeAppProvider>

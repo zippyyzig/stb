@@ -150,6 +150,13 @@ export default function Header() {
                           Admin
                         </Link>
                       )}
+                      <Link
+                        href="/debug/google-signin"
+                        className="flex items-center gap-2 px-3 py-2 text-xs text-orange-600 hover:bg-muted"
+                      >
+                        <Settings className="h-3.5 w-3.5" />
+                        Debug Google
+                      </Link>
                       <hr className="my-1 border-border" />
                       <button
                         onClick={() => signOutWithNativeCleanup({ callbackUrl: "/" })}
@@ -261,6 +268,12 @@ export default function Header() {
                             </Link>
                           </SheetClose>
                         )}
+                        <SheetClose asChild>
+                          <Link href="/debug/google-signin" className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-xs font-medium text-orange-600 hover:bg-orange-50 press-active">
+                            <Settings className="h-3.5 w-3.5" />
+                            Debug Google Sign-In
+                          </Link>
+                        </SheetClose>
                         <button
                           onClick={() => signOutWithNativeCleanup({ callbackUrl: "/" })}
                           className="mt-1 flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-xs font-medium text-destructive hover:bg-red-50 press-active"

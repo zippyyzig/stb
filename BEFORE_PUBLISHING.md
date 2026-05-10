@@ -203,7 +203,7 @@ Push notifications are automatically sent for:
 | Plugin | Configuration |
 |--------|---------------|
 | OneSignal | App ID: `70c19aa3-9238-4543-acf1-0c564fc4af5a` |
-| Social Login (Google) | Web Client ID: `393630939714-ccgciu2tmtf7me0souh2vt7a1ctqe1bf.apps.googleusercontent.com` |
+| Social Login (Google) | Web Client ID: `393630939714-kv9uopvubdai15ob74tn0s6ppdd4jip4.apps.googleusercontent.com` |
 | Social Login (Apple) | Enable for iOS |
 | Pull to Refresh | Enable |
 | Camera | Enable (for product reviews/profile photos) |
