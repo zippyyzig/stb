@@ -73,7 +73,11 @@ export default function GoogleSignInDebugPage() {
   };
 
   const handleDirectCall = () => {
+    // The Web Client ID must match what's configured in Google Cloud Console
+    const GOOGLE_WEB_CLIENT_ID = "393630939714-ccgciu2tmtf7me0souh2vt7a1ctqe1bf.apps.googleusercontent.com";
+    
     addLog("Testing direct median.socialLogin.google.login call...");
+    addLog(`Using clientId: ${GOOGLE_WEB_CLIENT_ID}`);
     
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -90,10 +94,11 @@ export default function GoogleSignInDebugPage() {
         addLog(`Direct callback received: ${JSON.stringify(response)}`);
       };
       
-      addLog("Calling median.socialLogin.google.login with callback...");
+      addLog("Calling median.socialLogin.google.login with clientId and callback...");
       
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       median.socialLogin.google.login({
+        clientId: GOOGLE_WEB_CLIENT_ID,
         callback: (window as any).testGoogleCallback,
       });
       

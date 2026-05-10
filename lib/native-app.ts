@@ -700,11 +700,13 @@ export function nativeGoogleSignIn(): Promise<GoogleLoginResult | null> {
         reject(new Error("Google Sign-In timed out. Please try again."));
       }, 60000);
 
-      console.log("[Median] Calling median.socialLogin.google.login...");
+      console.log("[Median] Calling median.socialLogin.google.login with clientId:", GOOGLE_WEB_CLIENT_ID);
       
       // Call the Median Social Login API
-      // Pass the global function reference directly
+      // MUST pass clientId to avoid "legacy mode" error
+      // The clientId should be the Web OAuth 2.0 Client ID from Google Cloud Console
       median.socialLogin.google.login({
+        clientId: GOOGLE_WEB_CLIENT_ID,
         callback: handleMedianGoogleCallback,
       });
       
