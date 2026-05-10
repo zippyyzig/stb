@@ -526,8 +526,12 @@ const GOOGLE_WEB_CLIENT_ID =
 /**
  * Native Google Sign-In using Median.co's Social Login plugin.
  * Uses the native Google SDK — no external browser, no redirect issues.
- * On Android, Median requires the Web Client ID to be passed so it can
- * exchange the auth code for an ID token server-side.
+ * 
+ * Median Social Login supports two modes:
+ * 1. Server-side redirect (redirectUri) - tokens POSTed to your server
+ * 2. JavaScript callback - result returned to a global function
+ * 
+ * We use the JavaScript callback mode for simplicity.
  *
  * @returns Promise with user data or null if not in native app
  */
@@ -550,7 +554,7 @@ export function nativeGoogleSignIn(): Promise<GoogleLoginResult | null> {
         return;
       }
 
-      // Timeout for the callback (45 seconds to allow for user interaction)
+      // Timeout for the callback (60 seconds to allow for user interaction)
       let timeoutId: ReturnType<typeof setTimeout> | null = null;
       let resolved = false;
 
@@ -561,13 +565,13 @@ export function nativeGoogleSignIn(): Promise<GoogleLoginResult | null> {
         }
         // Clean up the global callback
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        delete (window as any).median_google_callback;
+        delete (window as any).gonative_google_login_callback;
       };
 
       // Set up the callback function BEFORE calling login
-      // Median.co invokes this function by name after authentication completes
+      // Median/GoNative invokes this function by name after authentication completes
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (window as any).median_google_callback = (result: any) => {
+      (window as any).gonative_google_login_callback = (result: any) => {
         if (resolved) return;
         resolved = true;
         cleanup();
@@ -625,25 +629,70 @@ export function nativeGoogleSignIn(): Promise<GoogleLoginResult | null> {
         if (resolved) return;
         resolved = true;
         cleanup();
-        console.error("[Median] Google Sign-In timeout after 45s");
+        console.error("[Median] Google Sign-In timeout after 60s");
         reject(new Error("Google Sign-In timed out. Please try again."));
-      }, 45000);
+      }, 60000);
 
       console.log("[Median] Initiating Google Sign-In with Web Client ID:", GOOGLE_WEB_CLIENT_ID);
       
       // Call the Median Social Login API
-      // Using JavaScript callback mode - result returned directly to the page
-      // The callback name MUST be a string that references a global function
-      median.socialLogin.google.login({
-        clientId: GOOGLE_WEB_CLIENT_ID,
-        callback: "median_google_callback",
-      });
+      // Try without clientId first (let the plugin use its configured credentials)
+      // This avoids the "legacy mode" error when the clientId doesn't match plugin config
+      try {
+        median.socialLogin.google.login({
+          callback: "gonative_google_login_callback",
+        });
+      } catch {
+        // If that fails, try with the clientId
+        median.socialLogin.google.login({
+          clientId: GOOGLE_WEB_CLIENT_ID,
+          callback: "gonative_google_login_callback",
+        });
+      }
       
     } catch (error) {
       console.error("[Median] Native Google Sign-In exception:", error);
       reject(error);
     }
   });
+}
+
+/**
+ * Alternative Google Sign-In using server-side redirect mode.
+ * This is more reliable as it avoids JavaScript callback issues.
+ * The redirect URL should be your auth callback endpoint.
+ * 
+ * @param redirectUri - Your server endpoint that will receive the tokens
+ */
+export function nativeGoogleSignInWithRedirect(redirectUri?: string): void {
+  if (!isMedianApp()) {
+    console.warn("[Median] Not in native app, cannot use native Google Sign-In");
+    return;
+  }
+
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const median = (window as any).median;
+    
+    if (!median?.socialLogin?.google?.login) {
+      console.warn("[Median] Social Login plugin not available");
+      return;
+    }
+
+    // Use the configured redirect URI or default to our auth endpoint
+    const authRedirectUri = redirectUri || 
+      `${window.location.origin}/api/auth/median-google`;
+    
+    console.log("[Median] Initiating Google Sign-In with redirect to:", authRedirectUri);
+    
+    // Server-side redirect mode - Median will POST tokens to your endpoint
+    median.socialLogin.google.login({
+      redirectUri: authRedirectUri,
+    });
+    
+  } catch (error) {
+    console.error("[Median] Native Google Sign-In with redirect failed:", error);
+  }
 }
 
 /**

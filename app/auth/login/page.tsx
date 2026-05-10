@@ -7,7 +7,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { signInWithPopup } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
-import { isMedianApp, nativeGoogleSignIn } from "@/lib/native-app";
+import { isMedianApp, nativeGoogleSignIn, nativeGoogleSignInWithRedirect } from "@/lib/native-app";
 import { Input } from "@/components/ui/input";
 import {
   Mail,
@@ -110,14 +110,24 @@ function LoginForm() {
           return;
         } catch (nativeError) {
           console.error("[Median] Native Google sign-in error:", nativeError);
-          // Show the actual error message from native SDK
           const errorMsg = nativeError instanceof Error ? nativeError.message : "Google Sign-In failed";
+          
           // Don't show "cancelled" as an error - user intentionally cancelled
           if (errorMsg.toLowerCase().includes("cancel")) {
             setErrorMessage("");
-          } else {
-            setErrorMessage(errorMsg);
+            return;
           }
+          
+          // If callback mode failed with legacy error, try redirect mode as fallback
+          if (errorMsg.toLowerCase().includes("legacy") || errorMsg.toLowerCase().includes("unexpected")) {
+            console.log("[Median] Callback mode failed, trying redirect mode...");
+            // Use server-side redirect approach - more reliable
+            nativeGoogleSignInWithRedirect();
+            // Keep loading state - page will redirect
+            return;
+          }
+          
+          setErrorMessage(errorMsg);
           return;
         }
       }
