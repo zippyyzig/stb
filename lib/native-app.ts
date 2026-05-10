@@ -525,16 +525,133 @@ const GOOGLE_WEB_CLIENT_ID =
 
 // Track if a Google Sign-In is currently in progress to prevent duplicate calls
 let googleSignInInProgress = false;
+let googleSignInResolver: ((value: GoogleLoginResult | null) => void) | null = null;
+let googleSignInRejecter: ((reason: Error) => void) | null = null;
+let googleSignInTimeoutId: ReturnType<typeof setTimeout> | null = null;
+
+/**
+ * Global callback function for Median Google Sign-In.
+ * MUST be a global function accessible from window for the native bridge to call it.
+ * According to Median docs, the callback receives:
+ * - Success: { idToken: "token string", type: "google" }
+ * - Error: { error: "error description", type: "google" }
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function handleMedianGoogleCallback(result: any) {
+  console.log("[Median] Google callback received:", JSON.stringify(result, null, 2));
+  
+  // Clear timeout
+  if (googleSignInTimeoutId) {
+    clearTimeout(googleSignInTimeoutId);
+    googleSignInTimeoutId = null;
+  }
+  
+  // Check if we have resolver (sign-in in progress)
+  if (!googleSignInResolver || !googleSignInRejecter) {
+    console.warn("[Median] Callback received but no pending sign-in");
+    googleSignInInProgress = false;
+    return;
+  }
+  
+  const resolve = googleSignInResolver;
+  const reject = googleSignInRejecter;
+  
+  // Clear state
+  googleSignInResolver = null;
+  googleSignInRejecter = null;
+  googleSignInInProgress = false;
+  
+  // Handle error responses
+  if (result?.error) {
+    const errorMsg = result.error;
+    console.log("[Median] Google Sign-In error:", errorMsg);
+    
+    // Check for cancellation
+    if (errorMsg.toLowerCase?.().includes("cancel")) {
+      reject(new Error("Sign-in was cancelled"));
+      return;
+    }
+    
+    reject(new Error(errorMsg));
+    return;
+  }
+  
+  // According to Median docs, Google returns: { idToken: "token string", type: "google" }
+  const idToken = result?.idToken || "";
+  
+  if (!idToken) {
+    console.error("[Median] No idToken in response:", result);
+    reject(new Error("Google Sign-In did not return a token. Please try again."));
+    return;
+  }
+  
+  // Decode JWT to get user info
+  let email = "";
+  let name = "";
+  let givenName = "";
+  let familyName = "";
+  let picture = "";
+  let userId = "";
+  
+  try {
+    const parts = idToken.split(".");
+    if (parts.length >= 2) {
+      // Decode base64url to base64, then decode
+      const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+      const payload = JSON.parse(atob(base64));
+      console.log("[Median] Decoded JWT payload:", payload);
+      
+      email = payload.email || "";
+      name = payload.name || "";
+      givenName = payload.given_name || "";
+      familyName = payload.family_name || "";
+      picture = payload.picture || "";
+      userId = payload.sub || "";
+    }
+  } catch (decodeError) {
+    console.error("[Median] Failed to decode JWT:", decodeError);
+    reject(new Error("Failed to decode Google token. Please try again."));
+    return;
+  }
+  
+  if (!email) {
+    console.error("[Median] No email found in JWT");
+    reject(new Error("Google Sign-In did not return an email. Please try again."));
+    return;
+  }
+  
+  // Build full name if needed
+  if (!name && (givenName || familyName)) {
+    name = `${givenName} ${familyName}`.trim();
+  }
+  
+  const userData: GoogleLoginResult = {
+    idToken,
+    accessToken: "",
+    email,
+    name,
+    givenName,
+    familyName,
+    picture,
+    userId: userId || email,
+  };
+  
+  console.log("[Median] Google Sign-In success:", { email: userData.email, name: userData.name });
+  resolve(userData);
+}
+
+// Register the callback globally so Median's native bridge can find it
+if (typeof window !== "undefined") {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (window as any).handleMedianGoogleCallback = handleMedianGoogleCallback;
+}
 
 /**
  * Native Google Sign-In using Median.co's Social Login plugin.
  * Uses the native Google SDK — no external browser, no redirect issues.
  * 
- * Median Social Login supports two modes:
- * 1. Server-side redirect (redirectUri) - tokens POSTed to your server
- * 2. JavaScript callback - result returned to a global function
- * 
- * We use the JavaScript callback mode for simplicity.
+ * Median Social Login uses a JavaScript callback that MUST be a global function
+ * accessible from window for the native bridge to invoke it.
  *
  * @returns Promise with user data or null if not in native app
  */
@@ -546,9 +663,9 @@ export function nativeGoogleSignIn(): Promise<GoogleLoginResult | null> {
       return;
     }
 
-    // Prevent duplicate sign-in attempts (this fixes the double account picker issue)
+    // Prevent duplicate sign-in attempts
     if (googleSignInInProgress) {
-      console.warn("[Median] Google Sign-In already in progress, ignoring duplicate call");
+      console.warn("[Median] Google Sign-In already in progress, ignoring");
       resolve(null);
       return;
     }
@@ -559,149 +676,48 @@ export function nativeGoogleSignIn(): Promise<GoogleLoginResult | null> {
       
       // Check for socialLogin plugin availability
       if (!median?.socialLogin?.google?.login) {
-        console.warn("[Median] Social Login plugin not available - check Median.co dashboard");
+        console.warn("[Median] Social Login plugin not available");
         resolve(null);
         return;
       }
 
-      // Mark sign-in as in progress
+      // Set up state
       googleSignInInProgress = true;
-
-      // Timeout for the callback (60 seconds to allow for user interaction)
-      let timeoutId: ReturnType<typeof setTimeout> | null = null;
-      let resolved = false;
-
-      const cleanup = () => {
-        googleSignInInProgress = false;
-        if (timeoutId) {
-          clearTimeout(timeoutId);
-          timeoutId = null;
-        }
-      };
-
-      // Define the callback function that will handle the response
+      googleSignInResolver = resolve;
+      googleSignInRejecter = reject;
+      
+      // Re-register the global callback (ensure it's available)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const handleGoogleLoginResult = (result: any) => {
-        if (resolved) {
-          console.log("[Median] Ignoring duplicate callback - already resolved");
-          return;
-        }
-        resolved = true;
-        cleanup();
-        
-        console.log("[Median] Google Sign-In callback received:", JSON.stringify(result, null, 2));
-        
-        // Check for cancellation - handle various cancellation response formats
-        if (result?.error === "canceled" || 
-            result?.error === "cancelled" ||
-            result?.cancelled === true || 
-            result?.canceled === true ||
-            result?.error?.toLowerCase?.()?.includes("cancel")) {
-          console.log("[Median] User cancelled Google Sign-In");
-          reject(new Error("Sign-in was cancelled"));
-          return;
-        }
-        
-        // Check for error in result
-        if (result && (result.error || result?.status === "error")) {
-          const errorMsg = result.message || result.errorMessage || result.error || "Google Sign-In failed";
-          console.error("[Median] Google Sign-In error:", errorMsg);
-          reject(new Error(errorMsg));
-          return;
-        }
-        
-        // According to Median docs, Google returns: { idToken: "token string", type: "google" }
-        // But may also include additional user info depending on SDK version
-        const idToken = result.idToken || result.id_token || result.token || result.credential || "";
-        
-        // Try to extract email from the response or decode from idToken
-        let email = result.email || result.userEmail || "";
-        let name = result.name || result.displayName || result.userName || "";
-        let givenName = result.givenName || result.given_name || result.firstName || "";
-        let familyName = result.familyName || result.family_name || result.lastName || "";
-        let picture = result.picture || result.photoUrl || result.photo_url || 
-                     result.imageUrl || result.avatar || result.profilePicture || "";
-        let userId = result.userId || result.user_id || result.id || result.sub || 
-                    result.googleId || result.uid || "";
-        
-        // If we have an idToken but no email, we need to decode the JWT
-        // The idToken is a JWT that contains the user's info
-        if (idToken && !email) {
-          try {
-            // Decode JWT payload (base64)
-            const parts = idToken.split(".");
-            if (parts.length >= 2) {
-              const payload = JSON.parse(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/")));
-              console.log("[Median] Decoded JWT payload:", payload);
-              email = payload.email || email;
-              name = payload.name || name;
-              givenName = payload.given_name || givenName;
-              familyName = payload.family_name || familyName;
-              picture = payload.picture || picture;
-              userId = payload.sub || userId;
-            }
-          } catch (decodeError) {
-            console.warn("[Median] Failed to decode idToken:", decodeError);
-          }
-        }
-        
-        // Build full name if we have given/family name but no display name
-        if (!name && (givenName || familyName)) {
-          name = `${givenName} ${familyName}`.trim();
-        }
-        
-        const userData: GoogleLoginResult = {
-          idToken,
-          accessToken: result.accessToken || result.access_token || "",
-          email,
-          name,
-          givenName,
-          familyName,
-          picture,
-          userId,
-        };
-        
-        // Validate essential fields
-        if (!userData.email) {
-          console.error("[Median] Google Sign-In missing email. Full result:", result);
-          reject(new Error("Google Sign-In did not return an email address. Please try again."));
-          return;
-        }
-        
-        // If no userId, use email as fallback identifier
-        if (!userData.userId) {
-          userData.userId = userData.email;
-        }
-        
-        console.log("[Median] Google Sign-In success:", { email: userData.email, name: userData.name });
-        resolve(userData);
-      };
+      (window as any).handleMedianGoogleCallback = handleMedianGoogleCallback;
 
-      // Set timeout
-      timeoutId = setTimeout(() => {
-        if (resolved) return;
-        resolved = true;
-        cleanup();
+      // Set timeout (60 seconds for user interaction)
+      googleSignInTimeoutId = setTimeout(() => {
         console.error("[Median] Google Sign-In timeout after 60s");
+        googleSignInInProgress = false;
+        googleSignInResolver = null;
+        googleSignInRejecter = null;
+        googleSignInTimeoutId = null;
         reject(new Error("Google Sign-In timed out. Please try again."));
       }, 60000);
 
-      console.log("[Median] Initiating Google Sign-In with function callback...");
-      console.log("[Median] median.socialLogin.google available:", !!median.socialLogin?.google);
-      console.log("[Median] median.socialLogin.google.login type:", typeof median.socialLogin?.google?.login);
+      console.log("[Median] Calling median.socialLogin.google.login...");
       
-      // Call the Median Social Login API with the callback FUNCTION REFERENCE (not a string!)
-      // According to Median docs: median.socialLogin.google.login({ 'callback' : googleLoginCallback })
-      // The callback receives: { idToken: "token string", type: "google" } on success
-      // or { error: "error description", type: "google" } on failure
+      // Call the Median Social Login API
+      // Pass the global function reference directly
       median.socialLogin.google.login({
-        callback: handleGoogleLoginResult,
+        callback: handleMedianGoogleCallback,
       });
       
-      console.log("[Median] Login call completed, waiting for callback...");
+      console.log("[Median] Login initiated, waiting for native callback...");
       
     } catch (error) {
       googleSignInInProgress = false;
+      googleSignInResolver = null;
+      googleSignInRejecter = null;
+      if (googleSignInTimeoutId) {
+        clearTimeout(googleSignInTimeoutId);
+        googleSignInTimeoutId = null;
+      }
       console.error("[Median] Native Google Sign-In exception:", error);
       reject(error);
     }
