@@ -26,19 +26,35 @@ export async function POST(request: NextRequest) {
     console.log("[Median Google Auth] Received data:", JSON.stringify(data, null, 2));
     
     // Extract user info from the token data
-    // Median sends: idToken, accessToken, email, name, etc.
-    const { 
-      idToken, 
-      accessToken, 
-      email, 
-      name, 
-      givenName, 
-      familyName,
-      picture,
-      userId,
-      id,
-      sub 
-    } = data;
+    // Median sends: { idToken: "jwt token string", type: "google" }
+    let email = data.email || "";
+    let name = data.name || "";
+    let givenName = data.givenName || data.given_name || "";
+    let familyName = data.familyName || data.family_name || "";
+    let picture = data.picture || data.photoUrl || "";
+    let googleId = data.userId || data.id || data.sub || "";
+    
+    // If we have an idToken, decode it to get user info
+    const idToken = data.idToken || data.id_token || "";
+    if (idToken && !email) {
+      try {
+        const parts = idToken.split(".");
+        if (parts.length >= 2) {
+          const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+          const payload = JSON.parse(Buffer.from(base64, "base64").toString("utf-8"));
+          console.log("[Median Google Auth] Decoded JWT:", payload);
+          
+          email = payload.email || email;
+          name = payload.name || name;
+          givenName = payload.given_name || givenName;
+          familyName = payload.family_name || familyName;
+          picture = payload.picture || picture;
+          googleId = payload.sub || googleId;
+        }
+      } catch (decodeError) {
+        console.error("[Median Google Auth] Failed to decode idToken:", decodeError);
+      }
+    }
     
     if (!email) {
       console.error("[Median Google Auth] No email in response");
@@ -47,8 +63,8 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    const googleId = userId || id || sub || email;
-    const displayName = name || `${givenName || ""} ${familyName || ""}`.trim() || email.split("@")[0];
+    const displayName = name || `${givenName} ${familyName}`.trim() || email.split("@")[0];
+    googleId = googleId || email;
     
     await dbConnect();
     

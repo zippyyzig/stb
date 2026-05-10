@@ -73,11 +73,7 @@ export default function GoogleSignInDebugPage() {
   };
 
   const handleDirectCall = () => {
-    // The Web Client ID must match what's configured in Google Cloud Console
-    const GOOGLE_WEB_CLIENT_ID = "393630939714-ccgciu2tmtf7me0souh2vt7a1ctqe1bf.apps.googleusercontent.com";
-    
-    addLog("Testing direct median.socialLogin.google.login call...");
-    addLog(`Using clientId: ${GOOGLE_WEB_CLIENT_ID}`);
+    addLog("Testing direct call WITHOUT clientId...");
     
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -88,23 +84,45 @@ export default function GoogleSignInDebugPage() {
         return;
       }
       
-      // Define a simple global callback
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (window as any).testGoogleCallback = (response: any) => {
-        addLog(`Direct callback received: ${JSON.stringify(response)}`);
+        addLog(`Callback received: ${JSON.stringify(response)}`);
       };
       
-      addLog("Calling median.socialLogin.google.login with clientId and callback...");
+      addLog("Calling with callback only (no clientId)...");
       
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       median.socialLogin.google.login({
-        clientId: GOOGLE_WEB_CLIENT_ID,
         callback: (window as any).testGoogleCallback,
       });
       
-      addLog("Direct call completed, waiting for callback...");
+      addLog("Call completed, waiting for callback...");
     } catch (error) {
       addLog(`Direct call error: ${error}`);
+    }
+  };
+
+  const handleRedirectMode = () => {
+    addLog("Testing REDIRECT MODE...");
+    
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const median = (window as any).median;
+      
+      if (!median?.socialLogin?.google?.login) {
+        addLog("ERROR: median.socialLogin.google.login not available");
+        return;
+      }
+      
+      const redirectUri = `${window.location.origin}/api/auth/median-google`;
+      addLog(`Redirect URI: ${redirectUri}`);
+      
+      median.socialLogin.google.login({
+        redirectUri: redirectUri,
+      });
+      
+      addLog("Redirect initiated - should redirect after auth...");
+    } catch (error) {
+      addLog(`Redirect error: ${error}`);
     }
   };
 
@@ -117,6 +135,21 @@ export default function GoogleSignInDebugPage() {
     <div className="min-h-screen bg-gray-100 p-4">
       <div className="mx-auto max-w-2xl">
         <h1 className="mb-4 text-2xl font-bold">Google Sign-In Debug</h1>
+        
+        <div className="mb-4 rounded-lg bg-yellow-50 border border-yellow-200 p-4">
+          <h2 className="font-semibold text-yellow-800 mb-2">Legacy Mode Error Fix</h2>
+          <p className="text-sm text-yellow-700 mb-2">
+            The &quot;legacy mode&quot; error means Google Sign-In is not properly configured in your Median.co dashboard.
+          </p>
+          <ol className="text-xs text-yellow-700 list-decimal ml-4 space-y-1">
+            <li>Go to <strong>Median.co Dashboard</strong> → Your App → <strong>Native Plugins</strong> → <strong>Social Login</strong></li>
+            <li>Enable <strong>Google Sign-In</strong></li>
+            <li>For Android: Add your <strong>Web Client ID</strong> from Google Cloud Console</li>
+            <li>For Android: Add the <strong>SHA-1 fingerprint</strong> of your signing key</li>
+            <li>For iOS: Add your <strong>iOS Client ID</strong> and <strong>URL Scheme</strong></li>
+            <li>Rebuild the app in Median after saving changes</li>
+          </ol>
+        </div>
         
         <div className="mb-4 rounded-lg bg-white p-4 shadow">
           <h2 className="mb-2 font-semibold">Environment</h2>
@@ -141,7 +174,14 @@ export default function GoogleSignInDebugPage() {
             onClick={handleDirectCall}
             className="rounded-lg bg-green-600 px-4 py-2 text-white hover:bg-green-700"
           >
-            Test Direct Call
+            Test No ClientId
+          </button>
+          
+          <button
+            onClick={handleRedirectMode}
+            className="rounded-lg bg-purple-600 px-4 py-2 text-white hover:bg-purple-700"
+          >
+            Test Redirect Mode
           </button>
           
           <button
