@@ -22,7 +22,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     await dbConnect();
 
     const ticket = await Ticket.findById(id)
-      .populate("customer", "name email phone")
+      .populate("user", "name email phone")
       .populate("assignedTo", "name email")
       .populate("order", "orderNumber total status")
       .populate("replies.user", "name email role")
@@ -32,7 +32,13 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Ticket not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ ticket });
+    // Map 'user' to 'customer' for frontend compatibility
+    const ticketWithCustomer = {
+      ...ticket,
+      customer: ticket.user,
+    };
+
+    return NextResponse.json({ ticket: ticketWithCustomer });
   } catch (error) {
     console.error("Error fetching ticket:", error);
     return NextResponse.json(
@@ -87,8 +93,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       updateData,
       { new: true }
     )
-      .populate("customer", "name email")
+      .populate("user", "name email phone")
       .populate("assignedTo", "name email")
+      .populate("replies.user", "name email role")
       .lean();
 
     if (!ticket) {
@@ -108,9 +115,15 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       }
     }
 
+    // Map 'user' to 'customer' for frontend compatibility
+    const ticketWithCustomer = {
+      ...ticket,
+      customer: ticket.user,
+    };
+
     return NextResponse.json({
       message: "Ticket updated successfully",
-      ticket,
+      ticket: ticketWithCustomer,
     });
   } catch (error) {
     console.error("Error updating ticket:", error);
