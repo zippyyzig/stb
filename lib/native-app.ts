@@ -577,9 +577,6 @@ export function nativeGoogleSignIn(): Promise<GoogleLoginResult | null> {
           clearTimeout(timeoutId);
           timeoutId = null;
         }
-        // Clean up the global callback
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        delete (window as any).median_google_login_callback;
       };
 
       // Define the callback function that will handle the response
@@ -680,11 +677,6 @@ export function nativeGoogleSignIn(): Promise<GoogleLoginResult | null> {
         resolve(userData);
       };
 
-      // Register the callback globally BEFORE calling login
-      // Median calls this function by name after authentication completes
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (window as any).median_google_login_callback = handleGoogleLoginResult;
-
       // Set timeout
       timeoutId = setTimeout(() => {
         if (resolved) return;
@@ -694,13 +686,19 @@ export function nativeGoogleSignIn(): Promise<GoogleLoginResult | null> {
         reject(new Error("Google Sign-In timed out. Please try again."));
       }, 60000);
 
-      console.log("[Median] Initiating Google Sign-In...");
+      console.log("[Median] Initiating Google Sign-In with function callback...");
+      console.log("[Median] median.socialLogin.google available:", !!median.socialLogin?.google);
+      console.log("[Median] median.socialLogin.google.login type:", typeof median.socialLogin?.google?.login);
       
-      // Call the Median Social Login API with the callback function name
-      // According to Median docs, callback should be the NAME of the global function as a string
+      // Call the Median Social Login API with the callback FUNCTION REFERENCE (not a string!)
+      // According to Median docs: median.socialLogin.google.login({ 'callback' : googleLoginCallback })
+      // The callback receives: { idToken: "token string", type: "google" } on success
+      // or { error: "error description", type: "google" } on failure
       median.socialLogin.google.login({
-        callback: "median_google_login_callback",
+        callback: handleGoogleLoginResult,
       });
+      
+      console.log("[Median] Login call completed, waiting for callback...");
       
     } catch (error) {
       googleSignInInProgress = false;
