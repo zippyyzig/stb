@@ -65,11 +65,17 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     await ticket.save();
 
-    const updatedTicket = await Ticket.findById(id)
+    const rawTicket = await Ticket.findById(id)
       .populate("user", "name email phone")
       .populate("assignedTo", "name email")
       .populate("replies.user", "name email role")
       .lean();
+    
+    // Map 'user' to 'customer' for frontend compatibility
+    const updatedTicket = rawTicket ? {
+      ...rawTicket,
+      customer: rawTicket.user,
+    } : null;
 
     // Send email notification to customer (only for non-internal replies)
     if (!isInternal) {
