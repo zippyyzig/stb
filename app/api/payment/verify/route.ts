@@ -90,15 +90,11 @@ function verifyPaymentSignature(
 }
 
 export async function POST(request: NextRequest) {
-  console.log("[v0] Payment verify endpoint called");
-  
   try {
     // 1. Authenticate user
     const session = await getServerSession(authOptions);
-    console.log("[v0] Session user ID:", session?.user?.id);
     
     if (!session?.user?.id) {
-      console.log("[v0] No session, returning 401");
       return NextResponse.json(
         { error: "Authentication required" },
         { status: 401 }
@@ -117,16 +113,8 @@ export async function POST(request: NextRequest) {
       notes,
     } = body;
 
-    console.log("[v0] Received payment data:", {
-      razorpay_order_id,
-      razorpay_payment_id,
-      hasSignature: !!razorpay_signature,
-      itemCount: items?.length,
-    });
-
     // 3. Validate required fields
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
-      console.log("[v0] Missing payment verification data");
       return NextResponse.json(
         { error: "Missing payment verification data" },
         { status: 400 }
@@ -189,16 +177,14 @@ export async function POST(request: NextRequest) {
     };
 
     // 4. CRITICAL: Verify payment signature
-    console.log("[v0] Verifying payment signature...");
     const isValidSignature = verifyPaymentSignature(
       razorpay_order_id,
       razorpay_payment_id,
       razorpay_signature
     );
-    console.log("[v0] Signature valid:", isValidSignature);
 
     if (!isValidSignature) {
-      console.error("[v0] Invalid payment signature detected", {
+      console.error("Invalid payment signature detected", {
         orderId: razorpay_order_id,
         paymentId: razorpay_payment_id,
         userId: session.user.id,
@@ -330,7 +316,9 @@ export async function POST(request: NextRequest) {
     const totalTax = parseFloat(orderNotes?.totalTax || "0");
     const shippingCost = parseFloat(orderNotes?.shippingCost || "0");
     const discount = parseFloat(orderNotes?.discount || "0");
-    const taxType = orderNotes?.taxType || "INTER";
+    // Ensure taxType is valid enum value (INTRA or INTER)
+    const rawTaxType = orderNotes?.taxType || "";
+    const taxType: "INTRA" | "INTER" = rawTaxType === "INTRA" ? "INTRA" : "INTER";
     const customerStateCode = orderNotes?.customerStateCode || "";
 
     // 13. Calculate total from Razorpay (source of truth)
@@ -476,7 +464,6 @@ export async function POST(request: NextRequest) {
     }
 
     // 21. Return success response
-    console.log("[v0] Payment verification successful, order created:", order.orderNumber);
     return NextResponse.json({
       success: true,
       message: "Payment verified and order created successfully",
@@ -487,10 +474,14 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error("[v0] Payment verification error:", error);
+    // Log the full error details for debugging
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorStack = error instanceof Error ? error.stack : "";
+    console.error("[v0] Payment verification error:", errorMessage);
+    console.error("[v0] Error stack:", errorStack);
     
     return NextResponse.json(
-      { error: "Payment verification failed. Please contact support." },
+      { error: `Payment verification failed: ${errorMessage}` },
       { status: 500 }
     );
   }
