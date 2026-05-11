@@ -883,7 +883,34 @@ export function deliveryConfirmationTemplate(
   return baseTemplate(content, `Your order ${orderNumber} has been delivered! We hope you love it.`);
 }
 
-// 17. Newsletter Subscription Confirmation
+// 17. Password Reset Code Template (6-digit code)
+export function passwordResetCodeTemplate(userName: string, resetCode: string): string {
+  const content = `
+    <div class="content">
+      <h2>Reset Your Password</h2>
+      <p>Dear <strong>${userName}</strong>,</p>
+      <p>We received a request to reset your password for your ${COMPANY_NAME} account. Use the 6-digit code below to verify your identity and reset your password.</p>
+      
+      <div style="background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%); padding: 30px; border-radius: 12px; text-align: center; margin: 30px 0;">
+        <p style="color: rgba(255,255,255,0.8); font-size: 14px; margin-bottom: 10px;">Your Password Reset Code</p>
+        <p style="font-size: 42px; font-family: 'Courier New', monospace; letter-spacing: 12px; color: #ffffff; font-weight: bold; margin: 0;">${resetCode}</p>
+      </div>
+      
+      <div class="info-box">
+        <h3>Important</h3>
+        <p>This code will expire in <strong>15 minutes</strong>.</p>
+        <p>Do not share this code with anyone.</p>
+        <p>If you did not request a password reset, please ignore this email.</p>
+      </div>
+      
+      <div class="divider"></div>
+      <p class="text-muted">If you didn't request this password reset, your account is still secure. No changes have been made.</p>
+    </div>
+  `;
+  return baseTemplate(content, `Your password reset code: ${resetCode}`);
+}
+
+// 18. Newsletter Subscription Confirmation
 export function newsletterSubscriptionTemplate(email: string): string {
   const content = `
     <div class="content">
