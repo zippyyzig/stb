@@ -105,12 +105,12 @@ const TaxBreakdownSchema = new Schema({
   taxType: {
     type: String,
     enum: ["INTRA", "INTER"],
-    required: true,
+    default: "INTER",
   },
   cgst: { type: Number, default: 0, min: 0 },
   sgst: { type: Number, default: 0, min: 0 },
   igst: { type: Number, default: 0, min: 0 },
-  totalTax: { type: Number, required: true, min: 0 },
+  totalTax: { type: Number, default: 0, min: 0 },
   customerStateCode: { type: String, default: "" },
   customerGstin: { type: String, default: null },
   businessGstin: { type: String, default: null },
@@ -120,8 +120,8 @@ const OrderSchema = new Schema<IOrder>(
   {
     orderNumber: {
       type: String,
-      required: true,
       unique: true,
+      // Not required because it's auto-generated in pre-save hook
     },
     user: {
       type: Schema.Types.ObjectId,

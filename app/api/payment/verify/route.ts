@@ -474,11 +474,8 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    // Log the full error details for debugging
     const errorMessage = error instanceof Error ? error.message : String(error);
-    const errorStack = error instanceof Error ? error.stack : "";
-    console.error("[v0] Payment verification error:", errorMessage);
-    console.error("[v0] Error stack:", errorStack);
+    console.error("Payment verification error:", errorMessage);
     
     return NextResponse.json(
       { error: `Payment verification failed: ${errorMessage}` },
