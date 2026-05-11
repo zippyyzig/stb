@@ -48,10 +48,10 @@ export default function BrandsSection({ brands }: BrandsSectionProps) {
         </div>
 
         {/* Brands Marquee */}
-        <div className="relative overflow-hidden rounded-lg border border-border bg-muted/30 py-4 md:py-5">
+        <div className="relative overflow-hidden rounded-lg border border-border bg-gradient-to-r from-slate-50 via-white to-slate-50 py-4 md:py-5">
           {/* Gradient edges */}
-          <div className="pointer-events-none absolute left-0 top-0 z-10 h-full w-8 bg-gradient-to-r from-muted/80 to-transparent md:w-12" />
-          <div className="pointer-events-none absolute right-0 top-0 z-10 h-full w-8 bg-gradient-to-l from-muted/80 to-transparent md:w-12" />
+          <div className="pointer-events-none absolute left-0 top-0 z-10 h-full w-8 bg-gradient-to-r from-slate-50 to-transparent md:w-12" />
+          <div className="pointer-events-none absolute right-0 top-0 z-10 h-full w-8 bg-gradient-to-l from-slate-50 to-transparent md:w-12" />
 
           <div
             className="brand-track flex min-w-max items-center gap-6 px-4 md:gap-8"
@@ -61,19 +61,19 @@ export default function BrandsSection({ brands }: BrandsSectionProps) {
               <Link
                 key={`${brand.slug}-${index}`}
                 href={`/brand/${brand.slug}`}
-                className="group flex shrink-0 flex-col items-center gap-1"
+                className="group flex shrink-0 flex-col items-center gap-1.5"
               >
-                <div className="flex h-10 w-16 items-center justify-center rounded bg-white p-1.5 transition-all group-hover:shadow-sm md:h-12 md:w-20 md:p-2">
+                <div className="flex h-12 w-20 items-center justify-center rounded-lg bg-white p-2 shadow-sm ring-1 ring-border/50 transition-all group-hover:shadow-md group-hover:ring-primary/30 md:h-14 md:w-24 md:p-2.5">
                   <Image
                     src={brand.logo}
                     alt={brand.name}
                     width={64}
                     height={32}
-                    className="h-auto max-h-6 w-auto max-w-[48px] object-contain opacity-60 grayscale transition-all group-hover:opacity-100 group-hover:grayscale-0 md:max-h-7 md:max-w-[56px]"
+                    className="h-auto max-h-7 w-auto max-w-[52px] object-contain transition-transform group-hover:scale-110 md:max-h-8 md:max-w-[60px]"
                     unoptimized
                   />
                 </div>
-                <span className="text-[9px] font-medium text-muted-foreground transition-colors group-hover:text-primary md:text-[10px]">
+                <span className="text-[9px] font-semibold text-foreground transition-colors group-hover:text-primary md:text-[10px]">
                   {brand.name}
                 </span>
               </Link>

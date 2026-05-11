@@ -10,7 +10,7 @@ import Brand from "@/models/Brand";
 import Product from "@/models/Product";
 import { siteConfig, getCanonicalUrl } from "@/lib/site-config";
 import { generateWebPageSchema, generateOrganizationSchema } from "@/lib/schema";
-import { Package } from "lucide-react";
+
 
 // Disable caching to always fetch fresh data
 export const dynamic = "force-dynamic";
@@ -145,12 +145,12 @@ export default async function BrandsPage() {
                       alt={`${brand.name} logo`}
                       width={80}
                       height={48}
-                      className="h-auto max-h-12 w-auto max-w-[72px] object-contain opacity-70 grayscale transition-all group-hover:opacity-100 group-hover:grayscale-0 md:max-h-14 md:max-w-[80px]"
+                      className="h-auto max-h-12 w-auto max-w-[72px] object-contain transition-transform group-hover:scale-110 md:max-h-14 md:max-w-[80px]"
                       unoptimized
                     />
                   ) : (
-                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-muted">
-                      <span className="text-lg font-bold text-muted-foreground">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-primary/10 to-primary/5">
+                      <span className="text-lg font-bold text-primary">
                         {brand.name.charAt(0)}
                       </span>
                     </div>
@@ -162,10 +162,6 @@ export default async function BrandsPage() {
                   <h2 className="text-sm font-semibold text-foreground group-hover:text-primary md:text-base">
                     {brand.name}
                   </h2>
-                  <div className="mt-1 flex items-center justify-center gap-1 text-[10px] text-muted-foreground md:text-xs">
-                    <Package className="h-3 w-3" />
-                    <span>{brand.productCount} products</span>
-                  </div>
                 </div>
               </Link>
             ))}

@@ -1,163 +1,216 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
+import { useEffect, useRef, useCallback } from "react";
+import { usePathname } from "next/navigation";
 
-// Routes that should show loading bar (major page navigations)
-const MAJOR_ROUTE_PATTERNS = [
-  /^\/$/,                          // Home page
-  /^\/products/,                   // Products listing
-  /^\/product\//,                  // Product detail
-  /^\/category\//,                 // Category pages
-  /^\/brand\//,                    // Brand pages
-  /^\/brands$/,                    // Brands listing
-  /^\/cart$/,                      // Cart page
-  /^\/checkout$/,                  // Checkout page
-  /^\/search/,                     // Search page
-  /^\/wishlist$/,                  // Wishlist page
-  /^\/dashboard/,                  // Dashboard pages
-  /^\/admin/,                      // Admin pages
-  /^\/auth\//,                     // Auth pages
-  /^\/about$/,                     // About page
-  /^\/privacy$/,                   // Privacy page
-  /^\/terms$/,                     // Terms page
-  /^\/shipping$/,                  // Shipping page
-  /^\/order-success$/,             // Order success page
+// Simple state machine for loading bar
+type LoadingState = "idle" | "loading" | "completing" | "hiding";
+
+// Routes that should show loading bar
+const MAJOR_ROUTES = [
+  "/",
+  "/products",
+  "/product/",
+  "/category/",
+  "/brand/",
+  "/brands",
+  "/cart",
+  "/checkout",
+  "/search",
+  "/wishlist",
+  "/dashboard",
+  "/admin",
+  "/auth/",
+  "/about",
+  "/privacy",
+  "/terms",
+  "/shipping",
+  "/order-success",
 ];
 
-// Check if a route should trigger loading bar
-function shouldShowLoadingBar(href: string, currentPath: string): boolean {
-  // Extract the pathname from href (remove query string)
-  const [hrefPath] = href.split("?");
-  
-  // Don't show for same page navigation
-  if (hrefPath === currentPath) {
-    return false;
-  }
-  
-  // Check if it matches any major route pattern
-  return MAJOR_ROUTE_PATTERNS.some(pattern => pattern.test(hrefPath));
+function shouldShowLoadingBar(href: string): boolean {
+  const path = href.split(/[?#]/)[0];
+  return MAJOR_ROUTES.some(route => 
+    route.endsWith("/") ? path.startsWith(route) : path === route || path.startsWith(route + "/")
+  );
 }
 
 export function LoadingBar() {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const [isLoading, setIsLoading] = useState(false);
-  const [progress, setProgress] = useState(0);
+  const barRef = useRef<HTMLDivElement>(null);
+  const stateRef = useRef<LoadingState>("idle");
+  const progressRef = useRef(0);
+  const animationFrameRef = useRef<number | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastPathRef = useRef(pathname);
+  const clickedLinkRef = useRef<string | null>(null);
 
-  // Reset loading state when route changes complete
-  useEffect(() => {
-    setIsLoading(false);
-    setProgress(0);
-  }, [pathname, searchParams]);
+  // Cleanup all timers
+  const cleanup = useCallback(() => {
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+  }, []);
 
-  // Memoized handler for link clicks
-  const handleClick = useCallback((e: MouseEvent) => {
-    const target = e.target as HTMLElement;
-    const link = target.closest("a");
-    
-    // Only trigger for internal page navigation links
-    if (!link) return;
-    
-    const href = link.getAttribute("href");
-    const targetAttr = link.getAttribute("target");
-    
-    // Skip if:
-    // - No href
-    // - External link (starts with http/https or has target="_blank")
-    // - Anchor link (starts with #)
-    // - Same page anchor (contains #)
-    // - JavaScript link
-    // - Download link
-    // - API routes
-    // - Has data-no-loading attribute
-    if (!href) return;
-    if (href.startsWith("http") || href.startsWith("//")) return;
-    if (targetAttr === "_blank") return;
-    if (href.startsWith("#")) return;
-    if (href.includes("#")) return;
-    if (href.startsWith("javascript:")) return;
-    if (link.hasAttribute("download")) return;
-    if (href.startsWith("/api/")) return;
-    if (link.hasAttribute("data-no-loading")) return;
-    
-    // Only internal navigation starting with /
-    if (!href.startsWith("/")) return;
-    
-    // Check if this is a major route that should show loading
-    if (!shouldShowLoadingBar(href, pathname)) return;
-    
-    // Start loading for actual page navigation
-    setIsLoading(true);
-    setProgress(0);
-  }, [pathname]);
+  // Update the bar visually
+  const updateBar = useCallback((progress: number, visible: boolean) => {
+    if (!barRef.current) return;
+    barRef.current.style.width = `${progress}%`;
+    barRef.current.style.opacity = visible ? "1" : "0";
+  }, []);
 
-  // Listen for click events
-  useEffect(() => {
-    document.addEventListener("click", handleClick, true);
+  // Reset to idle state
+  const reset = useCallback(() => {
+    cleanup();
+    stateRef.current = "idle";
+    progressRef.current = 0;
+    clickedLinkRef.current = null;
+    updateBar(0, false);
+  }, [cleanup, updateBar]);
+
+  // Complete the loading bar
+  const complete = useCallback(() => {
+    if (stateRef.current === "idle" || stateRef.current === "hiding") return;
     
-    return () => {
-      document.removeEventListener("click", handleClick, true);
+    cleanup();
+    stateRef.current = "completing";
+    progressRef.current = 100;
+    updateBar(100, true);
+
+    timeoutRef.current = setTimeout(() => {
+      stateRef.current = "hiding";
+      updateBar(100, false);
+      
+      timeoutRef.current = setTimeout(() => {
+        reset();
+      }, 200);
+    }, 150);
+  }, [cleanup, updateBar, reset]);
+
+  // Start loading animation
+  const startLoading = useCallback(() => {
+    if (stateRef.current === "loading") return;
+    
+    cleanup();
+    stateRef.current = "loading";
+    progressRef.current = 0;
+    updateBar(0, true);
+
+    let lastTime = performance.now();
+    
+    const animate = (currentTime: number) => {
+      if (stateRef.current !== "loading") return;
+
+      const delta = currentTime - lastTime;
+      lastTime = currentTime;
+
+      // Slow down as we progress
+      const speed = progressRef.current < 30 ? 0.08 :
+                    progressRef.current < 50 ? 0.04 :
+                    progressRef.current < 70 ? 0.02 :
+                    progressRef.current < 85 ? 0.01 : 0.002;
+      
+      progressRef.current = Math.min(progressRef.current + delta * speed, 92);
+      updateBar(progressRef.current, true);
+
+      animationFrameRef.current = requestAnimationFrame(animate);
     };
-  }, [handleClick]);
 
-  // Animate progress while loading
+    // Small delay before showing
+    timeoutRef.current = setTimeout(() => {
+      progressRef.current = 5;
+      updateBar(5, true);
+      animationFrameRef.current = requestAnimationFrame(animate);
+    }, 50);
+  }, [cleanup, updateBar]);
+
+  // Handle link clicks
   useEffect(() => {
-    if (!isLoading) return;
+    const handleClick = (e: MouseEvent) => {
+      // Don't start if already loading
+      if (stateRef.current === "loading") return;
 
-    // Fast initial progress, then slow down
-    const intervals = [
-      { delay: 50, increment: 15 },   // 0-15% fast
-      { delay: 100, increment: 10 },  // 15-25% 
-      { delay: 150, increment: 8 },   // 25-33%
-      { delay: 200, increment: 5 },   // 33-38%
-      { delay: 300, increment: 3 },   // slower progress
-      { delay: 500, increment: 2 },   // even slower
-      { delay: 1000, increment: 1 },  // very slow near end
-    ];
+      const target = e.target as HTMLElement;
+      const link = target.closest("a");
+      if (!link) return;
 
-    let currentProgress = 0;
-    let intervalIndex = 0;
+      const href = link.getAttribute("href");
+      if (!href) return;
 
-    const updateProgress = () => {
-      if (currentProgress >= 90) {
-        // Stop at 90%, will complete when route changes
+      // Skip external links, hash links, etc.
+      if (
+        href.startsWith("http") ||
+        href.startsWith("//") ||
+        href.startsWith("#") ||
+        href.startsWith("javascript:") ||
+        href.startsWith("/api/") ||
+        link.getAttribute("target") === "_blank" ||
+        link.hasAttribute("download") ||
+        link.hasAttribute("data-no-loading")
+      ) {
         return;
       }
 
-      const { increment } = intervals[Math.min(intervalIndex, intervals.length - 1)];
-      currentProgress = Math.min(currentProgress + increment, 90);
-      setProgress(currentProgress);
-      intervalIndex++;
+      // Skip same page navigation
+      const hrefPath = href.split(/[?#]/)[0];
+      if (hrefPath === pathname) return;
 
-      const nextDelay = intervals[Math.min(intervalIndex, intervals.length - 1)].delay;
-      setTimeout(updateProgress, nextDelay);
+      // Only show for major routes
+      if (!shouldShowLoadingBar(hrefPath)) return;
+
+      // Store the clicked link and start loading
+      clickedLinkRef.current = hrefPath;
+      startLoading();
     };
 
-    const timer = setTimeout(updateProgress, 50);
+    document.addEventListener("click", handleClick, { capture: true, passive: true });
+    return () => document.removeEventListener("click", handleClick, { capture: true });
+  }, [pathname, startLoading]);
 
-    return () => clearTimeout(timer);
-  }, [isLoading]);
-
-  // Complete animation when loading finishes
+  // Handle route changes
   useEffect(() => {
-    if (!isLoading && progress > 0) {
-      setProgress(100);
-      const timer = setTimeout(() => {
-        setProgress(0);
-      }, 200);
-      return () => clearTimeout(timer);
+    if (lastPathRef.current !== pathname) {
+      lastPathRef.current = pathname;
+      
+      // Only complete if we were loading due to a click
+      if (stateRef.current === "loading" && clickedLinkRef.current) {
+        complete();
+      }
     }
-  }, [isLoading, progress]);
+  }, [pathname, complete]);
 
-  if (progress === 0) return null;
+  // Safety timeout
+  useEffect(() => {
+    if (stateRef.current !== "loading") return;
+
+    const timeout = setTimeout(() => {
+      if (stateRef.current === "loading") {
+        complete();
+      }
+    }, 10000);
+
+    return () => clearTimeout(timeout);
+  }, [stateRef.current === "loading", complete]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => cleanup();
+  }, [cleanup]);
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-[9999] h-1 bg-transparent">
+    <div className="fixed top-0 left-0 right-0 z-[9999] h-1 pointer-events-none">
       <div
-        className="h-full bg-primary transition-all duration-200 ease-out"
+        ref={barRef}
+        className="h-full bg-primary"
         style={{
-          width: `${progress}%`,
+          width: "0%",
+          opacity: 0,
+          transition: "width 100ms linear, opacity 150ms ease-out",
           boxShadow: "0 0 10px var(--primary), 0 0 5px var(--primary)",
         }}
       />
@@ -165,18 +218,10 @@ export function LoadingBar() {
   );
 }
 
-// Hook to manually trigger loading bar for programmatic navigation
+// Hook for programmatic loading control
 export function useLoadingBar() {
-  const [, setTrigger] = useState(0);
-  
-  const startLoading = useCallback(() => {
-    // Dispatch a custom event that the LoadingBar can listen to
-    window.dispatchEvent(new CustomEvent("loadingbar:start"));
-  }, []);
-  
-  const stopLoading = useCallback(() => {
-    window.dispatchEvent(new CustomEvent("loadingbar:stop"));
-  }, []);
-  
-  return { startLoading, stopLoading, forceUpdate: () => setTrigger(n => n + 1) };
+  return {
+    startLoading: () => window.dispatchEvent(new CustomEvent("loadingbar:start")),
+    stopLoading: () => window.dispatchEvent(new CustomEvent("loadingbar:stop")),
+  };
 }
