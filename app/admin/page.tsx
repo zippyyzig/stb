@@ -525,7 +525,7 @@ export default async function AdminDashboard() {
                     <div key={method._id} className="space-y-2">
                       <div className="flex items-center justify-between text-sm">
                         <span className="font-medium capitalize">
-                          {method._id === "cod" ? "Cash on Delivery" : method._id.replace("_", " ")}
+                          {method._id === "cod" ? "Cash on Delivery (Legacy)" : method._id.replace("_", " ")}
                         </span>
                         <span className="text-muted-foreground">
                           {method.count} orders ({percentage}%)

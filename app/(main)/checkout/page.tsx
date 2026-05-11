@@ -25,7 +25,6 @@ import {
   Plus,
   AlertCircle,
   CheckCircle2,
-  WifiOff,
 } from "lucide-react";
 
 // Razorpay types
@@ -163,7 +162,6 @@ export default function CheckoutPage() {
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
   const [savedAddresses, setSavedAddresses] = useState<Address[]>([]);
-  const [paymentMethod, setPaymentMethod] = useState<"cod" | "razorpay">("razorpay");
   const [shippingCost, setShippingCost] = useState(99);
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [razorpayLoaded, setRazorpayLoaded] = useState(false);
@@ -544,70 +542,8 @@ export default function CheckoutPage() {
     return error.description || "Payment failed. Please try again or use a different payment method.";
   };
 
-  const handlePlaceCODOrder = async () => {
-    if (!selectedAddress) {
-      setOrderError("Please add a delivery address");
-      vibrate(100);
-      return;
-    }
-
-    // Check network connectivity
-    if (!isOnline) {
-      setOrderError("You're offline. Please check your internet connection and try again.");
-      vibrate([50, 100, 50]);
-      return;
-    }
-
-    setIsPlacingOrder(true);
-    setOrderError(null);
-
-    try {
-      // Send minimal data - server calculates prices securely
-      const orderData = {
-        items: items.map((item) => ({
-          product: item.product._id,
-          quantity: item.quantity,
-        })),
-        shippingAddress: {
-          name: selectedAddress.name,
-          phone: selectedAddress.phone,
-          address: selectedAddress.address,
-          city: selectedAddress.city,
-          state: selectedAddress.state,
-          pincode: selectedAddress.pincode,
-        },
-        paymentMethod: "cod",
-      };
-
-      const response = await fetch("/api/orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(orderData),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        // Clear cart and redirect to success with order number
-        await fetch("/api/cart", { method: "DELETE" });
-        router.push(`/order-success?orderId=${data.order._id}&orderNumber=${data.order.orderNumber}`);
-      } else {
-        setOrderError(data.error || "Failed to place order");
-      }
-    } catch (error) {
-      console.error("Error placing order:", error);
-      setOrderError("Failed to place order. Please try again.");
-    } finally {
-      setIsPlacingOrder(false);
-    }
-  };
-
   const handlePlaceOrder = () => {
-    if (paymentMethod === "razorpay") {
-      initiateRazorpayPayment();
-    } else {
-      handlePlaceCODOrder();
-    }
+    initiateRazorpayPayment();
   };
 
   // Retry payment with same cart
@@ -691,15 +627,6 @@ export default function CheckoutPage() {
                           <CreditCard className="h-3.5 w-3.5" />
                         )}
                         Retry Payment
-                      </Button>
-                      <Button
-                        onClick={() => setPaymentMethod("cod")}
-                        variant="outline"
-                        size="sm"
-                        className="gap-1.5 border-red-300 text-red-700 hover:bg-red-100"
-                      >
-                        <Truck className="h-3.5 w-3.5" />
-                        Switch to COD
                       </Button>
                     </div>
                   )}
@@ -906,26 +833,15 @@ export default function CheckoutPage() {
                 </div>
 
                 <div className="flex flex-col gap-3">
-                  <label
-                    className={`flex cursor-pointer items-center gap-4 rounded-lg border p-4 transition-colors ${
-                      paymentMethod === "razorpay"
-                        ? "border-primary bg-primary/5"
-                        : "border-border hover:bg-muted/50"
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="payment"
-                      value="razorpay"
-                      checked={paymentMethod === "razorpay"}
-                      onChange={() => setPaymentMethod("razorpay")}
-                      className="h-4 w-4 text-primary"
-                    />
+                  <div className="flex items-center gap-4 rounded-lg border border-primary bg-primary/5 p-4">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                      <CreditCard className="h-5 w-5 text-primary" />
+                    </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <p className="font-medium">Pay Online (Razorpay)</p>
                         <span className="text-[10px] font-semibold text-green-600 bg-green-100 px-1.5 py-0.5 rounded">
-                          Recommended
+                          Secure
                         </span>
                       </div>
                       <p className="body-sm text-muted-foreground">
@@ -933,30 +849,7 @@ export default function CheckoutPage() {
                       </p>
                     </div>
                     <ShieldCheck className="h-5 w-5 text-green-600" />
-                  </label>
-
-                  <label
-                    className={`flex cursor-pointer items-center gap-4 rounded-lg border p-4 transition-colors ${
-                      paymentMethod === "cod"
-                        ? "border-primary bg-primary/5"
-                        : "border-border hover:bg-muted/50"
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="payment"
-                      value="cod"
-                      checked={paymentMethod === "cod"}
-                      onChange={() => setPaymentMethod("cod")}
-                      className="h-4 w-4 text-primary"
-                    />
-                    <div>
-                      <p className="font-medium">Cash on Delivery</p>
-                      <p className="body-sm text-muted-foreground">
-                        Pay when you receive your order
-                      </p>
-                    </div>
-                  </label>
+                  </div>
                 </div>
               </div>
             </div>

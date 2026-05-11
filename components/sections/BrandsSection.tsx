@@ -67,9 +67,9 @@ export default function BrandsSection({ brands }: BrandsSectionProps) {
                   <Image
                     src={brand.logo}
                     alt={brand.name}
-                    width={64}
-                    height={32}
-                    className="h-auto max-h-7 w-auto max-w-[52px] object-contain transition-transform group-hover:scale-110 md:max-h-8 md:max-w-[60px]"
+                    width={110}
+                    height={50}
+                    className="h-auto w-auto max-w-[110px] object-contain transition-transform group-hover:scale-110 md:max-w-[110px]"
                     unoptimized
                   />
                 </div>

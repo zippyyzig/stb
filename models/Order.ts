@@ -10,7 +10,7 @@ export type OrderStatus =
   | "returned";
 
 export type PaymentStatus = "pending" | "paid" | "failed" | "refunded";
-export type PaymentMethod = "cod" | "razorpay" | "bank_transfer";
+export type PaymentMethod = "razorpay" | "bank_transfer";
 
 export interface IOrderItem {
   product: mongoose.Types.ObjectId;
@@ -181,7 +181,7 @@ const OrderSchema = new Schema<IOrder>(
     },
     paymentMethod: {
       type: String,
-      enum: ["cod", "razorpay", "bank_transfer"],
+      enum: ["razorpay", "bank_transfer"],
       required: true,
     },
     razorpayOrderId: String,

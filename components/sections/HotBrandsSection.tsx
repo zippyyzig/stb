@@ -80,7 +80,7 @@ export default function HotBrandsSection({ brands, title = "Hot Brands" }: HotBr
                       alt={brand.name}
                       width={80}
                       height={40}
-                      className="h-auto max-h-8 w-auto max-w-[60px] object-contain transition-transform group-hover:scale-110 md:max-h-10 md:max-w-[80px]"
+                      className="h-auto w-auto max-w-[150px] object-contain transition-transform group-hover:scale-110 md:max-w-[150px]"
                       unoptimized
                     />
                   </div>
