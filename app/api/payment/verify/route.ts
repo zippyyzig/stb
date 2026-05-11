@@ -316,7 +316,9 @@ export async function POST(request: NextRequest) {
     const totalTax = parseFloat(orderNotes?.totalTax || "0");
     const shippingCost = parseFloat(orderNotes?.shippingCost || "0");
     const discount = parseFloat(orderNotes?.discount || "0");
-    const taxType = orderNotes?.taxType || "INTER";
+    // Ensure taxType is valid enum value (INTRA or INTER)
+    const rawTaxType = orderNotes?.taxType || "";
+    const taxType: "INTRA" | "INTER" = rawTaxType === "INTRA" ? "INTRA" : "INTER";
     const customerStateCode = orderNotes?.customerStateCode || "";
 
     // 13. Calculate total from Razorpay (source of truth)
@@ -472,10 +474,14 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error("Payment verification error:", error);
+    // Log the full error details for debugging
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorStack = error instanceof Error ? error.stack : "";
+    console.error("[v0] Payment verification error:", errorMessage);
+    console.error("[v0] Error stack:", errorStack);
     
     return NextResponse.json(
-      { error: "Payment verification failed. Please contact support." },
+      { error: `Payment verification failed: ${errorMessage}` },
       { status: 500 }
     );
   }

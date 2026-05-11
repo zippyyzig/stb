@@ -462,7 +462,7 @@ export default function CheckoutPage() {
               setIsPlacingOrder(false);
             }
           } catch (verifyError) {
-            console.error("Verification error:", verifyError);
+            console.error("Verification exception:", verifyError);
             setOrderError("Payment verification failed. Please contact support if amount was deducted. Order ID: " + response.razorpay_order_id);
             setPaymentFailed(true);
             setIsPlacingOrder(false);

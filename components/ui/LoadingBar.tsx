@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 
 export function LoadingBar() {
@@ -15,42 +15,43 @@ export function LoadingBar() {
     setProgress(0);
   }, [pathname, searchParams]);
 
-  // Listen for click events on links and buttons
+  // Listen for click events ONLY on actual page navigation links
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       const link = target.closest("a");
-      const button = target.closest("button");
       
-      // Check if it's an internal link navigation
+      // Only trigger for internal page navigation links
       if (link) {
         const href = link.getAttribute("href");
-        // Only show loading for internal navigation, not external links or anchors
-        if (href && href.startsWith("/") && !href.startsWith("/#")) {
-          // Don't trigger for the same page
-          if (href !== pathname && !href.startsWith(pathname + "#")) {
-            startLoading();
-          }
-        }
-      }
-      
-      // Check for buttons that might trigger loading (forms, actions)
-      if (button && !button.disabled) {
-        const type = button.getAttribute("type");
-        const isSubmit = type === "submit";
-        const hasLoadingClass = button.classList.contains("loading") || 
-                               button.getAttribute("aria-busy") === "true";
+        const target_attr = link.getAttribute("target");
         
-        // Only show for submit buttons or buttons with loading state
-        if (isSubmit && !hasLoadingClass) {
-          startLoading();
+        // Skip if:
+        // - No href
+        // - External link (starts with http/https or has target="_blank")
+        // - Anchor link (starts with #)
+        // - Same page anchor (contains #)
+        // - JavaScript link
+        // - Download link
+        if (!href) return;
+        if (href.startsWith("http") || href.startsWith("//")) return;
+        if (target_attr === "_blank") return;
+        if (href.startsWith("#")) return;
+        if (href.includes("#")) return;
+        if (href.startsWith("javascript:")) return;
+        if (link.hasAttribute("download")) return;
+        
+        // Only internal navigation starting with /
+        if (href.startsWith("/")) {
+          // Don't trigger for same page
+          const currentPath = pathname + (searchParams.toString() ? `?${searchParams.toString()}` : "");
+          if (href === pathname || href === currentPath) return;
+          
+          // Start loading for actual page navigation
+          setIsLoading(true);
+          setProgress(0);
         }
       }
-    };
-
-    const startLoading = () => {
-      setIsLoading(true);
-      setProgress(0);
     };
 
     document.addEventListener("click", handleClick, true);
@@ -58,7 +59,7 @@ export function LoadingBar() {
     return () => {
       document.removeEventListener("click", handleClick, true);
     };
-  }, [pathname]);
+  }, [pathname, searchParams]);
 
   // Animate progress while loading
   useEffect(() => {
