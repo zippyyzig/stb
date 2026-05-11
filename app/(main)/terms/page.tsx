@@ -1,7 +1,23 @@
+import { Metadata } from "next";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import Link from "next/link";
 import { FileText, ChevronRight, Mail, Phone } from "lucide-react";
+import { siteConfig, getCanonicalUrl } from "@/lib/site-config";
+
+export const metadata: Metadata = {
+  title: "Terms & Conditions",
+  description: "Read the Terms & Conditions for using Smart Tech Bazaar. Understand your rights and responsibilities when purchasing from our website.",
+  alternates: {
+    canonical: getCanonicalUrl("/terms"),
+  },
+  openGraph: {
+    title: `Terms & Conditions | ${siteConfig.name}`,
+    description: "Read the Terms & Conditions for using Smart Tech Bazaar.",
+    url: getCanonicalUrl("/terms"),
+    type: "website",
+  },
+};
 
 const sections = [
   {

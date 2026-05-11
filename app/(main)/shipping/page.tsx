@@ -1,3 +1,4 @@
+import { Metadata } from "next";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import Link from "next/link";
@@ -14,6 +15,21 @@ import {
   ChevronRight,
   IndianRupee,
 } from "lucide-react";
+import { siteConfig, getCanonicalUrl } from "@/lib/site-config";
+
+export const metadata: Metadata = {
+  title: "Shipping Information",
+  description: "Free shipping across India. Same day delivery in Bangalore. Learn about our delivery zones, timelines, and shipping policies at Smart Tech Bazaar.",
+  alternates: {
+    canonical: getCanonicalUrl("/shipping"),
+  },
+  openGraph: {
+    title: `Shipping Information | ${siteConfig.name}`,
+    description: "Free shipping across India. Same day delivery in Bangalore.",
+    url: getCanonicalUrl("/shipping"),
+    type: "website",
+  },
+};
 
 const shippingZones = [
   {

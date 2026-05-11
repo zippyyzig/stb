@@ -67,8 +67,13 @@ export function useAppVersion() {
     // Clear the update available state
     setUpdateAvailable(false);
     
-    // Force hard reload
-    window.location.href = window.location.href.split("?")[0] + "?_refresh=" + Date.now();
+    // Force hard reload - use clean base URL without query params
+    const baseUrl = window.location.origin + window.location.pathname;
+    // Remove trailing slash for consistency, then reload
+    const cleanUrl = baseUrl.endsWith("/") && baseUrl !== window.location.origin + "/" 
+      ? baseUrl.slice(0, -1) 
+      : baseUrl;
+    window.location.replace(cleanUrl);
   }, [getCurrentVersion]);
 
   // Dismiss the update banner without refreshing (stores current version)
