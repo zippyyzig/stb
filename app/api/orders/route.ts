@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate payment method
-    if (!paymentMethod || !["cod", "razorpay", "bank_transfer"].includes(paymentMethod)) {
+    if (!paymentMethod || !["razorpay", "bank_transfer"].includes(paymentMethod)) {
       return NextResponse.json(
         { error: "Invalid payment method" },
         { status: 400 }
@@ -214,7 +214,7 @@ export async function POST(request: NextRequest) {
       discount: 0,
       total,
       paymentMethod,
-      paymentStatus: paymentMethod === "cod" ? "pending" : "pending",
+      paymentStatus: "pending",
       status: "pending",
       notes,
     });
