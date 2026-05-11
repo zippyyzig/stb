@@ -424,7 +424,10 @@ export default function CheckoutPage() {
         },
         handler: async function (response: RazorpayResponse) {
           // Step 3: Verify payment on server
+          console.log("[v0] Razorpay handler called with response:", JSON.stringify(response));
+          
           try {
+            console.log("[v0] Sending verification request...");
             const verifyResponse = await fetch("/api/payment/verify", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -447,22 +450,26 @@ export default function CheckoutPage() {
               }),
             });
 
+            console.log("[v0] Verify response status:", verifyResponse.status);
             const verifyData = await verifyResponse.json();
+            console.log("[v0] Verify response data:", JSON.stringify(verifyData));
 
             if (verifyResponse.ok && verifyData.success) {
               // Payment successful - clear failure states and redirect
+              console.log("[v0] Payment verified successfully, redirecting...");
               setPaymentFailed(false);
               setPaymentAttempts(0);
               setFailedOrderId(null);
               router.push(`/order-success?orderId=${verifyData.orderId}&orderNumber=${verifyData.orderNumber}`);
             } else {
               // Verification failed - this is a serious issue
+              console.log("[v0] Payment verification failed:", verifyData.error);
               setOrderError(verifyData.error || "Payment verification failed. If amount was deducted, please contact support with Order ID: " + response.razorpay_order_id);
               setPaymentFailed(true);
               setIsPlacingOrder(false);
             }
           } catch (verifyError) {
-            console.error("Verification error:", verifyError);
+            console.error("[v0] Verification exception:", verifyError);
             setOrderError("Payment verification failed. Please contact support if amount was deducted. Order ID: " + response.razorpay_order_id);
             setPaymentFailed(true);
             setIsPlacingOrder(false);
