@@ -46,7 +46,7 @@ export default function TopCategories({ categories }: TopCategoriesProps) {
             <h2 className="text-sm font-bold text-foreground md:text-base">Shop by Category</h2>
           </div>
           <Link
-            href="/categories"
+            href="/products"
             className="flex items-center gap-0.5 text-[11px] font-semibold text-primary hover:text-stb-red-dark md:text-xs"
           >
             View All <ChevronRight className="h-3 w-3" />
@@ -79,7 +79,7 @@ export default function TopCategories({ categories }: TopCategoriesProps) {
           ))}
           {/* "More" pill */}
           <Link
-            href="/categories"
+            href="/products"
             className="group flex shrink-0 flex-col items-center gap-2 press-active"
           >
             <div className="flex h-[72px] w-[72px] items-center justify-center rounded-full border-2 border-dashed border-border bg-muted shadow-sm transition-all group-hover:border-primary">

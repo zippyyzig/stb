@@ -333,13 +333,10 @@ function LoginForm() {
               </div>
 
               <div>
-                <div className="mb-1.5 flex items-center justify-between">
+                <div className="mb-1.5">
                   <label htmlFor="password-desktop" className="text-xs font-semibold text-foreground">
                     Password
                   </label>
-                  <Link href="/auth/forgot-password" className="text-xs font-medium text-primary hover:underline">
-                    Forgot password?
-                  </Link>
                 </div>
                 <div className="relative">
                   <Lock className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -445,10 +442,9 @@ function MobileFormContent({
           </div>
         </div>
         <div>
-          <div className="mb-1.5 flex items-center justify-between">
-            <label htmlFor="password-mobile" className="text-xs font-semibold text-foreground">Password</label>
-            <Link href="/auth/forgot-password" className="text-xs font-medium text-primary hover:underline">Forgot password?</Link>
-          </div>
+                  <div className="mb-1.5">
+                  <label htmlFor="password-mobile" className="text-xs font-semibold text-foreground">Password</label>
+                  </div>
           <div className="relative">
             <Lock className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input id="password-mobile" type={showPassword ? "text" : "password"} placeholder="Enter your password" value={password} onChange={(e) => setPassword(e.target.value)} className="h-12 rounded-xl border-border pl-10 pr-11 text-sm focus:border-primary" required />
