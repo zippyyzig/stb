@@ -1,7 +1,23 @@
+import { Metadata } from "next";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import Link from "next/link";
 import { ShieldCheck, ChevronRight, Mail, Phone } from "lucide-react";
+import { siteConfig, getCanonicalUrl } from "@/lib/site-config";
+
+export const metadata: Metadata = {
+  title: "Privacy Policy",
+  description: "Learn how Smart Tech Bazaar collects, uses, and protects your personal information. Your privacy and data security is our priority.",
+  alternates: {
+    canonical: getCanonicalUrl("/privacy"),
+  },
+  openGraph: {
+    title: `Privacy Policy | ${siteConfig.name}`,
+    description: "Learn how Smart Tech Bazaar collects, uses, and protects your personal information.",
+    url: getCanonicalUrl("/privacy"),
+    type: "website",
+  },
+};
 
 const sections = [
   {
