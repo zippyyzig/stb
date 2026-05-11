@@ -1,7 +1,43 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
+
+// Routes that should show loading bar (major page navigations)
+const MAJOR_ROUTE_PATTERNS = [
+  /^\/$/,                          // Home page
+  /^\/products/,                   // Products listing
+  /^\/product\//,                  // Product detail
+  /^\/category\//,                 // Category pages
+  /^\/brand\//,                    // Brand pages
+  /^\/brands$/,                    // Brands listing
+  /^\/cart$/,                      // Cart page
+  /^\/checkout$/,                  // Checkout page
+  /^\/search/,                     // Search page
+  /^\/wishlist$/,                  // Wishlist page
+  /^\/dashboard/,                  // Dashboard pages
+  /^\/admin/,                      // Admin pages
+  /^\/auth\//,                     // Auth pages
+  /^\/about$/,                     // About page
+  /^\/privacy$/,                   // Privacy page
+  /^\/terms$/,                     // Terms page
+  /^\/shipping$/,                  // Shipping page
+  /^\/order-success$/,             // Order success page
+];
+
+// Check if a route should trigger loading bar
+function shouldShowLoadingBar(href: string, currentPath: string): boolean {
+  // Extract the pathname from href (remove query string)
+  const [hrefPath] = href.split("?");
+  
+  // Don't show for same page navigation
+  if (hrefPath === currentPath) {
+    return false;
+  }
+  
+  // Check if it matches any major route pattern
+  return MAJOR_ROUTE_PATTERNS.some(pattern => pattern.test(hrefPath));
+}
 
 export function LoadingBar() {
   const pathname = usePathname();
@@ -15,51 +51,55 @@ export function LoadingBar() {
     setProgress(0);
   }, [pathname, searchParams]);
 
-  // Listen for click events ONLY on actual page navigation links
-  useEffect(() => {
-    const handleClick = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      const link = target.closest("a");
-      
-      // Only trigger for internal page navigation links
-      if (link) {
-        const href = link.getAttribute("href");
-        const target_attr = link.getAttribute("target");
-        
-        // Skip if:
-        // - No href
-        // - External link (starts with http/https or has target="_blank")
-        // - Anchor link (starts with #)
-        // - Same page anchor (contains #)
-        // - JavaScript link
-        // - Download link
-        if (!href) return;
-        if (href.startsWith("http") || href.startsWith("//")) return;
-        if (target_attr === "_blank") return;
-        if (href.startsWith("#")) return;
-        if (href.includes("#")) return;
-        if (href.startsWith("javascript:")) return;
-        if (link.hasAttribute("download")) return;
-        
-        // Only internal navigation starting with /
-        if (href.startsWith("/")) {
-          // Don't trigger for same page
-          const currentPath = pathname + (searchParams.toString() ? `?${searchParams.toString()}` : "");
-          if (href === pathname || href === currentPath) return;
-          
-          // Start loading for actual page navigation
-          setIsLoading(true);
-          setProgress(0);
-        }
-      }
-    };
+  // Memoized handler for link clicks
+  const handleClick = useCallback((e: MouseEvent) => {
+    const target = e.target as HTMLElement;
+    const link = target.closest("a");
+    
+    // Only trigger for internal page navigation links
+    if (!link) return;
+    
+    const href = link.getAttribute("href");
+    const targetAttr = link.getAttribute("target");
+    
+    // Skip if:
+    // - No href
+    // - External link (starts with http/https or has target="_blank")
+    // - Anchor link (starts with #)
+    // - Same page anchor (contains #)
+    // - JavaScript link
+    // - Download link
+    // - API routes
+    // - Has data-no-loading attribute
+    if (!href) return;
+    if (href.startsWith("http") || href.startsWith("//")) return;
+    if (targetAttr === "_blank") return;
+    if (href.startsWith("#")) return;
+    if (href.includes("#")) return;
+    if (href.startsWith("javascript:")) return;
+    if (link.hasAttribute("download")) return;
+    if (href.startsWith("/api/")) return;
+    if (link.hasAttribute("data-no-loading")) return;
+    
+    // Only internal navigation starting with /
+    if (!href.startsWith("/")) return;
+    
+    // Check if this is a major route that should show loading
+    if (!shouldShowLoadingBar(href, pathname)) return;
+    
+    // Start loading for actual page navigation
+    setIsLoading(true);
+    setProgress(0);
+  }, [pathname]);
 
+  // Listen for click events
+  useEffect(() => {
     document.addEventListener("click", handleClick, true);
     
     return () => {
       document.removeEventListener("click", handleClick, true);
     };
-  }, [pathname, searchParams]);
+  }, [handleClick]);
 
   // Animate progress while loading
   useEffect(() => {
@@ -123,4 +163,20 @@ export function LoadingBar() {
       />
     </div>
   );
+}
+
+// Hook to manually trigger loading bar for programmatic navigation
+export function useLoadingBar() {
+  const [, setTrigger] = useState(0);
+  
+  const startLoading = useCallback(() => {
+    // Dispatch a custom event that the LoadingBar can listen to
+    window.dispatchEvent(new CustomEvent("loadingbar:start"));
+  }, []);
+  
+  const stopLoading = useCallback(() => {
+    window.dispatchEvent(new CustomEvent("loadingbar:stop"));
+  }, []);
+  
+  return { startLoading, stopLoading, forceUpdate: () => setTrigger(n => n + 1) };
 }
