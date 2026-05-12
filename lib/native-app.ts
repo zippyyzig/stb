@@ -704,10 +704,11 @@ export function nativeGoogleSignIn(): Promise<GoogleLoginResult | null> {
 
       console.log("[Median] Calling median.socialLogin.google.login with Web Client ID:", GOOGLE_WEB_CLIENT_ID);
       
-      // Call the Median Social Login API
-      // MUST pass clientId to avoid "legacy mode" error
-      // CRITICAL: Use the WEB Client ID here, NOT the Android Client ID
-      // The Android Client ID is only for SHA-1 configuration in Google Cloud Console
+      // IMPORTANT: Median's native bridge calls the callback by LOOKING UP a global
+      // window function by name string. Passing a direct function reference also works
+      // in newer Median versions, but the global registration below ensures compatibility.
+      // Do NOT pass redirectUri here — that would open a second webview causing the
+      // double account chooser issue.
       median.socialLogin.google.login({
         clientId: GOOGLE_WEB_CLIENT_ID,
         callback: handleMedianGoogleCallback,
@@ -762,11 +763,10 @@ export function nativeGoogleSignInWithRedirect(redirectUri?: string): void {
     const authRedirectUri = redirectUri || 
       `${window.location.origin}/api/auth/median-google`;
     
-    console.log("[Median] Initiating Google Sign-In with Web Client ID and redirect to:", authRedirectUri);
-    console.log("[Median] Web Client ID:", GOOGLE_WEB_CLIENT_ID);
+    console.log("[Median] Initiating Google Sign-In with redirect to:", authRedirectUri);
     
-    // Server-side redirect mode - Median will POST tokens to your endpoint
-    // IMPORTANT: Must pass clientId even in redirect mode to avoid "legacy mode" issues
+    // Server-side redirect mode — Median POSTs tokens to the redirectUri endpoint.
+    // Do NOT mix redirectUri + clientId + callback together; use one mode only.
     median.socialLogin.google.login({
       clientId: GOOGLE_WEB_CLIENT_ID,
       redirectUri: authRedirectUri,
