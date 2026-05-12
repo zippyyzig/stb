@@ -166,25 +166,25 @@ export default function CheckoutPage() {
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [razorpayLoaded, setRazorpayLoaded] = useState(false);
   const [orderError, setOrderError] = useState<string | null>(null);
-  
+
   // Payment failure states
   const [paymentFailed, setPaymentFailed] = useState(false);
   const [failedOrderId, setFailedOrderId] = useState<string | null>(null);
   const [paymentAttempts, setPaymentAttempts] = useState(0);
   const [isB2B, setIsB2B] = useState(false);
-  
+
   // Check if user is admin (can see both prices)
   const isAdmin = canSeeBothPrices(session?.user?.role);
-  
+
   // Tax breakdown state
   const [taxBreakdown, setTaxBreakdown] = useState<TaxBreakdown | null>(null);
   const [isCalculatingTax, setIsCalculatingTax] = useState(false);
-  
+
   // Mobile app detection
   const { isOnline } = useNetworkStatus();
   const [isMobileApp, setIsMobileApp] = useState(false);
   const [mobilePlatform, setMobilePlatform] = useState<"ios" | "android" | "web">("web");
-  
+
   useEffect(() => {
     setIsMobileApp(isRunningInMobileApp());
     setMobilePlatform(getMobilePlatform());
@@ -232,7 +232,7 @@ export default function CheckoutPage() {
       });
 
       const data = await response.json();
-      
+
       if (data.success && data.breakdown) {
         setTaxBreakdown(data.breakdown.taxBreakdown);
         setShippingCost(data.breakdown.shippingCost);
@@ -473,7 +473,7 @@ export default function CheckoutPage() {
       // Handle payment failures with detailed error tracking
       razorpay.on("payment.failed", async function (response: RazorpayErrorResponse) {
         console.error("Payment failed:", response.error);
-        
+
         // Increment attempt count
         setPaymentAttempts(prev => prev + 1);
         setPaymentFailed(true);
@@ -491,7 +491,7 @@ export default function CheckoutPage() {
           });
 
           const failureData = await failureResponse.json();
-          
+
           // Show user-friendly error message
           const errorMessage = failureData.userMessage || getPaymentErrorMessage(response.error);
           setOrderError(errorMessage);
@@ -574,14 +574,14 @@ export default function CheckoutPage() {
     <div className="flex min-h-screen flex-col">
       {/* Offline Alert for Mobile Apps */}
       <OfflineAlert onRetry={() => window.location.reload()} />
-      
+
       {/* Load Razorpay Script */}
       <Script
         src="https://checkout.razorpay.com/v1/checkout.js"
         onLoad={() => setRazorpayLoaded(true)}
         strategy="lazyOnload"
       />
-      
+
       <Header />
       <main className="flex-1 bg-background pb-32 md:pb-0">
         {/* Breadcrumb */}
@@ -667,11 +667,10 @@ export default function CheckoutPage() {
                     {savedAddresses.map((addr) => (
                       <label
                         key={addr._id}
-                        className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors md:p-4 ${
-                          selectedAddress?._id === addr._id
+                        className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors md:p-4 ${selectedAddress?._id === addr._id
                             ? "border-primary bg-primary/5"
                             : "border-border hover:bg-muted/50"
-                        }`}
+                          }`}
                       >
                         <input
                           type="radio"
@@ -959,7 +958,7 @@ export default function CheckoutPage() {
                           </span>
                         )}
                       </div>
-                      
+
                       {taxBreakdown.isIntraState ? (
                         <>
                           <div className="flex justify-between text-sm">
@@ -977,7 +976,7 @@ export default function CheckoutPage() {
                           <span>₹{taxBreakdown.igst.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
                         </div>
                       )}
-                      
+
                       <div className="flex justify-between text-sm font-medium border-t border-border pt-2">
                         <span>Total Tax</span>
                         <span>₹{taxBreakdown.totalTax.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
