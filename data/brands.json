@@ -1,14 +1,14 @@
 [
   {
     "_id": {
-      "$oid": "6a01bb3e43b05938a30b4f81"
+      "$oid": "6a01bb3e43b05938a30b4f72"
     },
-    "name": "Hikvision",
-    "slug": "hikvision",
+    "name": "TVS Electronics",
+    "slug": "tvs-electronics",
     "description": "",
     "logo": "",
     "isActive": true,
-    "sortOrder": 1,
+    "sortOrder": 3,
     "productCount": 0,
     "createdAt": {
       "$date": "2026-05-11T11:19:26.637Z"

@@ -88,16 +88,18 @@ export default function GoogleSignInDebugPage() {
         return;
       }
       
+      // IMPORTANT: Median requires callback as a STRING (function name), not a function reference
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (window as any).testGoogleCallback = (response: any) => {
         addLog(`Callback received: ${JSON.stringify(response)}`);
       };
       
-      addLog("Calling with Web clientId...");
+      addLog("Calling with Web clientId and STRING callback name...");
       
+      // Pass callback as STRING - this is required by Median's native bridge
       median.socialLogin.google.login({
         clientId: GOOGLE_WEB_CLIENT_ID,
-        callback: (window as any).testGoogleCallback,
+        callback: "testGoogleCallback",
       });
       
       addLog("Call completed, waiting for callback...");
@@ -107,7 +109,7 @@ export default function GoogleSignInDebugPage() {
   };
 
   const handleRedirectMode = () => {
-    addLog("Testing REDIRECT MODE...");
+    addLog("Testing REDIRECT MODE (no clientId - configured in Median dashboard)...");
     
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -120,7 +122,10 @@ export default function GoogleSignInDebugPage() {
       
       const redirectUri = `${window.location.origin}/api/auth/median-google`;
       addLog(`Redirect URI: ${redirectUri}`);
+      addLog("NOTE: clientId should be configured in Median.co dashboard, not passed here");
       
+      // IMPORTANT: Do NOT pass clientId when using redirectUri mode
+      // The clientId should be configured in Median.co dashboard
       median.socialLogin.google.login({
         redirectUri: redirectUri,
       });
@@ -128,6 +133,37 @@ export default function GoogleSignInDebugPage() {
       addLog("Redirect initiated - should redirect after auth...");
     } catch (error) {
       addLog(`Redirect error: ${error}`);
+    }
+  };
+
+  const handleCallbackOnlyMode = () => {
+    addLog("Testing CALLBACK ONLY MODE (no clientId - uses Median dashboard config)...");
+    
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const median = (window as any).median;
+      
+      if (!median?.socialLogin?.google?.login) {
+        addLog("ERROR: median.socialLogin.google.login not available");
+        return;
+      }
+      
+      // Register global callback
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (window as any).testCallbackOnly = (response: any) => {
+        addLog(`Callback received: ${JSON.stringify(response)}`);
+      };
+      
+      addLog("Calling with ONLY callback string (no clientId)...");
+      
+      // Try without clientId - it should use the one configured in Median dashboard
+      median.socialLogin.google.login({
+        callback: "testCallbackOnly",
+      });
+      
+      addLog("Call completed, waiting for callback...");
+    } catch (error) {
+      addLog(`Callback-only error: ${error}`);
     }
   };
 
@@ -188,6 +224,13 @@ export default function GoogleSignInDebugPage() {
             className="rounded-lg bg-purple-600 px-4 py-2 text-white hover:bg-purple-700"
           >
             Test Redirect Mode
+          </button>
+          
+          <button
+            onClick={handleCallbackOnlyMode}
+            className="rounded-lg bg-orange-600 px-4 py-2 text-white hover:bg-orange-700"
+          >
+            Test Callback Only (No ClientId)
           </button>
           
           <button

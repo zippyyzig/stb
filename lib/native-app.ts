@@ -704,14 +704,15 @@ export function nativeGoogleSignIn(): Promise<GoogleLoginResult | null> {
 
       console.log("[Median] Calling median.socialLogin.google.login with Web Client ID:", GOOGLE_WEB_CLIENT_ID);
       
-      // IMPORTANT: Median's native bridge calls the callback by LOOKING UP a global
-      // window function by name string. Passing a direct function reference also works
-      // in newer Median versions, but the global registration below ensures compatibility.
+      // IMPORTANT: According to Median.co documentation, the callback MUST be passed
+      // as a STRING containing the name of a globally registered window function.
+      // Passing a direct function reference causes "legacy mode" errors.
+      // The function must be accessible as window["functionName"].
       // Do NOT pass redirectUri here — that would open a second webview causing the
       // double account chooser issue.
       median.socialLogin.google.login({
         clientId: GOOGLE_WEB_CLIENT_ID,
-        callback: handleMedianGoogleCallback,
+        callback: "handleMedianGoogleCallback",
       });
       
       console.log("[Median] Login initiated, waiting for native callback...");
@@ -766,9 +767,10 @@ export function nativeGoogleSignInWithRedirect(redirectUri?: string): void {
     console.log("[Median] Initiating Google Sign-In with redirect to:", authRedirectUri);
     
     // Server-side redirect mode — Median POSTs tokens to the redirectUri endpoint.
-    // Do NOT mix redirectUri + clientId + callback together; use one mode only.
+    // IMPORTANT: When using redirectUri mode, do NOT pass clientId or callback.
+    // Mixing modes causes the double account chooser issue.
+    // The clientId should be configured in Median.co dashboard instead.
     median.socialLogin.google.login({
-      clientId: GOOGLE_WEB_CLIENT_ID,
       redirectUri: authRedirectUri,
     });
     
