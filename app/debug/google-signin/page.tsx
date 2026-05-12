@@ -167,6 +167,36 @@ export default function GoogleSignInDebugPage() {
     }
   };
 
+  const handleNoParamsMode = () => {
+    addLog("Testing NO PARAMS MODE (simplest call - uses all Median dashboard settings)...");
+    
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const median = (window as any).median;
+      
+      if (!median?.socialLogin?.google?.login) {
+        addLog("ERROR: median.socialLogin.google.login not available");
+        return;
+      }
+      
+      // Register global callback that Median might use
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (window as any).median_google_callback = (response: any) => {
+        addLog(`median_google_callback received: ${JSON.stringify(response)}`);
+      };
+      
+      addLog("Calling median.socialLogin.google.login() with NO PARAMETERS...");
+      addLog("This should use redirectUri configured in Median dashboard");
+      
+      // Simplest possible call - Median should use its dashboard configuration
+      median.socialLogin.google.login();
+      
+      addLog("Call completed - check if redirect happens or callback fires");
+    } catch (error) {
+      addLog(`No-params error: ${error}`);
+    }
+  };
+
   const clearLogs = () => {
     setLogs([]);
     addLog("Logs cleared");
@@ -177,16 +207,36 @@ export default function GoogleSignInDebugPage() {
       <div className="mx-auto max-w-2xl">
         <h1 className="mb-4 text-2xl font-bold">Google Sign-In Debug</h1>
         
+        <div className="mb-4 rounded-lg bg-red-50 border border-red-200 p-4">
+          <h2 className="font-semibold text-red-800 mb-2">LIKELY ISSUE: SHA1 Mismatch</h2>
+          <p className="text-sm text-red-700 mb-2">
+            The &quot;legacy mode&quot; error usually means the <strong>SHA1 fingerprint</strong> in Google Cloud Console 
+            doesn&apos;t match your app&apos;s actual signing key.
+          </p>
+          <div className="text-xs text-red-700 space-y-1">
+            <p><strong>Your Median SHA1:</strong></p>
+            <code className="bg-red-100 px-1 block">17:C1:48:B0:50:C0:96:66:C1:28:DC:65:25:53:E3:1C:E0:95:D9:C9</code>
+            <p className="mt-2"><strong>Check these:</strong></p>
+            <ol className="list-decimal ml-4 space-y-1">
+              <li>Go to <strong>Google Cloud Console</strong> → APIs &amp; Services → Credentials</li>
+              <li>Find/Create an <strong>Android OAuth Client</strong></li>
+              <li>Enter the SHA1 above AND your exact package name</li>
+              <li>If using Google Play App Signing, get SHA1 from Play Console → App Integrity</li>
+              <li>You may need BOTH debug and release SHA1 fingerprints</li>
+            </ol>
+          </div>
+        </div>
+        
         <div className="mb-4 rounded-lg bg-yellow-50 border border-yellow-200 p-4">
           <h2 className="font-semibold text-yellow-800 mb-2">Median.co Configuration</h2>
           <div className="text-sm text-yellow-700 mb-2 space-y-1">
-            <p><strong>Web Client ID (use in code):</strong></p>
+            <p><strong>Web Client ID (use in Median dashboard):</strong></p>
             <code className="bg-yellow-100 px-1 text-xs break-all block">393630939714-ccgciu2tmtf7me0souh2vt7a1ctqe1bf.apps.googleusercontent.com</code>
             <p className="mt-2"><strong>Android Client ID (for Google Cloud Console SHA-1):</strong></p>
             <code className="bg-yellow-100 px-1 text-xs break-all block">393630939714-kv9uopvubdai15ob74tn0s6ppdd4jip4.apps.googleusercontent.com</code>
           </div>
           <ol className="text-xs text-yellow-700 list-decimal ml-4 space-y-1 mt-3">
-            <li>In <strong>Google Cloud Console</strong> → Credentials → Add your app&apos;s SHA-1 fingerprint to the <strong>Android Client ID</strong></li>
+            <li>In <strong>Google Cloud Console</strong> → Credentials → Create Android OAuth Client with SHA1 + Package Name</li>
             <li>In <strong>Median.co Dashboard</strong> → Native Plugins → Social Login → Enable Google</li>
             <li>In Median, enter the <strong>Web Client ID</strong> (NOT Android ID)</li>
             <li><strong>Rebuild the app</strong> in Median after saving</li>
@@ -231,6 +281,13 @@ export default function GoogleSignInDebugPage() {
             className="rounded-lg bg-orange-600 px-4 py-2 text-white hover:bg-orange-700"
           >
             Test Callback Only (No ClientId)
+          </button>
+          
+          <button
+            onClick={handleNoParamsMode}
+            className="rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700"
+          >
+            Test NO PARAMS (Simplest)
           </button>
           
           <button
