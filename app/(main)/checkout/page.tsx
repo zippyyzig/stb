@@ -1018,11 +1018,11 @@ export default function CheckoutPage() {
                   {isPlacingOrder ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      {paymentMethod === "razorpay" ? "Processing..." : "Placing Order..."}
+                      Processing...
                     </>
                   ) : (
                     <>
-                      {paymentMethod === "razorpay" ? "Pay Now" : "Place Order"}
+                      Pay Now
                       <ChevronRight className="h-4 w-4" />
                     </>
                   )}
