@@ -6,7 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { signInWithPopup } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
-import { isMedianApp, nativeGoogleSignInWithRedirect } from "@/lib/native-app";
+import { isMedianApp, nativeGoogleSignIn } from "@/lib/native-app";
 import { signIn } from "next-auth/react";
 import { Input } from "@/components/ui/input";
 import {
@@ -92,35 +92,43 @@ export default function RegisterPage() {
   };
 
   const handleGoogleSignIn = async () => {
-    // Prevent multiple clicks
-    if (isGoogleLoading) {
-      console.log("[v0] Google sign-up already in progress, ignoring click");
-      return;
-    }
-    
+    if (isGoogleLoading) return;
+
     setIsGoogleLoading(true);
     setErrorMessage("");
-    
+
     try {
-      // Check if we're in a Median.co native app - use native SDK with redirect mode
-      // Redirect mode is more reliable than callback mode for Median apps
       if (isNativeApp) {
-        console.log("[Median] Starting native Google Sign-Up with redirect mode...");
-        
-        // Use redirect mode directly - it's more reliable and handles the full flow server-side
-        nativeGoogleSignInWithRedirect();
-        
-        // Keep loading state - page will redirect to Google, then to our callback endpoint
-        setTimeout(() => {
-          if (window.location.pathname.includes('/auth/register')) {
-            setIsGoogleLoading(false);
-            setErrorMessage("Google Sign-Up timed out. Please try again.");
-          }
-        }, 10000);
+        // Median.co native app: use callback mode (NOT redirectUri mode).
+        // nativeGoogleSignIn() opens the native Google picker, waits for the
+        // native bridge callback, decodes the idToken, and returns user data.
+        const nativeResult = await nativeGoogleSignIn();
+
+        if (!nativeResult) {
+          setErrorMessage("Google Sign-Up is not available. Please use email/password.");
+          setIsGoogleLoading(false);
+          return;
+        }
+
+        const signInResult = await signIn("google-firebase", {
+          email: nativeResult.email,
+          name: nativeResult.name,
+          googleId: nativeResult.userId,
+          avatar: nativeResult.picture || null,
+          redirect: false,
+        });
+
+        if (signInResult?.error) {
+          setErrorMessage(signInResult.error);
+          setIsGoogleLoading(false);
+        } else {
+          router.push("/auth/onboarding");
+          router.refresh();
+        }
         return;
       }
-      
-      // Web browser only - use Firebase popup (safe in browsers, not in native webviews)
+
+      // Web browser: use Firebase popup
       const result = await signInWithPopup(auth, googleProvider);
       const user = result.user;
       const signInResult = await signIn("google-firebase", {
@@ -136,11 +144,14 @@ export default function RegisterPage() {
       } else {
         router.push("/auth/onboarding");
         router.refresh();
-        // Keep loading state while redirecting
       }
-    } catch (error) {
-      console.error("Google sign-in error:", error);
-      setErrorMessage("Failed to sign in with Google. Please try again.");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "";
+      if (msg.toLowerCase().includes("cancel")) {
+        setIsGoogleLoading(false);
+        return;
+      }
+      setErrorMessage(msg || "Failed to sign up with Google. Please try again.");
       setIsGoogleLoading(false);
     }
   };
