@@ -7,7 +7,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { signInWithPopup } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
-import { isMedianApp, nativeGoogleSignIn, nativeGoogleSignInWithRedirect } from "@/lib/native-app";
+import { isMedianApp, nativeGoogleSignInWithRedirect } from "@/lib/native-app";
 import { Input } from "@/components/ui/input";
 import {
   Mail,
@@ -78,70 +78,25 @@ function LoginForm() {
     setErrorMessage("");
     
     try {
-      // Check if we're in a Median.co native app - use native SDK
+      // Check if we're in a Median.co native app - use native SDK with redirect mode
+      // Redirect mode is more reliable than callback mode for Median apps
       if (isNativeApp) {
-        try {
-          console.log("[Median] Starting native Google Sign-In from login page...");
-          const nativeResult = await nativeGoogleSignIn();
-          
-          // If nativeResult is null, it means sign-in is already in progress or plugin unavailable
-          if (nativeResult === null) {
-            console.warn("[Median] Native Google Sign-In returned null - may already be in progress or plugin not configured");
-            setErrorMessage("Google Sign-In is not available. Please use email/password.");
+        console.log("[Median] Starting native Google Sign-In with redirect mode...");
+        
+        // Use redirect mode directly - it's more reliable and handles the full flow server-side
+        // The server endpoint /api/auth/median-google will receive the tokens and redirect back
+        nativeGoogleSignInWithRedirect();
+        
+        // Keep loading state - page will redirect to Google, then to our callback endpoint
+        // If redirect doesn't happen within 5 seconds, show error
+        setTimeout(() => {
+          // Only reset if we're still on this page (redirect didn't happen)
+          if (window.location.pathname.includes('/auth/login')) {
             setIsGoogleLoading(false);
-            return;
+            setErrorMessage("Google Sign-In timed out. Please try again.");
           }
-          
-          console.log("[Median] Native result received:", { 
-            email: nativeResult.email, 
-            name: nativeResult.name,
-            hasUserId: !!nativeResult.userId 
-          });
-          
-          // Use the native result to sign in with NextAuth
-          const signInResult = await signIn("google-firebase", {
-            email: nativeResult.email,
-            name: nativeResult.name,
-            googleId: nativeResult.userId,
-            avatar: nativeResult.picture || null,
-            redirect: false,
-          });
-          
-          if (signInResult?.error) {
-            console.error("[Median] NextAuth sign-in error:", signInResult.error);
-            setErrorMessage(signInResult.error);
-            setIsGoogleLoading(false);
-          } else {
-            console.log("[Median] Sign-in successful, redirecting to:", callbackUrl);
-            router.push(callbackUrl);
-            router.refresh();
-            // Keep loading state while redirecting
-          }
-          return;
-        } catch (nativeError) {
-          console.error("[Median] Native Google sign-in error:", nativeError);
-          const errorMsg = nativeError instanceof Error ? nativeError.message : "Google Sign-In failed";
-          
-          // Don't show "cancelled" as an error - user intentionally cancelled
-          if (errorMsg.toLowerCase().includes("cancel")) {
-            setErrorMessage("");
-            setIsGoogleLoading(false);
-            return;
-          }
-          
-          // If callback mode failed with legacy error, try redirect mode as fallback
-          if (errorMsg.toLowerCase().includes("legacy") || errorMsg.toLowerCase().includes("unexpected")) {
-            console.log("[Median] Callback mode failed, trying redirect mode...");
-            // Use server-side redirect approach - more reliable
-            nativeGoogleSignInWithRedirect();
-            // Keep loading state - page will redirect
-            return;
-          }
-          
-          setErrorMessage(errorMsg);
-          setIsGoogleLoading(false);
-          return;
-        }
+        }, 10000);
+        return;
       }
       
       // Web browser only - use Firebase popup (safe in browsers, not in native webviews)
