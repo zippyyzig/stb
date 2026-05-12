@@ -73,11 +73,11 @@ export default function GoogleSignInDebugPage() {
   };
 
   const handleDirectCall = () => {
-    // Android Client ID from Google Cloud Console
-    const GOOGLE_ANDROID_CLIENT_ID = "393630939714-kv9uopvubdai15ob74tn0s6ppdd4jip4.apps.googleusercontent.com";
+    // Web Client ID from Google Cloud Console (NOT Android - that's only for SHA-1 config)
+    const GOOGLE_WEB_CLIENT_ID = "393630939714-ccgciu2tmtf7me0souh2vt7a1ctqe1bf.apps.googleusercontent.com";
     
-    addLog("Testing with Android Client ID...");
-    addLog(`Client ID: ${GOOGLE_ANDROID_CLIENT_ID}`);
+    addLog("Testing with Web Client ID (correct for Median)...");
+    addLog(`Client ID: ${GOOGLE_WEB_CLIENT_ID}`);
     
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -93,10 +93,10 @@ export default function GoogleSignInDebugPage() {
         addLog(`Callback received: ${JSON.stringify(response)}`);
       };
       
-      addLog("Calling with Android clientId...");
+      addLog("Calling with Web clientId...");
       
       median.socialLogin.google.login({
-        clientId: GOOGLE_ANDROID_CLIENT_ID,
+        clientId: GOOGLE_WEB_CLIENT_ID,
         callback: (window as any).testGoogleCallback,
       });
       
@@ -143,14 +143,16 @@ export default function GoogleSignInDebugPage() {
         
         <div className="mb-4 rounded-lg bg-yellow-50 border border-yellow-200 p-4">
           <h2 className="font-semibold text-yellow-800 mb-2">Median.co Configuration</h2>
-          <p className="text-sm text-yellow-700 mb-2">
-            Android Client ID: <code className="bg-yellow-100 px-1 text-xs break-all">393630939714-kv9uopvubdai15ob74tn0s6ppdd4jip4.apps.googleusercontent.com</code>
-          </p>
-          <ol className="text-xs text-yellow-700 list-decimal ml-4 space-y-1">
-            <li>Go to <strong>Median.co Dashboard</strong> → Your App → <strong>Native Plugins</strong> → <strong>Social Login</strong></li>
-            <li>Enable <strong>Google Sign-In</strong></li>
-            <li>Add the <strong>Android Client ID</strong> above</li>
-            <li>Add the <strong>SHA-1 fingerprint</strong> of your app signing key</li>
+          <div className="text-sm text-yellow-700 mb-2 space-y-1">
+            <p><strong>Web Client ID (use in code):</strong></p>
+            <code className="bg-yellow-100 px-1 text-xs break-all block">393630939714-ccgciu2tmtf7me0souh2vt7a1ctqe1bf.apps.googleusercontent.com</code>
+            <p className="mt-2"><strong>Android Client ID (for Google Cloud Console SHA-1):</strong></p>
+            <code className="bg-yellow-100 px-1 text-xs break-all block">393630939714-kv9uopvubdai15ob74tn0s6ppdd4jip4.apps.googleusercontent.com</code>
+          </div>
+          <ol className="text-xs text-yellow-700 list-decimal ml-4 space-y-1 mt-3">
+            <li>In <strong>Google Cloud Console</strong> → Credentials → Add your app&apos;s SHA-1 fingerprint to the <strong>Android Client ID</strong></li>
+            <li>In <strong>Median.co Dashboard</strong> → Native Plugins → Social Login → Enable Google</li>
+            <li>In Median, enter the <strong>Web Client ID</strong> (NOT Android ID)</li>
             <li><strong>Rebuild the app</strong> in Median after saving</li>
           </ol>
         </div>
@@ -178,7 +180,7 @@ export default function GoogleSignInDebugPage() {
             onClick={handleDirectCall}
             className="rounded-lg bg-green-600 px-4 py-2 text-white hover:bg-green-700"
           >
-            Test Android ID
+            Test Web Client ID
           </button>
           
           <button
