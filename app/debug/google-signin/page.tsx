@@ -208,21 +208,23 @@ export default function GoogleSignInDebugPage() {
         <h1 className="mb-4 text-2xl font-bold">Google Sign-In Debug</h1>
         
         <div className="mb-4 rounded-lg bg-red-50 border border-red-200 p-4">
-          <h2 className="font-semibold text-red-800 mb-2">LIKELY ISSUE: SHA1 Mismatch</h2>
+          <h2 className="font-semibold text-red-800 mb-2">LIKELY ISSUE: App Not Rebuilt or Google Play App Signing</h2>
           <p className="text-sm text-red-700 mb-2">
-            The &quot;legacy mode&quot; error usually means the <strong>SHA1 fingerprint</strong> in Google Cloud Console 
-            doesn&apos;t match your app&apos;s actual signing key.
+            The &quot;legacy mode&quot; error means the native Google SDK failed to initialize.
           </p>
           <div className="text-xs text-red-700 space-y-1">
-            <p><strong>Your Median SHA1:</strong></p>
-            <code className="bg-red-100 px-1 block">17:C1:48:B0:50:C0:96:66:C1:28:DC:65:25:53:E3:1C:E0:95:D9:C9</code>
-            <p className="mt-2"><strong>Check these:</strong></p>
+            <p><strong>Your Current Config:</strong></p>
+            <ul className="list-disc ml-4 space-y-0.5">
+              <li>Package: <code className="bg-red-100 px-1">com.smarttechbazaar.app</code></li>
+              <li>SHA1: <code className="bg-red-100 px-1 text-[10px]">17:C1:48:B0:50:C0:96:66:C1:28:DC:65:25:53:E3:1C:E0:95:D9:C9</code></li>
+            </ul>
+            <p className="mt-2"><strong>Fix Checklist:</strong></p>
             <ol className="list-decimal ml-4 space-y-1">
-              <li>Go to <strong>Google Cloud Console</strong> → APIs &amp; Services → Credentials</li>
-              <li>Find/Create an <strong>Android OAuth Client</strong></li>
-              <li>Enter the SHA1 above AND your exact package name</li>
-              <li>If using Google Play App Signing, get SHA1 from Play Console → App Integrity</li>
-              <li>You may need BOTH debug and release SHA1 fingerprints</li>
+              <li><strong className="text-red-900">REBUILD the APK</strong> in Median.co after enabling Social Login</li>
+              <li>If app is on Google Play with <strong>App Signing</strong>, you need Play&apos;s SHA1 from Play Console → App Integrity</li>
+              <li>Create <strong>separate Android OAuth clients</strong> for both your upload key SHA1 AND Google&apos;s signing key SHA1</li>
+              <li>Wait 5-10 minutes for Google changes to propagate</li>
+              <li>Uninstall old app and install fresh APK from Median</li>
             </ol>
           </div>
         </div>
@@ -235,11 +237,14 @@ export default function GoogleSignInDebugPage() {
             <p className="mt-2"><strong>Android Client ID (for Google Cloud Console SHA-1):</strong></p>
             <code className="bg-yellow-100 px-1 text-xs break-all block">393630939714-kv9uopvubdai15ob74tn0s6ppdd4jip4.apps.googleusercontent.com</code>
           </div>
+          <div className="text-xs text-yellow-700 mt-2">
+            <p><strong>Package Name:</strong> <code className="bg-yellow-100 px-1">com.smarttechbazaar.app</code></p>
+          </div>
           <ol className="text-xs text-yellow-700 list-decimal ml-4 space-y-1 mt-3">
-            <li>In <strong>Google Cloud Console</strong> → Credentials → Create Android OAuth Client with SHA1 + Package Name</li>
-            <li>In <strong>Median.co Dashboard</strong> → Native Plugins → Social Login → Enable Google</li>
-            <li>In Median, enter the <strong>Web Client ID</strong> (NOT Android ID)</li>
-            <li><strong>Rebuild the app</strong> in Median after saving</li>
+            <li>In <strong>Google Cloud Console</strong> → Credentials → Android OAuth Client with SHA1 + Package Name ✓</li>
+            <li>In <strong>Median.co Dashboard</strong> → Native Plugins → Social Login → Enable Google ✓</li>
+            <li>In Median, enter the <strong>Web Client ID</strong> (NOT Android ID) ✓</li>
+            <li><strong className="text-red-600">REBUILD the APK in Median and reinstall</strong></li>
           </ol>
         </div>
         
