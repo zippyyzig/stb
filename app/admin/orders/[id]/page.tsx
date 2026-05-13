@@ -76,12 +76,40 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
   const paymentConfig = paymentStatusConfig[order.paymentStatus] || paymentStatusConfig.pending;
   const StatusIcon = config.icon;
 
+  // Build timeline from statusHistory if available, otherwise fall back to basic logic
+  const statusHistoryMap = new Map<string, Date>();
+  if (order.statusHistory && order.statusHistory.length > 0) {
+    order.statusHistory.forEach((entry: { status: string; timestamp: string }) => {
+      statusHistoryMap.set(entry.status, new Date(entry.timestamp));
+    });
+  }
+
   const statusTimeline = [
-    { status: "pending", label: "Order Placed", date: order.createdAt },
-    { status: "confirmed", label: "Confirmed", date: order.status !== "pending" ? order.updatedAt : null },
-    { status: "processing", label: "Processing", date: ["processing", "shipped", "delivered"].includes(order.status) ? order.updatedAt : null },
-    { status: "shipped", label: "Shipped", date: ["shipped", "delivered"].includes(order.status) ? order.updatedAt : null },
-    { status: "delivered", label: "Delivered", date: order.deliveredAt },
+    { 
+      status: "pending", 
+      label: "Order Placed", 
+      date: statusHistoryMap.get("pending") || order.createdAt 
+    },
+    { 
+      status: "confirmed", 
+      label: "Confirmed", 
+      date: statusHistoryMap.get("confirmed") || null 
+    },
+    { 
+      status: "processing", 
+      label: "Processing", 
+      date: statusHistoryMap.get("processing") || null 
+    },
+    { 
+      status: "shipped", 
+      label: "Shipped", 
+      date: statusHistoryMap.get("shipped") || null 
+    },
+    { 
+      status: "delivered", 
+      label: "Delivered", 
+      date: statusHistoryMap.get("delivered") || order.deliveredAt || null 
+    },
   ];
 
   return (

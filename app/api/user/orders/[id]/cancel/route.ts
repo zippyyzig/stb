@@ -46,6 +46,16 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     order.status = "cancelled";
     order.cancelledAt = new Date();
     order.cancellationReason = reason;
+    
+    // Add to status history
+    if (!order.statusHistory) {
+      order.statusHistory = [];
+    }
+    order.statusHistory.push({
+      status: "cancelled",
+      timestamp: new Date(),
+      note: reason,
+    });
 
     await order.save();
 

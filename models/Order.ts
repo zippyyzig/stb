@@ -33,6 +33,12 @@ export interface ITaxBreakdown {
   businessGstin?: string | null;
 }
 
+export interface IStatusHistoryEntry {
+  status: OrderStatus;
+  timestamp: Date;
+  note?: string;
+}
+
 export interface IOrder extends Document {
   _id: mongoose.Types.ObjectId;
   orderNumber: string;
@@ -61,6 +67,7 @@ export interface IOrder extends Document {
   total: number;
   couponCode?: string;
   status: OrderStatus;
+  statusHistory: IStatusHistoryEntry[];
   paymentStatus: PaymentStatus;
   paymentMethod: PaymentMethod;
   razorpayOrderId?: string;
@@ -114,6 +121,16 @@ const TaxBreakdownSchema = new Schema({
   customerStateCode: { type: String, default: "" },
   customerGstin: { type: String, default: null },
   businessGstin: { type: String, default: null },
+});
+
+const StatusHistorySchema = new Schema({
+  status: {
+    type: String,
+    enum: ["pending", "confirmed", "processing", "shipped", "delivered", "cancelled", "returned"],
+    required: true,
+  },
+  timestamp: { type: Date, default: Date.now },
+  note: { type: String },
 });
 
 const OrderSchema = new Schema<IOrder>(
@@ -174,6 +191,10 @@ const OrderSchema = new Schema<IOrder>(
       ],
       default: "pending",
     },
+    statusHistory: {
+      type: [StatusHistorySchema],
+      default: [],
+    },
     paymentStatus: {
       type: String,
       enum: ["pending", "paid", "failed", "refunded"],
@@ -211,17 +232,25 @@ OrderSchema.index({ paymentStatus: 1, createdAt: -1 }); // For revenue queries
 OrderSchema.index({ status: 1, createdAt: -1 }); // For filtered order lists
 OrderSchema.index({ "shippingAddress.name": "text", "shippingAddress.phone": "text" }); // For search
 
-// Generate order number before saving
+// Generate order number and initialize status history before saving
 OrderSchema.pre("save", async function (next) {
-  if (this.isNew && !this.orderNumber) {
-    const date = new Date();
-    const year = date.getFullYear().toString().slice(-2);
-    const month = (date.getMonth() + 1).toString().padStart(2, "0");
-    const day = date.getDate().toString().padStart(2, "0");
-    const random = Math.floor(Math.random() * 10000)
-      .toString()
-      .padStart(4, "0");
-    this.orderNumber = `STB${year}${month}${day}${random}`;
+  if (this.isNew) {
+    // Generate order number
+    if (!this.orderNumber) {
+      const date = new Date();
+      const year = date.getFullYear().toString().slice(-2);
+      const month = (date.getMonth() + 1).toString().padStart(2, "0");
+      const day = date.getDate().toString().padStart(2, "0");
+      const random = Math.floor(Math.random() * 10000)
+        .toString()
+        .padStart(4, "0");
+      this.orderNumber = `STB${year}${month}${day}${random}`;
+    }
+    
+    // Initialize status history with the current status
+    if (!this.statusHistory || this.statusHistory.length === 0) {
+      this.statusHistory = [{ status: this.status, timestamp: new Date() }];
+    }
   }
   next();
 });
