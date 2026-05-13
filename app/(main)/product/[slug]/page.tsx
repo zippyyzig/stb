@@ -13,9 +13,8 @@ import Product from "@/models/Product";
 import { siteConfig, getCanonicalUrl } from "@/lib/site-config";
 import { generateProductSchema, generateOrganizationSchema } from "@/lib/schema";
 
-// Disable caching to always fetch fresh data
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+// Enable ISR with 60 second revalidation
+export const revalidate = 60;
 
 interface ProductPageProps {
   params: Promise<{ slug: string }>;
@@ -38,13 +37,11 @@ async function getProductData(slug: string) {
       
       // If found but inactive, still return null (product exists but is hidden)
       if (product && product.isActive === false) {
-        console.log(`[v0] Product "${slug}" found but isActive is false`);
         return null;
       }
     }
 
     if (!product) {
-      console.log(`[v0] Product not found for slug: ${slug}`);
       return null;
     }
 
@@ -70,8 +67,7 @@ async function getProductData(slug: string) {
       product: JSON.parse(JSON.stringify(product)),
       relatedProducts: JSON.parse(JSON.stringify(relatedProducts)),
     };
-  } catch (error) {
-    console.error(`[v0] Error fetching product "${slug}":`, error);
+  } catch {
     return null;
   }
 }

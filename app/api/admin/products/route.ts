@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
 import Product from "@/models/Product";
 import { logAdminAction } from "@/lib/activity-logger";
+import { CACHE_TAGS } from "@/lib/cache";
 
 // GET all products (admin)
 export async function GET(request: NextRequest) {
@@ -84,6 +86,9 @@ export async function POST(request: NextRequest) {
       product._id.toString(),
       { productName: data.name, slug: finalSlug }
     );
+
+    // Revalidate product caches
+    revalidateTag(CACHE_TAGS.products);
 
     return NextResponse.json(
       { message: "Product created successfully", product },

@@ -12,9 +12,8 @@ import { siteConfig, getCanonicalUrl } from "@/lib/site-config";
 import { generateWebPageSchema, generateOrganizationSchema } from "@/lib/schema";
 
 
-// Disable caching to always fetch fresh data
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+// Enable ISR with 5 minute revalidation (brands don't change often)
+export const revalidate = 300;
 
 export const metadata: Metadata = {
   title: "All Brands",
@@ -57,35 +56,37 @@ const defaultBrands: BrandWithCount[] = [
 async function getBrands(): Promise<BrandWithCount[]> {
   try {
     await dbConnect();
-    const brands = await Brand.find({ isActive: true })
-      .sort({ sortOrder: 1, name: 1 })
-      .lean();
+    
+    // Use aggregation to get brand product counts in a single query (no N+1)
+    const [brands, productCounts] = await Promise.all([
+      Brand.find({ isActive: true })
+        .select("_id name slug description logo productCount")
+        .sort({ sortOrder: 1, name: 1 })
+        .lean(),
+      Product.aggregate([
+        { $match: { isActive: true, brand: { $exists: true, $ne: null } } },
+        { $group: { _id: "$brand", count: { $sum: 1 } } },
+      ]),
+    ]);
 
     if (!brands || brands.length === 0) {
       return defaultBrands;
     }
 
-    // Get product counts for each brand
-    const brandsWithCounts = await Promise.all(
-      brands.map(async (brand) => {
-        const count = await Product.countDocuments({
-          brand: brand.name,
-          isActive: true,
-        });
-        return {
-          _id: brand._id.toString(),
-          name: brand.name,
-          slug: brand.slug,
-          description: brand.description,
-          logo: brand.logo,
-          productCount: count || brand.productCount || 0,
-        };
-      })
-    );
+    // Create a map for quick lookup
+    const countMap = new Map(productCounts.map((p) => [p._id, p.count]));
+
+    const brandsWithCounts = brands.map((brand) => ({
+      _id: brand._id.toString(),
+      name: brand.name,
+      slug: brand.slug,
+      description: brand.description,
+      logo: brand.logo,
+      productCount: countMap.get(brand.name) || brand.productCount || 0,
+    }));
 
     return brandsWithCounts.length > 0 ? brandsWithCounts : defaultBrands;
-  } catch (error) {
-    console.error("Error fetching brands:", error);
+  } catch {
     return defaultBrands;
   }
 }

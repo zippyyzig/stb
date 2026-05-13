@@ -65,6 +65,7 @@ const BannerSchema = new Schema<IBanner>(
 BannerSchema.index({ position: 1 });
 BannerSchema.index({ isActive: 1 });
 BannerSchema.index({ sortOrder: 1 });
+BannerSchema.index({ position: 1, isActive: 1, sortOrder: 1 }); // Compound index for banner queries
 
 const Banner: Model<IBanner> =
   mongoose.models.Banner || mongoose.model<IBanner>("Banner", BannerSchema);

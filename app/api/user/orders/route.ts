@@ -14,8 +14,11 @@ export async function GET() {
 
     await dbConnect();
 
+    // Use projection to only fetch needed fields and limit for initial load
     const orders = await Order.find({ user: session.user.id })
+      .select("_id orderNumber total status createdAt items.name items.quantity items.image")
       .sort({ createdAt: -1 })
+      .limit(50) // Limit for performance
       .lean();
 
     return NextResponse.json({ orders });
