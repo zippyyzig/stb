@@ -17,6 +17,9 @@ import { Badge } from "@/components/ui/badge";
 import OrderFilters from "@/components/admin/OrderFilters";
 import ExportOrdersButton from "@/components/admin/ExportOrdersButton";
 
+// Force dynamic rendering for admin pages
+export const dynamic = "force-dynamic";
+
 interface OrdersPageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }

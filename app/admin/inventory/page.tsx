@@ -8,6 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import StockAdjustButton from "@/components/admin/StockAdjustButton";
 import { formatPrice } from "@/lib/pricing";
 
+// Force dynamic rendering to always show fresh data after stock updates
+export const dynamic = "force-dynamic";
+
 interface InventoryPageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
@@ -22,7 +25,7 @@ async function getInventory(searchParams: { [key: string]: string | string[] | u
     const filter = searchParams.filter as string;
     const sort = (searchParams.sort as string) || "stock-asc";
 
-    // Remove isActive filter to show ALL products in inventory (including those without isActive field)
+    // Show all active products (including those without isActive field set)
     const query: Record<string, unknown> = { isActive: { $ne: false } };
 
     if (searchParams.search) {
@@ -32,8 +35,28 @@ async function getInventory(searchParams: { [key: string]: string | string[] | u
       ];
     }
 
+    // Fix stock filtering - use $lte 0 for out-of-stock to handle null/0 cases
     if (filter === "out-of-stock") {
-      query.stock = { $in: [0, null, undefined] };
+      query.$or = [
+        { stock: 0 },
+        { stock: { $exists: false } },
+        { stock: null },
+      ];
+      // If there's already a search $or, we need to use $and
+      if (searchParams.search) {
+        query.$and = [
+          { $or: [
+            { name: { $regex: searchParams.search, $options: "i" } },
+            { sku: { $regex: searchParams.search, $options: "i" } },
+          ]},
+          { $or: [
+            { stock: 0 },
+            { stock: { $exists: false } },
+            { stock: null },
+          ]}
+        ];
+        delete query.$or;
+      }
     } else if (filter === "low-stock") {
       query.stock = { $gt: 0, $lt: 10 };
     } else if (filter === "in-stock") {

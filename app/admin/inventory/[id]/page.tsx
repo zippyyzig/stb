@@ -8,6 +8,9 @@ import InventoryLog from "@/models/InventoryLog";
 import { Badge } from "@/components/ui/badge";
 import StockAdjustButton from "@/components/admin/StockAdjustButton";
 
+// Force dynamic rendering to always show fresh data after stock updates
+export const dynamic = "force-dynamic";
+
 interface ProductInventoryPageProps {
   params: Promise<{ id: string }>;
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;

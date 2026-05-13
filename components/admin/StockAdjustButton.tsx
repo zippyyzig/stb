@@ -48,10 +48,14 @@ export default function StockAdjustButton({
         throw new Error(data.error || "Failed to adjust stock");
       }
 
+      // Close modal and reset form
       setIsOpen(false);
       setQuantity(0);
       setReason("");
-      router.refresh();
+      
+      // Force a full page refresh to ensure fresh data is fetched
+      // This is more reliable than router.refresh() for RSC pages
+      window.location.reload();
     } catch (error) {
       console.error("Error adjusting stock:", error);
       alert(error instanceof Error ? error.message : "Failed to adjust stock");
