@@ -82,7 +82,7 @@ export default function HeroBanner({ banners }: HeroBannerProps) {
           <CarouselContent className="-ml-0">
             {SLIDES.map((slide, i) => (
               <CarouselItem key={slide.id} className="pl-0">
-                <Link href={slide.href} className="block w-full">
+                <Link href={slide.href} className="block w-full" aria-label={slide.alt}>
                   {/* Desktop ratio 1500:450 = 10:3 */}
                   <div
                     className="relative w-full hidden md:block"
@@ -94,11 +94,11 @@ export default function HeroBanner({ banners }: HeroBannerProps) {
                       fill
                       sizes="100vw"
                       className="object-cover object-center"
+                      // First slide: priority + no placeholder so the real image is the LCP element.
+                      // A blur placeholder makes the base64 data URI the LCP candidate (5,620ms delay).
                       priority={i === 0}
                       loading={i === 0 ? "eager" : "lazy"}
                       quality={85}
-                      placeholder="blur"
-                      blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFgABAQEAAAAAAAAAAAAAAAAAAAUH/8QAIhAAAgICAAcBAAAAAAAAAAAAAQIDBAARBQYSITFBUWH/xAAVAQEBAAAAAAAAAAAAAAAAAAADBf/EABkRAQEBAAMAAAAAAAAAAAAAAAEAAgMRIf/aAAwDAQACEQMRAD8AzzhvAtLiNKKe5xS5JJIwZFaIKoYgbJBLHR+ZPmMxgEm5dtk9t//Z"
                     />
                   </div>
                   {/* Mobile ratio 450:300 = 3:2 — use same image or mobile image, crop to top */}
@@ -115,8 +115,6 @@ export default function HeroBanner({ banners }: HeroBannerProps) {
                       priority={i === 0}
                       loading={i === 0 ? "eager" : "lazy"}
                       quality={85}
-                      placeholder="blur"
-                      blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFgABAQEAAAAAAAAAAAAAAAAAAAUH/8QAIhAAAgICAAcBAAAAAAAAAAAAAQIDBAARBQYSITFBUWH/xAAVAQEBAAAAAAAAAAAAAAAAAAADBf/EABkRAQEBAAMAAAAAAAAAAAAAAAEAAgMRIf/aAAwDAQACEQMRAD8AzzhvAtLiNKKe5xS5JJIwZFaIKoYgbJBLHR+ZPmMxgEm5dtk9t//Z"
                     />
                   </div>
                 </Link>

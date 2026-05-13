@@ -7,12 +7,16 @@ import { CartWishlistProvider } from "@/components/providers/CartWishlistProvide
 import { NativeAppProvider } from "@/components/providers/NativeAppProvider";
 import { LoadingBar } from "@/components/ui/LoadingBar";
 
-// Optimize font loading - use next/font for automatic optimization
+// Use next/font/google which self-hosts the font, eliminating the
+// Google Fonts CDN request chain that blocks rendering by ~540ms.
+// Declaring specific weights avoids loading the full variable font file.
 const inter = Inter({
   subsets: ["latin"],
-  display: "swap", // Prevents FOIT (flash of invisible text)
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
   variable: "--font-inter",
   preload: true,
+  fallback: ["system-ui", "sans-serif"],
 });
 
 export const metadata: Metadata = {
@@ -120,8 +124,11 @@ export default function RootLayout({
         <meta charSet="utf-8" />
         {/* Version meta tag for cache busting in mobile apps */}
         <meta name="app-version" content={process.env.VERCEL_GIT_COMMIT_SHA || "1.0.0"} />
-        {/* Preconnect to image CDN for faster LCP */}
-        <link rel="preconnect" href="https://hebbkx1anhila5yf.public.blob.vercel-storage.com" />
+        {/* Preconnect to the Vercel Blob CDN where banner images are hosted (LCP speedup).
+            Note: fonts.googleapis.com preconnect is intentionally omitted — next/font
+            self-hosts Inter so there is no external font CDN request. */}
+        <link rel="preconnect" href="https://hebbkx1anhila5yf.public.blob.vercel-storage.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://hebbkx1anhila5yf.public.blob.vercel-storage.com" />
         {/* Splash screens for iOS */}
         <link
           rel="apple-touch-startup-image"

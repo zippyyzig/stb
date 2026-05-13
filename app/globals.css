@@ -126,6 +126,8 @@
     overflow-x: hidden;
     /* prevent double-tap zoom on touch devices */
     touch-action: manipulation;
+    /* Reduce layout shift caused by font swap by hinting the fallback size */
+    font-size-adjust: from-font;
   }
   html {
     @apply font-sans bg-background;
