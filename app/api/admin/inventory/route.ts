@@ -24,7 +24,8 @@ export async function GET(request: NextRequest) {
     const filter = searchParams.get("filter") || "";
     const sort = searchParams.get("sort") || "stock-asc";
 
-    const query: Record<string, unknown> = { isActive: true };
+    // Use isActive: { $ne: false } to include products without isActive field
+    const query: Record<string, unknown> = { isActive: { $ne: false } };
 
     if (search) {
       query.$or = [
@@ -34,7 +35,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (filter === "out-of-stock") {
-      query.stock = 0;
+      query.stock = { $in: [0, null, undefined] };
     } else if (filter === "low-stock") {
       query.stock = { $gt: 0, $lt: 10 };
     } else if (filter === "in-stock") {
@@ -82,22 +83,30 @@ export async function GET(request: NextRequest) {
 }
 
 async function getInventoryStats() {
-  const [totalProducts, outOfStock, lowStock, totalValue] = await Promise.all([
-    Product.countDocuments({ isActive: true }),
-    Product.countDocuments({ isActive: true, stock: 0 }),
-    Product.countDocuments({ isActive: true, stock: { $gt: 0, $lt: 10 } }),
-    Product.aggregate([
-      { $match: { isActive: true } },
-      { $group: { _id: null, total: { $sum: { $multiply: ["$stock", "$priceB2C"] } } } },
-    ]),
+  // Use aggregation to get all stats in a single query for better performance
+  const stats = await Product.aggregate([
+    { $match: { isActive: { $ne: false } } },
+    {
+      $facet: {
+        total: [{ $count: "count" }],
+        outOfStock: [{ $match: { $or: [{ stock: 0 }, { stock: null }, { stock: { $exists: false } }] } }, { $count: "count" }],
+        lowStock: [{ $match: { stock: { $gt: 0, $lt: 10 } } }, { $count: "count" }],
+        totalValue: [{ $group: { _id: null, total: { $sum: { $multiply: [{ $ifNull: ["$stock", 0] }, { $ifNull: ["$priceB2C", 0] }] } } } }],
+      },
+    },
   ]);
+
+  const result = stats[0] || {};
+  const totalProducts = result.total?.[0]?.count || 0;
+  const outOfStock = result.outOfStock?.[0]?.count || 0;
+  const lowStock = result.lowStock?.[0]?.count || 0;
 
   return {
     totalProducts,
     outOfStock,
     lowStock,
     inStock: totalProducts - outOfStock - lowStock,
-    totalValue: totalValue[0]?.total || 0,
+    totalValue: result.totalValue?.[0]?.total || 0,
   };
 }
 

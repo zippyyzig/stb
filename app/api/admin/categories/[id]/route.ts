@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
 import Category from "@/models/Category";
 import Product from "@/models/Product";
+import { CACHE_TAGS } from "@/lib/cache";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -99,6 +101,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Category not found" }, { status: 404 });
     }
 
+    // Revalidate caches
+    revalidateTag(CACHE_TAGS.categories);
+
     return NextResponse.json({
       message: "Category updated successfully",
       category,
@@ -150,6 +155,9 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     if (!category) {
       return NextResponse.json({ error: "Category not found" }, { status: 404 });
     }
+
+    // Revalidate caches
+    revalidateTag(CACHE_TAGS.categories);
 
     return NextResponse.json({ message: "Category deleted successfully" });
   } catch (error) {

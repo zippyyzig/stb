@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
 import Category from "@/models/Category";
 import Product from "@/models/Product";
 import { logAdminAction } from "@/lib/activity-logger";
+import { CACHE_TAGS } from "@/lib/cache";
 
 // GET all categories (admin)
 export async function GET(request: NextRequest) {
@@ -39,23 +41,29 @@ export async function GET(request: NextRequest) {
       query.parent = parent;
     }
 
-    const [categories, total] = await Promise.all([
+    // Use aggregation to get product counts in a single query (no N+1)
+    const [categories, total, productCounts] = await Promise.all([
       Category.find(query)
+        .select("_id name slug description image parent isActive sortOrder")
         .populate("parent", "name slug")
         .sort({ sortOrder: 1, name: 1 })
         .skip(skip)
         .limit(limit)
         .lean(),
       Category.countDocuments(query),
+      Product.aggregate([
+        { $match: { category: { $exists: true, $ne: null } } },
+        { $group: { _id: "$category", count: { $sum: 1 } } },
+      ]),
     ]);
 
-    // Get product counts for each category
-    const categoriesWithCounts = await Promise.all(
-      categories.map(async (cat) => {
-        const productCount = await Product.countDocuments({ category: cat._id });
-        return { ...cat, productCount };
-      })
-    );
+    // Create a map for quick lookup
+    const countMap = new Map(productCounts.map((p) => [p._id.toString(), p.count]));
+
+    const categoriesWithCounts = categories.map((cat) => ({
+      ...cat,
+      productCount: countMap.get(cat._id.toString()) || 0,
+    }));
 
     return NextResponse.json({
       categories: categoriesWithCounts,
@@ -117,6 +125,9 @@ export async function POST(request: NextRequest) {
       category._id.toString(),
       { categoryName: data.name, slug }
     );
+
+    // Revalidate caches
+    revalidateTag(CACHE_TAGS.categories);
 
     return NextResponse.json(
       { message: "Category created successfully", category },
