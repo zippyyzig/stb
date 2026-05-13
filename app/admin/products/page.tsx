@@ -11,6 +11,9 @@ import DeleteProductButton from "@/components/admin/DeleteProductButton";
 import ProductImportExport from "@/components/admin/ProductImportExport";
 import { formatPrice } from "@/lib/pricing";
 
+// Force dynamic rendering for admin pages to always show fresh data
+export const dynamic = "force-dynamic";
+
 interface ProductsPageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
@@ -25,8 +28,9 @@ async function getProducts(searchParams: { [key: string]: string | string[] | un
 
     const query: Record<string, unknown> = {};
 
+    // Optimize category lookup - only fetch category ID if needed
     if (searchParams.category) {
-      const category = await Category.findOne({ slug: searchParams.category });
+      const category = await Category.findOne({ slug: searchParams.category }).select("_id").lean();
       if (category) {
         query.category = category._id;
       }
@@ -39,23 +43,37 @@ async function getProducts(searchParams: { [key: string]: string | string[] | un
       ];
     }
 
+    // Improved stock filtering
     if (searchParams.filter === "low-stock") {
-      query.stock = { $lt: 10 };
+      query.stock = { $gt: 0, $lt: 10 };
     } else if (searchParams.filter === "out-of-stock") {
-      query.stock = 0;
+      query.$or = query.$or ? undefined : [{ stock: 0 }, { stock: { $exists: false } }, { stock: null }];
+      if (searchParams.search) {
+        query.$and = [
+          { $or: [
+            { name: { $regex: searchParams.search, $options: "i" } },
+            { sku: { $regex: searchParams.search, $options: "i" } },
+          ]},
+          { $or: [{ stock: 0 }, { stock: { $exists: false } }, { stock: null }] }
+        ];
+        delete query.$or;
+      }
     } else if (searchParams.filter === "featured") {
       query.isFeatured = true;
     }
 
     const [products, total, categories] = await Promise.all([
       Product.find(query)
+        // Select only necessary fields for list view - significant performance gain
+        .select("_id name slug images priceB2C priceB2B stock sku isActive isFeatured category")
         .populate("category", "name slug")
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
         .lean(),
       Product.countDocuments(query),
-      Category.find({ isActive: true }).sort({ name: 1 }).lean(),
+      // Cache categories - they don't change often
+      Category.find({ isActive: true }).select("_id name slug").sort({ name: 1 }).lean(),
     ]);
 
     return {

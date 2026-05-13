@@ -15,6 +15,9 @@ import {
 import { Badge } from "@/components/ui/badge";
 import CustomerFilters from "@/components/admin/CustomerFilters";
 
+// Force dynamic rendering for admin pages
+export const dynamic = "force-dynamic";
+
 interface CustomersPageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }

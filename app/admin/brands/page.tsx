@@ -5,11 +5,14 @@ import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
 import Brand from "@/models/Brand";
 import Product from "@/models/Product";
-import { Plus, Search, Edit, Trash2, Tag, Package, Globe } from "lucide-react";
+import { Plus, Search, Edit, Tag, Package, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import DeleteBrandButton from "@/components/admin/DeleteBrandButton";
+
+// Force dynamic rendering for admin pages to always show fresh data
+export const dynamic = "force-dynamic";
 
 interface BrandsPageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;

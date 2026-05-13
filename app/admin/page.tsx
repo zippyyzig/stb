@@ -23,6 +23,9 @@ import {
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 
+// Force dynamic rendering for admin dashboard
+export const dynamic = "force-dynamic";
+
 async function getDashboardStats() {
   try {
     await dbConnect();
@@ -51,19 +54,23 @@ async function getDashboardStats() {
       openTickets,
       // Top selling products (this month)
       topProducts,
-      // Revenue by payment method
+      // Revenue by payment method (also includes total revenue calculation)
       revenueByPaymentMethod,
+      // Total revenue
+      totalRevenueResult,
     ] = await Promise.all([
       Product.countDocuments({ isActive: true }),
       Order.countDocuments(),
       User.countDocuments({ role: "customer" }),
       Category.countDocuments({ isActive: true }),
       Order.find()
+        .select("orderNumber total status createdAt user") // Select only needed fields
         .sort({ createdAt: -1 })
         .limit(5)
         .populate("user", "name email")
         .lean(),
       Product.find({ stock: { $lt: 10 }, isActive: true })
+        .select("_id name sku stock") // Select only needed fields
         .limit(5)
         .lean(),
       // Today's orders
@@ -113,14 +120,14 @@ async function getDashboardStats() {
           },
         },
       ]),
+      // Total revenue - included in parallel Promise.all instead of separate query
+      Order.aggregate([
+        { $match: { paymentStatus: "paid" } },
+        { $group: { _id: null, total: { $sum: "$total" } } },
+      ]),
     ]);
 
-    // Calculate total revenue
-    const revenueResult = await Order.aggregate([
-      { $match: { paymentStatus: "paid" } },
-      { $group: { _id: null, total: { $sum: "$total" } } },
-    ]);
-    const totalRevenue = revenueResult[0]?.total || 0;
+    const totalRevenue = totalRevenueResult[0]?.total || 0;
 
     // Calculate month over month change
     const thisMonthRev = monthRevenue[0]?.total || 0;

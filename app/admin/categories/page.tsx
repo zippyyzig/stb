@@ -5,12 +5,15 @@ import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
 import Category from "@/models/Category";
 import Product from "@/models/Product";
-import { Plus, Search, Edit, Trash2, FolderTree, Package } from "lucide-react";
+import { Plus, Search, Edit, FolderTree, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import DeleteCategoryButton from "@/components/admin/DeleteCategoryButton";
 import SeedCategoriesButton from "@/components/admin/SeedCategoriesButton";
+
+// Force dynamic rendering for admin pages to always show fresh data
+export const dynamic = "force-dynamic";
 
 interface CategoriesPageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -37,26 +40,42 @@ async function getCategories(searchParams: { [key: string]: string | string[] | 
       query.parent = null;
     }
 
-    const [categories, total] = await Promise.all([
+    // Use aggregation to get all counts in parallel - eliminates N+1 queries
+    const [categories, total, productCounts, subcategoryCounts] = await Promise.all([
       Category.find(query)
+        .select("_id name slug description image icon parent isActive sortOrder")
         .populate("parent", "name slug")
         .sort({ sortOrder: 1, name: 1 })
         .skip(skip)
         .limit(limit)
         .lean(),
       Category.countDocuments(query),
+      // Get all product counts in a single aggregation
+      Product.aggregate([
+        { $match: { category: { $exists: true, $ne: null } } },
+        { $group: { _id: "$category", count: { $sum: 1 } } },
+      ]),
+      // Get all subcategory counts in a single aggregation
+      Category.aggregate([
+        { $match: { parent: { $exists: true, $ne: null } } },
+        { $group: { _id: "$parent", count: { $sum: 1 } } },
+      ]),
     ]);
 
-    // Get product counts and subcategory counts
-    const categoriesWithCounts = await Promise.all(
-      categories.map(async (cat) => {
-        const [productCount, subcategoryCount] = await Promise.all([
-          Product.countDocuments({ category: cat._id }),
-          Category.countDocuments({ parent: cat._id }),
-        ]);
-        return { ...cat, productCount, subcategoryCount };
-      })
+    // Create maps for O(1) lookups
+    const productCountMap = new Map(
+      productCounts.map((p) => [p._id.toString(), p.count])
     );
+    const subcategoryCountMap = new Map(
+      subcategoryCounts.map((s) => [s._id.toString(), s.count])
+    );
+
+    // Map counts to categories
+    const categoriesWithCounts = categories.map((cat) => ({
+      ...cat,
+      productCount: productCountMap.get(cat._id.toString()) || 0,
+      subcategoryCount: subcategoryCountMap.get(cat._id.toString()) || 0,
+    }));
 
     return {
       categories: JSON.parse(JSON.stringify(categoriesWithCounts)),
