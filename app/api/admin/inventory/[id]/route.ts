@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
@@ -6,6 +7,7 @@ import Product from "@/models/Product";
 import InventoryLog from "@/models/InventoryLog";
 import { sendEmail, COMPANY_EMAIL } from "@/lib/email";
 import { lowStockAlertTemplate } from "@/lib/email-templates";
+import { CACHE_TAGS } from "@/lib/cache";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -79,13 +81,14 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     await dbConnect();
 
-    const product = await Product.findById(id);
+    // Fetch only the fields we need to calculate new stock
+    const existing = await Product.findById(id).select("_id name sku stock isActive").lean();
 
-    if (!product) {
+    if (!existing) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
-    const previousStock = product.stock;
+    const previousStock = existing.stock ?? 0;
     let newStock: number;
 
     if (type === "set") {
@@ -95,7 +98,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     } else if (type === "subtract") {
       newStock = previousStock - quantity;
     } else {
-      newStock = previousStock + quantity; // Default: add/subtract based on sign
+      newStock = previousStock + quantity;
     }
 
     if (newStock < 0) {
@@ -105,46 +108,57 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    product.stock = newStock;
-    await product.save();
+    // Use findByIdAndUpdate with $set so only the stock field is touched —
+    // this avoids triggering a full document re-save which could inadvertently
+    // modify other fields or cause validation issues.
+    await Product.findByIdAndUpdate(
+      id,
+      { $set: { stock: newStock } },
+      { new: true }
+    );
 
-    // Log the adjustment
-    await InventoryLog.create({
-      product: product._id,
-      productName: product.name,
-      productSku: product.sku,
-      actionType,
-      quantityChange: newStock - previousStock,
-      previousStock,
-      newStock,
-      reason: reason || "Manual adjustment",
-      performedBy: session.user.id,
-      performedByName: session.user.name,
-    });
+    // Log the adjustment and revalidate cache in parallel
+    await Promise.all([
+      InventoryLog.create({
+        product: existing._id,
+        productName: existing.name,
+        productSku: existing.sku,
+        actionType,
+        quantityChange: newStock - previousStock,
+        previousStock,
+        newStock,
+        reason: reason || "Manual adjustment",
+        performedBy: session.user.id,
+        performedByName: session.user.name,
+      }),
+      // Revalidate the products cache so router.refresh() on the page
+      // immediately sees the updated stock instead of stale ISR data.
+      Promise.resolve(revalidateTag(CACHE_TAGS.products)),
+    ]);
 
-    // Send low stock alert if stock is below threshold (10 units)
+    // Send low stock alert if stock crosses below threshold (10 units)
     const LOW_STOCK_THRESHOLD = 10;
     if (newStock <= LOW_STOCK_THRESHOLD && previousStock > LOW_STOCK_THRESHOLD) {
       const lowStockEmail = lowStockAlertTemplate([
         {
-          name: product.name,
-          sku: product.sku,
+          name: existing.name,
+          sku: existing.sku,
           currentStock: newStock,
           reorderLevel: LOW_STOCK_THRESHOLD,
         },
       ]);
-      await sendEmail({
+      sendEmail({
         to: COMPANY_EMAIL,
-        subject: `Low Stock Alert: ${product.name}`,
+        subject: `Low Stock Alert: ${existing.name}`,
         html: lowStockEmail,
-      });
+      }).catch(console.error); // fire-and-forget, don't block the response
     }
 
     return NextResponse.json({
       message: "Stock updated successfully",
       product: {
-        _id: product._id,
-        sku: product.sku,
+        _id: existing._id,
+        sku: existing.sku,
         previousStock,
         newStock,
       },
