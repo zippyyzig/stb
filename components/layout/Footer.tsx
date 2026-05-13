@@ -182,7 +182,7 @@ export default function Footer() {
         {/* Two-column link grid */}
         <div className="grid grid-cols-2 gap-0 border-b border-white/10">
           <div className="border-r border-white/10 px-4 py-4">
-            <p className="mb-3 text-[10px] font-semibold uppercase tracking-wider text-white/40">Quick Links</p>
+            <p className="mb-3 text-[10px] font-semibold uppercase tracking-wider text-white/60">Quick Links</p>
             <div className="flex flex-col gap-1">
               {infoLinks.map((link) => (
                 <Link
@@ -196,7 +196,7 @@ export default function Footer() {
             </div>
           </div>
           <div className="px-4 py-4">
-            <p className="mb-3 text-[10px] font-semibold uppercase tracking-wider text-white/40">Categories</p>
+            <p className="mb-3 text-[10px] font-semibold uppercase tracking-wider text-white/60">Categories</p>
             <div className="flex flex-col gap-1">
               {categoryLinks.map((link) => (
                 <Link
@@ -328,7 +328,7 @@ export default function Footer() {
       {/* Copyright */}
       <div className="border-t border-white/10">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 md:py-4">
-          <p className="text-[10px] text-white/40 md:text-xs">
+            <p className="text-[10px] text-white/70 md:text-xs">
             &copy; 2025 Smart Tech Bazaar. All Rights Reserved.
           </p>
           <button

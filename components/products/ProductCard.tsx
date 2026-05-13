@@ -144,7 +144,8 @@ export default function ProductCard({ product }: ProductCardProps) {
               fill
               sizes="(max-width: 640px) 50vw, 200px"
               className="object-contain transition-transform duration-300 group-hover:scale-105"
-              unoptimized
+              loading="lazy"
+              quality={75}
             />
           </div>
         </Link>
@@ -154,7 +155,7 @@ export default function ProductCard({ product }: ProductCardProps) {
       <div className="flex flex-1 flex-col px-2.5 pb-2.5 pt-2 md:px-3 md:pb-3 md:pt-2.5">
         {/* Brand */}
         {product.brand && (
-          <span className="text-[9px] font-semibold uppercase tracking-wide text-primary md:text-[10px]">
+          <span className="text-[10px] font-semibold uppercase tracking-wide text-primary md:text-[11px]">
             {product.brand}
           </span>
         )}
@@ -192,19 +193,19 @@ export default function ProductCard({ product }: ProductCardProps) {
           {canSeeBothPrices ? (
             <div className="space-y-1">
               <div className="flex items-baseline gap-1.5">
-                <span className="text-[9px] font-semibold text-blue-700 md:text-[10px]">B2B:</span>
+                <span className="text-[10px] font-semibold text-blue-700 md:text-[11px]">B2B:</span>
                 <span className="text-sm font-extrabold text-foreground md:text-base">
                   {formatPrice(priceB2B)}
                 </span>
               </div>
               <div className="flex items-baseline gap-1.5">
-                <span className="text-[9px] font-semibold text-green-700 md:text-[10px]">B2C:</span>
+                <span className="text-[10px] font-semibold text-green-700 md:text-[11px]">B2C:</span>
                 <span className="text-sm font-bold text-muted-foreground md:text-base">
                   {formatPrice(priceB2C)}
                 </span>
               </div>
               {mrp > (priceB2C ?? 0) && (
-                <span className="text-[9px] text-muted-foreground line-through md:text-[10px]">
+                <span className="text-[10px] text-muted-foreground line-through md:text-[11px]">
                   MRP: {formatPrice(mrp)}
                 </span>
               )}
@@ -217,7 +218,7 @@ export default function ProductCard({ product }: ProductCardProps) {
                   {formatPrice(displayPrice)}
                 </span>
                 {mrp > displayPrice && (
-                  <span className="text-[9px] text-muted-foreground line-through md:text-[10px]">
+                  <span className="text-[10px] text-muted-foreground line-through md:text-[11px]">
                     {formatPrice(mrp)}
                   </span>
                 )}
@@ -231,14 +232,14 @@ export default function ProductCard({ product }: ProductCardProps) {
           )}
           <div className="flex items-center justify-between">
             {savings > 0 && !canSeeBothPrices ? (
-              <span className="text-[9px] font-medium text-stb-success md:text-[10px]">
+              <span className="text-[10px] font-semibold text-stb-success md:text-[11px]">
                 Save {formatPrice(savings)}
               </span>
             ) : (
               <span />
             )}
             <span
-              className={`text-[9px] font-semibold md:text-[10px] ${
+              className={`text-[10px] font-semibold md:text-[11px] ${
                 inStock ? "text-stb-success" : "text-destructive"
               }`}
             >

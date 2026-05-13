@@ -48,14 +48,18 @@ export default function StockAdjustButton({
         throw new Error(data.error || "Failed to adjust stock");
       }
 
-      // Close modal and reset form
+      // Close modal and reset form first
       setIsOpen(false);
       setQuantity(0);
       setReason("");
-      
-      // Force a full page refresh to ensure fresh data is fetched
-      // This is more reliable than router.refresh() for RSC pages
-      window.location.reload();
+
+      // router.refresh() invalidates the Next.js client-side RSC payload cache
+      // so the subsequent router.push actually re-fetches from the server instead
+      // of serving the stale cached RSC payload. window.location.reload() was
+      // broken because browsers served a cached HTML response without hitting
+      // the server at all.
+      router.refresh();
+      router.push(window.location.pathname + window.location.search);
     } catch (error) {
       console.error("Error adjusting stock:", error);
       alert(error instanceof Error ? error.message : "Failed to adjust stock");

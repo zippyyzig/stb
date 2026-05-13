@@ -77,7 +77,7 @@ export default function AdBannerSlider({ banners, showAsGrid = false }: AdBanner
             <CarouselContent className="-ml-0">
               {AD_BANNERS.map((banner, i) => (
                 <CarouselItem key={banner.id} className="pl-0">
-                  <Link href={banner.href} className="block w-full">
+                  <Link href={banner.href} className="block w-full" aria-label={banner.alt}>
                     {/* Desktop ratio 1500:300 = 5:1 */}
                     <div
                       className="relative w-full hidden md:block"
@@ -89,8 +89,8 @@ export default function AdBannerSlider({ banners, showAsGrid = false }: AdBanner
                         fill
                         sizes="100vw"
                         className="object-cover object-center"
-                        priority={i === 0}
-                        unoptimized
+                        loading={i === 0 ? "eager" : "lazy"}
+                        quality={80}
                       />
                     </div>
                     {/* Mobile ratio — taller for better visibility */}
@@ -104,8 +104,8 @@ export default function AdBannerSlider({ banners, showAsGrid = false }: AdBanner
                         fill
                         sizes="100vw"
                         className="object-cover object-center"
-                        priority={i === 0}
-                        unoptimized
+                        loading={i === 0 ? "eager" : "lazy"}
+                        quality={80}
                       />
                     </div>
                   </Link>
@@ -131,7 +131,7 @@ export default function AdBannerSlider({ banners, showAsGrid = false }: AdBanner
           <CarouselContent className="-ml-0">
             {AD_BANNERS.map((banner, i) => (
               <CarouselItem key={banner.id} className="pl-0">
-                <Link href={banner.href} className="block w-full">
+                <Link href={banner.href} className="block w-full" aria-label={banner.alt}>
                   {/* Desktop ratio 1500:300 = 5:1 */}
                   <div
                     className="relative w-full hidden md:block"
@@ -143,8 +143,8 @@ export default function AdBannerSlider({ banners, showAsGrid = false }: AdBanner
                       fill
                       sizes="100vw"
                       className="object-cover object-center"
-                      priority={i === 0}
-                      unoptimized
+                      loading="lazy"
+                      quality={80}
                     />
                   </div>
                   {/* Mobile ratio — taller for better visibility */}
@@ -158,8 +158,8 @@ export default function AdBannerSlider({ banners, showAsGrid = false }: AdBanner
                       fill
                       sizes="100vw"
                       className="object-cover object-center"
-                      priority={i === 0}
-                      unoptimized
+                      loading="lazy"
+                      quality={80}
                     />
                   </div>
                 </Link>

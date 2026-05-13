@@ -98,7 +98,7 @@ export default function Header() {
         {/* Top utility bar - Desktop */}
         <div className="hidden border-b border-border bg-muted/50 md:block">
           <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-1.5">
-            <div className="flex items-center gap-4 text-[11px] text-muted-foreground">
+            <div className="flex items-center gap-4 text-[11px] text-foreground/70">
               <span className="flex items-center gap-1">
                 <Phone className="h-3 w-3" />
                 +91 93539 19299
@@ -109,7 +109,7 @@ export default function Header() {
               </span>
             </div>
             <div className="flex items-center gap-3 text-[11px]">
-              <span className="text-muted-foreground">Free shipping on orders above ₹5,000</span>
+              <span className="text-foreground/70">Free shipping on orders above ₹5,000</span>
               <span className="text-muted-foreground">|</span>
               {status === "loading" ? (
                 <span className="text-muted-foreground">Loading...</span>
@@ -174,7 +174,7 @@ export default function Header() {
                     Sign In
                   </Link>
                   <span className="text-border">|</span>
-                  <Link href="/auth/register" className="font-medium text-primary hover:text-stb-red-dark transition-colors">
+                  <Link href="/auth/register" className="font-semibold text-stb-red-dark transition-colors hover:text-primary">
                     Register
                   </Link>
                 </div>
@@ -189,8 +189,8 @@ export default function Header() {
             {/* Mobile menu */}
             <Sheet>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-10 w-10 shrink-0 rounded-xl md:hidden">
-                  <Menu className="h-5 w-5" />
+                <Button variant="ghost" size="icon" aria-label="Open navigation menu" className="h-11 w-11 shrink-0 rounded-xl md:hidden">
+                  <Menu className="h-5 w-5" aria-hidden="true" />
                 </Button>
               </SheetTrigger>
               <SheetContent side="left" className="w-[280px] p-0">
@@ -317,31 +317,41 @@ export default function Header() {
               </div>
             </form>
 
-            {/* Mobile search toggle */}
+            {/* Mobile search toggle — minimum 44×44px touch target */}
             <button
               onClick={() => setMobileSearchOpen(!mobileSearchOpen)}
-              className="flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground md:hidden press-active"
+              aria-label={mobileSearchOpen ? "Close search" : "Open search"}
+              aria-expanded={mobileSearchOpen}
+              className="flex h-11 w-11 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground md:hidden press-active"
             >
-              {mobileSearchOpen ? <X className="h-5 w-5" /> : <Search className="h-5 w-5" />}
+              {mobileSearchOpen ? <X className="h-5 w-5" aria-hidden="true" /> : <Search className="h-5 w-5" aria-hidden="true" />}
             </button>
 
             {/* Actions */}
             <div className="flex items-center gap-1">
               {/* Wishlist - desktop */}
-              <Link href="/wishlist" className="relative hidden md:flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
-                <Heart className="h-4.5 w-4.5" />
+              <Link 
+                href="/wishlist" 
+                aria-label={`Wishlist${wishlistCount > 0 ? ` (${wishlistCount} items)` : ""}`}
+                className="relative hidden md:flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              >
+                <Heart className="h-4.5 w-4.5" aria-hidden="true" />
                 {wishlistCount > 0 && (
-                  <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-semibold text-white">
+                  <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-semibold text-white" aria-hidden="true">
                     {wishlistCount > 9 ? "9+" : wishlistCount}
                   </span>
                 )}
               </Link>
 
               {/* Cart */}
-              <Link href="/cart" className="relative flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground press-active md:h-9 md:w-9">
-                <ShoppingCart className="h-5 w-5 md:h-4.5 md:w-4.5" />
+              <Link 
+                href="/cart" 
+                aria-label={`Shopping cart${cartCount > 0 ? ` (${cartCount} items)` : ""}`}
+                className="relative flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground press-active md:h-9 md:w-9"
+              >
+                <ShoppingCart className="h-5 w-5 md:h-4.5 md:w-4.5" aria-hidden="true" />
                 {cartCount > 0 && (
-                  <span className="absolute -right-0.5 -top-0.5 flex h-[15px] min-w-[15px] items-center justify-center rounded-full bg-primary px-0.5 text-[8px] font-bold leading-none text-white ring-2 ring-white">
+                  <span className="absolute -right-0.5 -top-0.5 flex h-[15px] min-w-[15px] items-center justify-center rounded-full bg-primary px-0.5 text-[8px] font-bold leading-none text-white ring-2 ring-white" aria-hidden="true">
                     {cartCount > 9 ? "9+" : cartCount}
                   </span>
                 )}

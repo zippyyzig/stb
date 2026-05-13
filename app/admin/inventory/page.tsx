@@ -25,43 +25,36 @@ async function getInventory(searchParams: { [key: string]: string | string[] | u
     const filter = searchParams.filter as string;
     const sort = (searchParams.sort as string) || "stock-asc";
 
-    // Show all active products (including those without isActive field set)
-    const query: Record<string, unknown> = { isActive: { $ne: false } };
+    // Build all conditions as an array and combine with $and at the end.
+    // This avoids the bug where setting query.$or twice (once for search,
+    // once for out-of-stock filter) silently overwrites the first assignment.
+    const conditions: Record<string, unknown>[] = [
+      { isActive: { $ne: false } },
+    ];
 
     if (searchParams.search) {
-      query.$or = [
-        { name: { $regex: searchParams.search, $options: "i" } },
-        { sku: { $regex: searchParams.search, $options: "i" } },
-      ];
+      conditions.push({
+        $or: [
+          { name: { $regex: searchParams.search, $options: "i" } },
+          { sku: { $regex: searchParams.search, $options: "i" } },
+        ],
+      });
     }
 
-    // Fix stock filtering - use $lte 0 for out-of-stock to handle null/0 cases
     if (filter === "out-of-stock") {
-      query.$or = [
-        { stock: 0 },
-        { stock: { $exists: false } },
-        { stock: null },
-      ];
-      // If there's already a search $or, we need to use $and
-      if (searchParams.search) {
-        query.$and = [
-          { $or: [
-            { name: { $regex: searchParams.search, $options: "i" } },
-            { sku: { $regex: searchParams.search, $options: "i" } },
-          ]},
-          { $or: [
-            { stock: 0 },
-            { stock: { $exists: false } },
-            { stock: null },
-          ]}
-        ];
-        delete query.$or;
-      }
+      // stock === 0 OR stock field missing — covers all "no stock" states
+      conditions.push({
+        $or: [{ stock: 0 }, { stock: { $exists: false } }, { stock: null }],
+      });
     } else if (filter === "low-stock") {
-      query.stock = { $gt: 0, $lt: 10 };
+      conditions.push({ stock: { $gt: 0, $lt: 10 } });
     } else if (filter === "in-stock") {
-      query.stock = { $gte: 10 };
+      conditions.push({ stock: { $gte: 10 } });
     }
+
+    // Collapse to a simple object when there is only one condition so
+    // MongoDB does not have to evaluate a single-element $and array.
+    const query = conditions.length === 1 ? conditions[0] : { $and: conditions };
 
     let sortOption: Record<string, 1 | -1> = { stock: 1 };
     if (sort === "stock-desc") sortOption = { stock: -1 };

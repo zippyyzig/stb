@@ -1,10 +1,23 @@
 import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import SessionProvider from "@/components/providers/SessionProvider";
 import { CartWishlistProvider } from "@/components/providers/CartWishlistProvider";
 import { NativeAppProvider } from "@/components/providers/NativeAppProvider";
 import { LoadingBar } from "@/components/ui/LoadingBar";
+
+// Use next/font/google which self-hosts the font, eliminating the
+// Google Fonts CDN request chain that blocks rendering by ~540ms.
+// Declaring specific weights avoids loading the full variable font file.
+const inter = Inter({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+  variable: "--font-inter",
+  preload: true,
+  fallback: ["system-ui", "sans-serif"],
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://smarttechbazaar.com"),
@@ -92,9 +105,10 @@ export const viewport: Viewport = {
   ],
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
+  // Allow user scaling for accessibility - users with low vision need to zoom
+  maximumScale: 5,
   minimumScale: 1,
-  userScalable: false,
+  userScalable: true,
   viewportFit: "cover",
 };
 
@@ -104,13 +118,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="bg-background">
+    <html lang="en" className={`bg-background ${inter.variable}`}>
       <head>
+        {/* Charset declaration - must be in first 1024 bytes */}
+        <meta charSet="utf-8" />
         {/* Version meta tag for cache busting in mobile apps */}
         <meta name="app-version" content={process.env.VERCEL_GIT_COMMIT_SHA || "1.0.0"} />
-        {/* Preconnect to external resources */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {/* Preconnect to the Vercel Blob CDN where banner images are hosted (LCP speedup).
+            Note: fonts.googleapis.com preconnect is intentionally omitted — next/font
+            self-hosts Inter so there is no external font CDN request. */}
+        <link rel="preconnect" href="https://hebbkx1anhila5yf.public.blob.vercel-storage.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://hebbkx1anhila5yf.public.blob.vercel-storage.com" />
         {/* Splash screens for iOS */}
         <link
           rel="apple-touch-startup-image"
