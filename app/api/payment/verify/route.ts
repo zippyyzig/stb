@@ -325,6 +325,7 @@ export async function POST(request: NextRequest) {
     const total = Number(razorpayOrder.amount) / 100; // Convert from paise
 
     // 14. Create order in database
+    const orderCreatedAt = new Date();
     const order = new Order({
       user: session.user.id,
       items: orderItems,
@@ -336,6 +337,10 @@ export async function POST(request: NextRequest) {
       discount,
       total,
       status: "confirmed",
+      statusHistory: [
+        { status: "pending", timestamp: orderCreatedAt },
+        { status: "confirmed", timestamp: orderCreatedAt, note: "Payment verified" },
+      ],
       paymentStatus: "paid",
       paymentMethod: "razorpay",
       razorpayOrderId: razorpay_order_id,

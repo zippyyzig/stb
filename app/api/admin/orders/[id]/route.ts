@@ -95,8 +95,18 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const previousPaymentStatus = order.paymentStatus;
 
     // Update order fields
-    if (data.status) {
+    if (data.status && data.status !== previousStatus) {
       order.status = data.status;
+      
+      // Add to status history with timestamp
+      if (!order.statusHistory) {
+        order.statusHistory = [];
+      }
+      order.statusHistory.push({
+        status: data.status,
+        timestamp: new Date(),
+        note: data.statusNote || undefined,
+      });
 
       if (data.status === "delivered" && !order.deliveredAt) {
         order.deliveredAt = new Date();
