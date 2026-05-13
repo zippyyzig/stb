@@ -56,6 +56,7 @@ export async function GET(request: NextRequest) {
 
     const [orders, total, stats] = await Promise.all([
       Order.find(query)
+        .select("_id orderNumber total status paymentStatus createdAt shippingAddress items user trackingNumber")
         .populate("user", "name email phone")
         .sort({ createdAt: -1 })
         .skip(skip)
