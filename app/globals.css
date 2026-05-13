@@ -1,5 +1,6 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 @import "tailwindcss";
+
+/* Font is now loaded via next/font in layout.tsx for optimal performance */
 
 @custom-variant dark (&:is(.dark *));
 
@@ -58,7 +59,8 @@
 }
 
 @theme inline {
-    --font-sans: 'Inter', system-ui, sans-serif;
+    /* Uses CSS variable from next/font Inter loaded in layout.tsx */
+    --font-sans: var(--font-inter), system-ui, sans-serif;
 
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);

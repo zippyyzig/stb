@@ -89,8 +89,8 @@ export default function AdBannerSlider({ banners, showAsGrid = false }: AdBanner
                         fill
                         sizes="100vw"
                         className="object-cover object-center"
-                        priority={i === 0}
-                        unoptimized
+                        loading={i === 0 ? "eager" : "lazy"}
+                        quality={80}
                       />
                     </div>
                     {/* Mobile ratio — taller for better visibility */}
@@ -104,8 +104,8 @@ export default function AdBannerSlider({ banners, showAsGrid = false }: AdBanner
                         fill
                         sizes="100vw"
                         className="object-cover object-center"
-                        priority={i === 0}
-                        unoptimized
+                        loading={i === 0 ? "eager" : "lazy"}
+                        quality={80}
                       />
                     </div>
                   </Link>
@@ -143,8 +143,8 @@ export default function AdBannerSlider({ banners, showAsGrid = false }: AdBanner
                       fill
                       sizes="100vw"
                       className="object-cover object-center"
-                      priority={i === 0}
-                      unoptimized
+                      loading="lazy"
+                      quality={80}
                     />
                   </div>
                   {/* Mobile ratio — taller for better visibility */}
@@ -158,8 +158,8 @@ export default function AdBannerSlider({ banners, showAsGrid = false }: AdBanner
                       fill
                       sizes="100vw"
                       className="object-cover object-center"
-                      priority={i === 0}
-                      unoptimized
+                      loading="lazy"
+                      quality={80}
                     />
                   </div>
                 </Link>

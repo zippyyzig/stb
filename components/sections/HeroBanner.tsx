@@ -95,7 +95,10 @@ export default function HeroBanner({ banners }: HeroBannerProps) {
                       sizes="100vw"
                       className="object-cover object-center"
                       priority={i === 0}
-                      unoptimized
+                      loading={i === 0 ? "eager" : "lazy"}
+                      quality={85}
+                      placeholder="blur"
+                      blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFgABAQEAAAAAAAAAAAAAAAAAAAUH/8QAIhAAAgICAAcBAAAAAAAAAAAAAQIDBAARBQYSITFBUWH/xAAVAQEBAAAAAAAAAAAAAAAAAAADBf/EABkRAQEBAAMAAAAAAAAAAAAAAAEAAgMRIf/aAAwDAQACEQMRAD8AzzhvAtLiNKKe5xS5JJIwZFaIKoYgbJBLHR+ZPmMxgEm5dtk9t//Z"
                     />
                   </div>
                   {/* Mobile ratio 450:300 = 3:2 — use same image or mobile image, crop to top */}
@@ -110,7 +113,10 @@ export default function HeroBanner({ banners }: HeroBannerProps) {
                       sizes="100vw"
                       className="object-cover object-top"
                       priority={i === 0}
-                      unoptimized
+                      loading={i === 0 ? "eager" : "lazy"}
+                      quality={85}
+                      placeholder="blur"
+                      blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFgABAQEAAAAAAAAAAAAAAAAAAAUH/8QAIhAAAgICAAcBAAAAAAAAAAAAAQIDBAARBQYSITFBUWH/xAAVAQEBAAAAAAAAAAAAAAAAAAADBf/EABkRAQEBAAMAAAAAAAAAAAAAAAEAAgMRIf/aAAwDAQACEQMRAD8AzzhvAtLiNKKe5xS5JJIwZFaIKoYgbJBLHR+ZPmMxgEm5dtk9t//Z"
                     />
                   </div>
                 </Link>
@@ -123,16 +129,21 @@ export default function HeroBanner({ banners }: HeroBannerProps) {
           <CarouselNext className="right-2 hidden md:flex h-8 w-8 border-0 bg-white/85 text-foreground shadow hover:bg-white" />
         </Carousel>
 
-        {/* Dot indicators */}
-        <div className="absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 gap-1.5">
+        {/* Dot indicators - minimum 44x44px touch target for accessibility */}
+        <div className="absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 gap-1">
           {SLIDES.map((_, i) => (
             <button
               key={i}
               onClick={() => api?.scrollTo(i)}
-              aria-label={`Go to slide ${i + 1}`}
-              className={`h-1.5 rounded-full transition-all duration-300 ${i === current ? "w-5 bg-primary" : "w-1.5 bg-white/60 hover:bg-white"
+              aria-label={`Go to slide ${i + 1} of ${SLIDES.length}`}
+              className="flex h-11 w-11 items-center justify-center"
+            >
+              <span
+                className={`block h-2 rounded-full transition-all duration-300 ${
+                  i === current ? "w-6 bg-primary" : "w-2 bg-white/60 hover:bg-white"
                 }`}
-            />
+              />
+            </button>
           ))}
         </div>
       </div>

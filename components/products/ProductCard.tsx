@@ -144,7 +144,8 @@ export default function ProductCard({ product }: ProductCardProps) {
               fill
               sizes="(max-width: 640px) 50vw, 200px"
               className="object-contain transition-transform duration-300 group-hover:scale-105"
-              unoptimized
+              loading="lazy"
+              quality={75}
             />
           </div>
         </Link>

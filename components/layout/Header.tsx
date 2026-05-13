@@ -328,20 +328,28 @@ export default function Header() {
             {/* Actions */}
             <div className="flex items-center gap-1">
               {/* Wishlist - desktop */}
-              <Link href="/wishlist" className="relative hidden md:flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
-                <Heart className="h-4.5 w-4.5" />
+              <Link 
+                href="/wishlist" 
+                aria-label={`Wishlist${wishlistCount > 0 ? ` (${wishlistCount} items)` : ""}`}
+                className="relative hidden md:flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              >
+                <Heart className="h-4.5 w-4.5" aria-hidden="true" />
                 {wishlistCount > 0 && (
-                  <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-semibold text-white">
+                  <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-semibold text-white" aria-hidden="true">
                     {wishlistCount > 9 ? "9+" : wishlistCount}
                   </span>
                 )}
               </Link>
 
               {/* Cart */}
-              <Link href="/cart" className="relative flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground press-active md:h-9 md:w-9">
-                <ShoppingCart className="h-5 w-5 md:h-4.5 md:w-4.5" />
+              <Link 
+                href="/cart" 
+                aria-label={`Shopping cart${cartCount > 0 ? ` (${cartCount} items)` : ""}`}
+                className="relative flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground press-active md:h-9 md:w-9"
+              >
+                <ShoppingCart className="h-5 w-5 md:h-4.5 md:w-4.5" aria-hidden="true" />
                 {cartCount > 0 && (
-                  <span className="absolute -right-0.5 -top-0.5 flex h-[15px] min-w-[15px] items-center justify-center rounded-full bg-primary px-0.5 text-[8px] font-bold leading-none text-white ring-2 ring-white">
+                  <span className="absolute -right-0.5 -top-0.5 flex h-[15px] min-w-[15px] items-center justify-center rounded-full bg-primary px-0.5 text-[8px] font-bold leading-none text-white ring-2 ring-white" aria-hidden="true">
                     {cartCount > 9 ? "9+" : cartCount}
                   </span>
                 )}
