@@ -32,22 +32,28 @@ async function getBrands(searchParams: { [key: string]: string | string[] | unde
       ];
     }
 
-    const [brands, total] = await Promise.all([
+    // Use aggregation to get brand product counts in a single query (no N+1)
+    const [brands, total, productCounts] = await Promise.all([
       Brand.find(query)
+        .select("_id name slug description logo website isActive sortOrder")
         .sort({ sortOrder: 1, name: 1 })
         .skip(skip)
         .limit(limit)
         .lean(),
       Brand.countDocuments(query),
+      Product.aggregate([
+        { $match: { brand: { $exists: true, $ne: null } } },
+        { $group: { _id: "$brand", count: { $sum: 1 } } },
+      ]),
     ]);
 
-    // Get product counts for each brand
-    const brandsWithCounts = await Promise.all(
-      brands.map(async (brand) => {
-        const productCount = await Product.countDocuments({ brand: brand.name });
-        return { ...brand, productCount };
-      })
-    );
+    // Create a map for quick lookup
+    const countMap = new Map(productCounts.map((p) => [p._id, p.count]));
+
+    const brandsWithCounts = brands.map((brand) => ({
+      ...brand,
+      productCount: countMap.get(brand.name) || 0,
+    }));
 
     return {
       brands: JSON.parse(JSON.stringify(brandsWithCounts)),

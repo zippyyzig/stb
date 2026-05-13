@@ -149,16 +149,17 @@ export const getCategories = unstable_cache(
   async (): Promise<CategoryData[]> => {
     await dbConnect();
 
-    const categories = await Category.aggregate([
-      { $match: { isActive: true, parent: null } },
-      { $sort: { sortOrder: 1 } },
-      { $limit: 12 },
+    // First try to get root categories (parent: null), if none found get all active categories
+    let categories = await Category.aggregate([
+      { $match: { isActive: { $ne: false }, $or: [{ parent: null }, { parent: { $exists: false } }] } },
+      { $sort: { sortOrder: 1, name: 1 } },
+      { $limit: 14 },
       {
         $lookup: {
           from: "products",
           let: { catId: "$_id" },
           pipeline: [
-            { $match: { $expr: { $and: [{ $eq: ["$category", "$$catId"] }, { $eq: ["$isActive", true] }] } } },
+            { $match: { $expr: { $and: [{ $eq: ["$category", "$$catId"] }, { $ne: ["$isActive", false] }] } } },
             { $count: "n" },
           ],
           as: "productStats",
@@ -174,6 +175,35 @@ export const getCategories = unstable_cache(
         },
       },
     ]);
+
+    // Fallback: if no root categories found, get all categories
+    if (categories.length === 0) {
+      categories = await Category.aggregate([
+        { $match: { isActive: { $ne: false } } },
+        { $sort: { sortOrder: 1, name: 1 } },
+        { $limit: 14 },
+        {
+          $lookup: {
+            from: "products",
+            let: { catId: "$_id" },
+            pipeline: [
+              { $match: { $expr: { $and: [{ $eq: ["$category", "$$catId"] }, { $ne: ["$isActive", false] }] } } },
+              { $count: "n" },
+            ],
+            as: "productStats",
+          },
+        },
+        {
+          $project: {
+            _id: 1,
+            name: 1,
+            image: 1,
+            slug: 1,
+            productCount: { $ifNull: [{ $arrayElemAt: ["$productStats.n", 0] }, 0] },
+          },
+        },
+      ]);
+    }
 
     return categories.map((cat) => ({
       id: cat._id.toString(),

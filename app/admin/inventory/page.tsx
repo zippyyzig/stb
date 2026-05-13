@@ -22,7 +22,8 @@ async function getInventory(searchParams: { [key: string]: string | string[] | u
     const filter = searchParams.filter as string;
     const sort = (searchParams.sort as string) || "stock-asc";
 
-    const query: Record<string, unknown> = { isActive: true };
+    // Remove isActive filter to show ALL products in inventory (including those without isActive field)
+    const query: Record<string, unknown> = { isActive: { $ne: false } };
 
     if (searchParams.search) {
       query.$or = [
@@ -32,7 +33,7 @@ async function getInventory(searchParams: { [key: string]: string | string[] | u
     }
 
     if (filter === "out-of-stock") {
-      query.stock = 0;
+      query.stock = { $in: [0, null, undefined] };
     } else if (filter === "low-stock") {
       query.stock = { $gt: 0, $lt: 10 };
     } else if (filter === "in-stock") {
@@ -46,7 +47,7 @@ async function getInventory(searchParams: { [key: string]: string | string[] | u
 
     const [products, total, stats] = await Promise.all([
       Product.find(query)
-        .select("_id name sku stock images priceB2C category")
+        .select("_id name sku stock images priceB2C category isActive")
         .populate("category", "name")
         .sort(sortOption)
         .skip(skip)
@@ -76,22 +77,30 @@ async function getInventory(searchParams: { [key: string]: string | string[] | u
 }
 
 async function getInventoryStats() {
-  const [totalProducts, outOfStock, lowStock, totalValue] = await Promise.all([
-    Product.countDocuments({ isActive: true }),
-    Product.countDocuments({ isActive: true, stock: 0 }),
-    Product.countDocuments({ isActive: true, stock: { $gt: 0, $lt: 10 } }),
-    Product.aggregate([
-      { $match: { isActive: true } },
-      { $group: { _id: null, total: { $sum: { $multiply: ["$stock", "$priceB2C"] } } } },
-    ]),
+  // Use aggregation to get all stats in a single query for better performance
+  const stats = await Product.aggregate([
+    { $match: { isActive: { $ne: false } } },
+    {
+      $facet: {
+        total: [{ $count: "count" }],
+        outOfStock: [{ $match: { $or: [{ stock: 0 }, { stock: null }, { stock: { $exists: false } }] } }, { $count: "count" }],
+        lowStock: [{ $match: { stock: { $gt: 0, $lt: 10 } } }, { $count: "count" }],
+        totalValue: [{ $group: { _id: null, total: { $sum: { $multiply: [{ $ifNull: ["$stock", 0] }, { $ifNull: ["$priceB2C", 0] }] } } } }],
+      },
+    },
   ]);
+
+  const result = stats[0] || {};
+  const totalProducts = result.total?.[0]?.count || 0;
+  const outOfStock = result.outOfStock?.[0]?.count || 0;
+  const lowStock = result.lowStock?.[0]?.count || 0;
 
   return {
     totalProducts,
     outOfStock,
     lowStock,
     inStock: totalProducts - outOfStock - lowStock,
-    totalValue: totalValue[0]?.total || 0,
+    totalValue: result.totalValue?.[0]?.total || 0,
   };
 }
 
