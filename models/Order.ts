@@ -207,6 +207,9 @@ OrderSchema.index({ user: 1 });
 OrderSchema.index({ status: 1 });
 OrderSchema.index({ paymentStatus: 1 });
 OrderSchema.index({ createdAt: -1 });
+OrderSchema.index({ paymentStatus: 1, createdAt: -1 }); // For revenue queries
+OrderSchema.index({ status: 1, createdAt: -1 }); // For filtered order lists
+OrderSchema.index({ "shippingAddress.name": "text", "shippingAddress.phone": "text" }); // For search
 
 // Generate order number before saving
 OrderSchema.pre("save", async function (next) {

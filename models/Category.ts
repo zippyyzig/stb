@@ -62,6 +62,7 @@ const CategorySchema = new Schema<ICategory>(
 CategorySchema.index({ parent: 1 });
 CategorySchema.index({ isActive: 1 });
 CategorySchema.index({ sortOrder: 1 });
+CategorySchema.index({ isActive: 1, parent: 1, sortOrder: 1 }); // Compound index for category queries
 
 const Category: Model<ICategory> =
   mongoose.models.Category ||

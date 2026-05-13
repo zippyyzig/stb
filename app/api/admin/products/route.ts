@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
 import Product from "@/models/Product";
 import { logAdminAction } from "@/lib/activity-logger";
+import { CACHE_TAGS } from "@/lib/cache";
 
 // GET all products (admin)
 export async function GET(request: NextRequest) {
@@ -21,14 +23,17 @@ export async function GET(request: NextRequest) {
     const limit = Number(searchParams.get("limit")) || 20;
     const skip = (page - 1) * limit;
 
-    const products = await Product.find()
-      .populate("category", "name slug")
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean();
-
-    const total = await Product.countDocuments();
+    // Use Promise.all for parallel execution and select only needed fields for list view
+    const [products, total] = await Promise.all([
+      Product.find()
+        .select("_id name slug images priceB2C priceB2B mrp stock sku isActive isFeatured category brand createdAt")
+        .populate("category", "name slug")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      Product.countDocuments(),
+    ]);
 
     return NextResponse.json({
       products,
@@ -84,6 +89,9 @@ export async function POST(request: NextRequest) {
       product._id.toString(),
       { productName: data.name, slug: finalSlug }
     );
+
+    // Revalidate product caches
+    revalidateTag(CACHE_TAGS.products);
 
     return NextResponse.json(
       { message: "Product created successfully", product },

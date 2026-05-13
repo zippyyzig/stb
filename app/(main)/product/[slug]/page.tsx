@@ -13,9 +13,8 @@ import Product from "@/models/Product";
 import { siteConfig, getCanonicalUrl } from "@/lib/site-config";
 import { generateProductSchema, generateOrganizationSchema } from "@/lib/schema";
 
-// Disable caching to always fetch fresh data
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+// Enable ISR with 60 second revalidation
+export const revalidate = 60;
 
 interface ProductPageProps {
   params: Promise<{ slug: string }>;
@@ -25,22 +24,44 @@ async function getProductData(slug: string) {
   try {
     await dbConnect();
 
-    const product = await Product.findOne({ slug, isActive: true })
+    // First try to find by slug with isActive: true
+    let product = await Product.findOne({ slug, isActive: true })
       .populate("category", "name slug")
       .lean();
+
+    // If not found, try without isActive filter (in case it's set to false by default)
+    if (!product) {
+      product = await Product.findOne({ slug })
+        .populate("category", "name slug")
+        .lean();
+      
+      // If found but inactive, still return null (product exists but is hidden)
+      if (product && product.isActive === false) {
+        return null;
+      }
+    }
 
     if (!product) {
       return null;
     }
 
-    // Get related products from same category
-    const relatedProducts = await Product.find({
-      category: product.category._id,
-      _id: { $ne: product._id },
-      isActive: true,
-    })
-      .limit(6)
-      .lean();
+    // Get related products from same category (only if category exists)
+    let relatedProducts: typeof product[] = [];
+    
+    // Handle case where category might be an ObjectId or a populated object
+    const categoryId = product.category && typeof product.category === 'object' && '_id' in product.category
+      ? product.category._id
+      : product.category;
+    
+    if (categoryId) {
+      relatedProducts = await Product.find({
+        category: categoryId,
+        _id: { $ne: product._id },
+        isActive: true,
+      })
+        .limit(6)
+        .lean();
+    }
 
     return {
       product: JSON.parse(JSON.stringify(product)),
@@ -121,9 +142,12 @@ export default async function ProductPage({ params }: ProductPageProps) {
     }),
   ];
 
-  // Breadcrumb items
+  // Breadcrumb items - handle case where category might not be populated
+  const categoryName = product.category && typeof product.category === 'object' ? product.category.name : null;
+  const categorySlug = product.category && typeof product.category === 'object' ? product.category.slug : null;
+  
   const breadcrumbItems = [
-    ...(product.category ? [{ label: product.category.name, href: `/category/${product.category.slug}` }] : []),
+    ...(categoryName && categorySlug ? [{ label: categoryName, href: `/category/${categorySlug}` }] : []),
     { label: product.name },
   ];
 

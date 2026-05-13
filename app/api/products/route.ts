@@ -122,10 +122,11 @@ export async function GET(request: NextRequest) {
         sort = { isFeatured: -1, createdAt: -1 };
     }
 
-    // Execute query
+    // Execute query with optimized projection
     const skip = (page - 1) * limit;
     const [products, total] = await Promise.all([
       Product.find(query)
+        .select("_id name slug images priceB2C priceB2B mrp stock brand sku category isFeatured isNewArrival")
         .populate("category", "name slug")
         .sort(sort)
         .skip(skip)

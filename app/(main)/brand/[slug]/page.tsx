@@ -18,9 +18,8 @@ import {
 } from "@/lib/schema";
 import { ExternalLink } from "lucide-react";
 
-// Disable caching to always fetch fresh data
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+// Enable ISR with 60 second revalidation
+export const revalidate = 60;
 
 interface BrandPageProps {
   params: Promise<{ slug: string }>;

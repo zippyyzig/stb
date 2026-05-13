@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
 import Product from "@/models/Product";
 import { logAdminAction } from "@/lib/activity-logger";
+import { CACHE_TAGS } from "@/lib/cache";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -73,6 +75,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       { productName: product.name }
     );
 
+    // Revalidate product caches
+    revalidateTag(CACHE_TAGS.products);
+
     return NextResponse.json({
       message: "Product updated successfully",
       product,
@@ -115,6 +120,9 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       id,
       { productName: product.name }
     );
+
+    // Revalidate product caches
+    revalidateTag(CACHE_TAGS.products);
 
     return NextResponse.json({ message: "Product deleted successfully" });
   } catch (error) {

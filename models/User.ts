@@ -181,6 +181,8 @@ const UserSchema = new Schema<IUser>(
 
 // Create indexes
 UserSchema.index({ role: 1 });
+UserSchema.index({ role: 1, createdAt: -1 }); // For customer listing with pagination
+UserSchema.index({ name: "text", email: "text", phone: "text" }); // For search
 // Note: email and googleId indexes are created automatically via unique: true / sparse: true in the schema field definitions
 
 const User: Model<IUser> =

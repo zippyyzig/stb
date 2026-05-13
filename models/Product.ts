@@ -184,6 +184,10 @@ ProductSchema.index({ isNewArrival: 1 });
 ProductSchema.index({ isBestSeller: 1 });
 ProductSchema.index({ priceB2C: 1 });
 ProductSchema.index({ priceB2B: 1 });
+ProductSchema.index({ stock: 1, isActive: 1 }); // For low stock queries
+ProductSchema.index({ soldCount: -1, isActive: 1 }); // For best sellers
+ProductSchema.index({ views: -1, isActive: 1 }); // For popular products
+ProductSchema.index({ createdAt: -1 }); // For sorting by date
 ProductSchema.index({ name: "text", description: "text", tags: "text" });
 
 const Product: Model<IProduct> =
