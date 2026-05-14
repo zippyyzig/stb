@@ -76,12 +76,19 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
   const paymentConfig = paymentStatusConfig[order.paymentStatus] || paymentStatusConfig.pending;
   const StatusIcon = config.icon;
 
-  // Build timeline from statusHistory if available, otherwise fall back to basic logic
+  // Build timeline from statusHistory.
+  // Use the FIRST occurrence of each status so that if an admin ever moves a status
+  // backward and forward, the timeline shows when each step was first reached.
+  // forEach with Map.set() overwrites duplicates, so we iterate in reverse and
+  // then the first occurrence wins (last set in the reversed array = first in original).
   const statusHistoryMap = new Map<string, Date>();
   if (order.statusHistory && order.statusHistory.length > 0) {
-    order.statusHistory.forEach((entry: { status: string; timestamp: string }) => {
-      statusHistoryMap.set(entry.status, new Date(entry.timestamp));
-    });
+    // Iterate in reverse so that earlier (first) entries overwrite later ones
+    [...order.statusHistory]
+      .reverse()
+      .forEach((entry: { status: string; timestamp: string }) => {
+        statusHistoryMap.set(entry.status, new Date(entry.timestamp));
+      });
   }
 
   const statusTimeline = [

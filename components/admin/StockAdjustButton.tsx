@@ -35,7 +35,10 @@ export default function StockAdjustButton({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          quantity: adjustType === "subtract" ? -quantity : quantity,
+          // Always send the raw positive number. The API route handles the
+          // arithmetic based on `type`, so pre-negating here caused the API's
+          // own subtraction to flip it back to a positive (double-negation bug).
+          quantity: quantity,
           type: adjustType,
           reason,
           actionType: adjustType === "set" ? "adjustment" : adjustType === "add" ? "purchase" : "adjustment",

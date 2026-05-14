@@ -98,7 +98,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     if (data.status && data.status !== previousStatus) {
       order.status = data.status;
       
-      // Add to status history with timestamp
+      // Add to status history with a fresh timestamp capturing exactly when
+      // this transition happened — each push gets its own new Date() so that
+      // sequential updates (pending→confirmed→processing) all have distinct timestamps.
       if (!order.statusHistory) {
         order.statusHistory = [];
       }
@@ -179,7 +181,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       order.notes = data.notes;
     }
 
-    order.updatedAt = new Date();
+    // Do NOT manually set order.updatedAt — the schema has timestamps: true,
+    // so Mongoose manages updatedAt automatically on .save(). Manually setting
+    // it before save() can cause the pre-save hook to use the wrong value.
     await order.save();
 
     // Create notification for status changes
