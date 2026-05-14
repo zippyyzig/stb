@@ -326,6 +326,8 @@ export async function POST(request: NextRequest) {
 
     // 14. Create order in database
     const orderCreatedAt = new Date();
+    // confirmed is one second after placed so each timeline step has a unique timestamp
+    const orderConfirmedAt = new Date(orderCreatedAt.getTime() + 1000);
     const order = new Order({
       user: session.user.id,
       items: orderItems,
@@ -338,8 +340,8 @@ export async function POST(request: NextRequest) {
       total,
       status: "confirmed",
       statusHistory: [
-        { status: "pending", timestamp: orderCreatedAt },
-        { status: "confirmed", timestamp: orderCreatedAt, note: "Payment verified" },
+        { status: "pending",   timestamp: orderCreatedAt },
+        { status: "confirmed", timestamp: orderConfirmedAt, note: "Payment verified" },
       ],
       paymentStatus: "paid",
       paymentMethod: "razorpay",
