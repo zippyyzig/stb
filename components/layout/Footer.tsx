@@ -35,7 +35,6 @@ const LinkedinIcon = ({ className }: { className?: string }) => (
 
 const infoLinks = [
   { name: "About Us", href: "/about" },
-  { name: "Shipping Info", href: "/shipping" },
   { name: "Privacy Policy", href: "/privacy" },
   { name: "Terms & Conditions", href: "/terms" },
   { name: "Dealer Registration", href: "/auth/register?type=dealer" },

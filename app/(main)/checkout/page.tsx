@@ -993,8 +993,6 @@ export default function CheckoutPage() {
 
                   {(total ?? 0) < 5000 && (
                     <p className="body-sm text-muted-foreground">
-                      Add {formatPrice(5000 - (total ?? 0))} more for
-                      free shipping
                     </p>
                   )}
                 </div>
