@@ -11,6 +11,8 @@ import Breadcrumbs from "@/components/seo/Breadcrumbs";
 import JsonLd from "@/components/seo/JsonLd";
 import dbConnect from "@/lib/mongodb";
 import Product from "@/models/Product";
+// Category must be imported to register its schema with Mongoose before any populate() call
+import "@/models/Category";
 import { siteConfig, getCanonicalUrl } from "@/lib/site-config";
 import { generateProductSchema, generateOrganizationSchema } from "@/lib/schema";
 import { CACHE_TAGS, CACHE_DURATIONS } from "@/lib/cache";
