@@ -189,7 +189,6 @@ export default function ProductInfo({ product }: ProductInfoProps) {
             </div>
           </>
         )}
-        <p className="mt-1 text-[10px] text-muted-foreground md:text-[11px]">Inclusive of all taxes</p>
       </div>
 
       {/* ── Stock + Qty ─────────────────────────────────────────────── */}

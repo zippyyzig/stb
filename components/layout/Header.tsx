@@ -109,7 +109,6 @@ export default function Header() {
               </span>
             </div>
             <div className="flex items-center gap-3 text-[11px]">
-              <span className="text-foreground/70">Free shipping on orders above ₹5,000</span>
               <span className="text-muted-foreground">|</span>
               {status === "loading" ? (
                 <span className="text-muted-foreground">Loading...</span>
