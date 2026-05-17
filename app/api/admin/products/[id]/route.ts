@@ -77,6 +77,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     // Revalidate product caches and paths
     revalidateTag(CACHE_TAGS.products);
+    // Revalidate the specific product cache tag
+    revalidateTag(`product-${product.slug}`);
     // Revalidate the specific product page
     revalidatePath(`/product/${product.slug}`);
     // Revalidate product listing pages
@@ -129,6 +131,8 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     // Revalidate product caches and paths
     revalidateTag(CACHE_TAGS.products);
+    // Revalidate the specific product cache tag
+    revalidateTag(`product-${product.slug}`);
     // Revalidate the specific product page
     revalidatePath(`/product/${product.slug}`);
     // Revalidate product listing pages
