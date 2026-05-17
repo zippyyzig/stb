@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { revalidateTag } from "next/cache";
+import { revalidateTag, revalidatePath } from "next/cache";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
@@ -99,9 +99,12 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       { new: true }
     );
 
-    // Revalidate caches
+    // Revalidate caches and paths
     revalidateTag(CACHE_TAGS.brands);
     revalidateTag(CACHE_TAGS.products);
+    revalidatePath(`/brand/${brand.slug}`);
+    revalidatePath("/brands");
+    revalidatePath("/");
 
     return NextResponse.json({
       message: "Brand updated successfully",
@@ -147,8 +150,11 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     await Brand.findByIdAndDelete(id);
 
-    // Revalidate caches
+    // Revalidate caches and paths
     revalidateTag(CACHE_TAGS.brands);
+    revalidatePath(`/brand/${brand.slug}`);
+    revalidatePath("/brands");
+    revalidatePath("/");
 
     return NextResponse.json({ message: "Brand deleted successfully" });
   } catch (error) {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { revalidateTag } from "next/cache";
+import { revalidateTag, revalidatePath } from "next/cache";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
@@ -126,8 +126,10 @@ export async function POST(request: NextRequest) {
       { categoryName: data.name, slug }
     );
 
-    // Revalidate caches
+    // Revalidate caches and paths
     revalidateTag(CACHE_TAGS.categories);
+    revalidatePath(`/category/${slug}`);
+    revalidatePath("/");
 
     return NextResponse.json(
       { message: "Category created successfully", category },

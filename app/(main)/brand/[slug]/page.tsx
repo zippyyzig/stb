@@ -21,6 +21,9 @@ import { ExternalLink } from "lucide-react";
 // Enable ISR with 60 second revalidation
 export const revalidate = 60;
 
+// Allow dynamic paths that weren't generated at build time
+export const dynamicParams = true;
+
 interface BrandPageProps {
   params: Promise<{ slug: string }>;
 }

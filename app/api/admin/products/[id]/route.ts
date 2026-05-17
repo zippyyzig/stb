@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { revalidateTag } from "next/cache";
+import { revalidateTag, revalidatePath } from "next/cache";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
@@ -75,8 +75,14 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       { productName: product.name }
     );
 
-    // Revalidate product caches
+    // Revalidate product caches and paths
     revalidateTag(CACHE_TAGS.products);
+    // Revalidate the specific product page
+    revalidatePath(`/product/${product.slug}`);
+    // Revalidate product listing pages
+    revalidatePath("/products");
+    // Revalidate homepage for featured/new products
+    revalidatePath("/");
 
     return NextResponse.json({
       message: "Product updated successfully",
@@ -121,8 +127,14 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       { productName: product.name }
     );
 
-    // Revalidate product caches
+    // Revalidate product caches and paths
     revalidateTag(CACHE_TAGS.products);
+    // Revalidate the specific product page
+    revalidatePath(`/product/${product.slug}`);
+    // Revalidate product listing pages
+    revalidatePath("/products");
+    // Revalidate homepage for featured/new products
+    revalidatePath("/");
 
     return NextResponse.json({ message: "Product deleted successfully" });
   } catch (error) {

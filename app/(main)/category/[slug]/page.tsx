@@ -15,6 +15,9 @@ import { generateCollectionPageSchema, generateOrganizationSchema } from "@/lib/
 // Enable ISR with 60 second revalidation
 export const revalidate = 60;
 
+// Allow dynamic paths that weren't generated at build time
+export const dynamicParams = true;
+
 interface CategoryPageProps {
   params: Promise<{ slug: string }>;
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
