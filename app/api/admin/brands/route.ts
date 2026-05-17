@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { revalidateTag } from "next/cache";
+import { revalidateTag, revalidatePath } from "next/cache";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
@@ -104,8 +104,11 @@ export async function POST(request: NextRequest) {
       slug,
     });
 
-    // Revalidate brand caches
+    // Revalidate brand caches and paths
     revalidateTag(CACHE_TAGS.brands);
+    revalidatePath(`/brand/${slug}`);
+    revalidatePath("/brands");
+    revalidatePath("/");
 
     return NextResponse.json(
       { message: "Brand created successfully", brand },

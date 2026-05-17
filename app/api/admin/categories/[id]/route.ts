@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { revalidateTag } from "next/cache";
+import { revalidateTag, revalidatePath } from "next/cache";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
@@ -101,8 +101,10 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Category not found" }, { status: 404 });
     }
 
-    // Revalidate caches
+    // Revalidate caches and paths
     revalidateTag(CACHE_TAGS.categories);
+    revalidatePath(`/category/${category.slug}`);
+    revalidatePath("/");
 
     return NextResponse.json({
       message: "Category updated successfully",
@@ -156,8 +158,10 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Category not found" }, { status: 404 });
     }
 
-    // Revalidate caches
+    // Revalidate caches and paths
     revalidateTag(CACHE_TAGS.categories);
+    revalidatePath(`/category/${category.slug}`);
+    revalidatePath("/");
 
     return NextResponse.json({ message: "Category deleted successfully" });
   } catch (error) {

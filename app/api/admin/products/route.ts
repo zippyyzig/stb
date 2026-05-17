@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { revalidateTag } from "next/cache";
+import { revalidateTag, revalidatePath } from "next/cache";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
@@ -90,8 +90,14 @@ export async function POST(request: NextRequest) {
       { productName: data.name, slug: finalSlug }
     );
 
-    // Revalidate product caches
+    // Revalidate product caches and paths
     revalidateTag(CACHE_TAGS.products);
+    // Revalidate the specific product page path
+    revalidatePath(`/product/${finalSlug}`);
+    // Revalidate product listing pages
+    revalidatePath("/products");
+    // Revalidate homepage for featured/new products
+    revalidatePath("/");
 
     return NextResponse.json(
       { message: "Product created successfully", product },

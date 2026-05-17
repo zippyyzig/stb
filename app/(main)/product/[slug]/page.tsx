@@ -16,6 +16,10 @@ import { generateProductSchema, generateOrganizationSchema } from "@/lib/schema"
 // Enable ISR with 60 second revalidation
 export const revalidate = 60;
 
+// Allow dynamic paths that weren't generated at build time
+// This ensures new products are accessible immediately without 404
+export const dynamicParams = true;
+
 interface ProductPageProps {
   params: Promise<{ slug: string }>;
 }

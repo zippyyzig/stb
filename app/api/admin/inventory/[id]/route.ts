@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { revalidateTag } from "next/cache";
+import { revalidateTag, revalidatePath } from "next/cache";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
@@ -111,11 +111,11 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     // Use findByIdAndUpdate with $set so only the stock field is touched —
     // this avoids triggering a full document re-save which could inadvertently
     // modify other fields or cause validation issues.
-    await Product.findByIdAndUpdate(
+    const updatedProduct = await Product.findByIdAndUpdate(
       id,
       { $set: { stock: newStock } },
       { new: true }
-    );
+    ).select("slug");
 
     // Log the adjustment and revalidate cache in parallel
     await Promise.all([
@@ -135,6 +135,13 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       // immediately sees the updated stock instead of stale ISR data.
       Promise.resolve(revalidateTag(CACHE_TAGS.products)),
     ]);
+
+    // Revalidate the specific product page if slug is available
+    if (updatedProduct?.slug) {
+      revalidatePath(`/product/${updatedProduct.slug}`);
+    }
+    // Revalidate product listing pages
+    revalidatePath("/products");
 
     // Send low stock alert if stock crosses below threshold (10 units)
     const LOW_STOCK_THRESHOLD = 10;
