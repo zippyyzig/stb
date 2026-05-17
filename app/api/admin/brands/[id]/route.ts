@@ -99,6 +99,10 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       { new: true }
     );
 
+    if (!brand) {
+      return NextResponse.json({ error: "Brand not found" }, { status: 404 });
+    }
+
     // Revalidate caches and paths
     revalidateTag(CACHE_TAGS.brands);
     revalidateTag(CACHE_TAGS.products);
