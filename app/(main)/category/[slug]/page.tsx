@@ -12,8 +12,8 @@ import Brand from "@/models/Brand";
 import { siteConfig, getCanonicalUrl } from "@/lib/site-config";
 import { generateCollectionPageSchema, generateOrganizationSchema } from "@/lib/schema";
 
-// Enable ISR with 60 second revalidation
-export const revalidate = 60;
+// Use dynamic rendering to avoid caching 404 responses
+export const dynamic = "force-dynamic";
 
 // Allow dynamic paths that weren't generated at build time
 export const dynamicParams = true;

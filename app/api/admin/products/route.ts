@@ -92,6 +92,8 @@ export async function POST(request: NextRequest) {
 
     // Revalidate product caches and paths
     revalidateTag(CACHE_TAGS.products);
+    // Revalidate the specific product cache tag
+    revalidateTag(`product-${finalSlug}`);
     // Revalidate the specific product page path
     revalidatePath(`/product/${finalSlug}`);
     // Revalidate product listing pages

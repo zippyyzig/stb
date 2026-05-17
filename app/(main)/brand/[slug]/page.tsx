@@ -18,8 +18,8 @@ import {
 } from "@/lib/schema";
 import { ExternalLink } from "lucide-react";
 
-// Enable ISR with 60 second revalidation
-export const revalidate = 60;
+// Use dynamic rendering to avoid caching 404 responses
+export const dynamic = "force-dynamic";
 
 // Allow dynamic paths that weren't generated at build time
 export const dynamicParams = true;

@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { unstable_cache } from "next/cache";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import ProductGallery from "@/components/products/ProductGallery";
@@ -12,9 +13,11 @@ import dbConnect from "@/lib/mongodb";
 import Product from "@/models/Product";
 import { siteConfig, getCanonicalUrl } from "@/lib/site-config";
 import { generateProductSchema, generateOrganizationSchema } from "@/lib/schema";
+import { CACHE_TAGS, CACHE_DURATIONS } from "@/lib/cache";
 
-// Enable ISR with 60 second revalidation
-export const revalidate = 60;
+// Use dynamic rendering to avoid caching 404 responses
+// Data is cached separately via unstable_cache with proper tags
+export const dynamic = "force-dynamic";
 
 // Allow dynamic paths that weren't generated at build time
 // This ensures new products are accessible immediately without 404
@@ -24,55 +27,80 @@ interface ProductPageProps {
   params: Promise<{ slug: string }>;
 }
 
-async function getProductData(slug: string) {
-  try {
-    await dbConnect();
+// Cached function for fetching product data
+// This ensures data is cached and invalidated via tags, while page rendering stays dynamic
+const getProductFromDb = async (slug: string) => {
+  await dbConnect();
 
-    // First try to find by slug with isActive: true
-    let product = await Product.findOne({ slug, isActive: true })
+  // First try to find by slug with isActive: true
+  let product = await Product.findOne({ slug, isActive: true })
+    .populate("category", "name slug")
+    .lean();
+
+  // If not found, try without isActive filter (in case it's set to false by default)
+  if (!product) {
+    product = await Product.findOne({ slug })
       .populate("category", "name slug")
       .lean();
-
-    // If not found, try without isActive filter (in case it's set to false by default)
-    if (!product) {
-      product = await Product.findOne({ slug })
-        .populate("category", "name slug")
-        .lean();
-      
-      // If found but inactive, still return null (product exists but is hidden)
-      if (product && product.isActive === false) {
-        return null;
-      }
-    }
-
-    if (!product) {
+    
+    // If found but inactive, still return null (product exists but is hidden)
+    if (product && product.isActive === false) {
       return null;
     }
+  }
 
-    // Get related products from same category (only if category exists)
-    let relatedProducts: typeof product[] = [];
-    
-    // Handle case where category might be an ObjectId or a populated object
-    const categoryId = product.category && typeof product.category === 'object' && '_id' in product.category
-      ? product.category._id
-      : product.category;
-    
-    if (categoryId) {
-      relatedProducts = await Product.find({
-        category: categoryId,
-        _id: { $ne: product._id },
-        isActive: true,
-      })
-        .limit(6)
-        .lean();
-    }
-
-    return {
-      product: JSON.parse(JSON.stringify(product)),
-      relatedProducts: JSON.parse(JSON.stringify(relatedProducts)),
-    };
-  } catch {
+  if (!product) {
     return null;
+  }
+
+  // Get related products from same category (only if category exists)
+  let relatedProducts: typeof product[] = [];
+  
+  // Handle case where category might be an ObjectId or a populated object
+  const categoryId = product.category && typeof product.category === 'object' && '_id' in product.category
+    ? product.category._id
+    : product.category;
+  
+  if (categoryId) {
+    relatedProducts = await Product.find({
+      category: categoryId,
+      _id: { $ne: product._id },
+      isActive: true,
+    })
+      .limit(6)
+      .lean();
+  }
+
+  return {
+    product: JSON.parse(JSON.stringify(product)),
+    relatedProducts: JSON.parse(JSON.stringify(relatedProducts)),
+  };
+};
+
+// Create cached version with proper cache tags
+const getCachedProductData = (slug: string) => {
+  return unstable_cache(
+    () => getProductFromDb(slug),
+    [`product-${slug}`],
+    {
+      revalidate: CACHE_DURATIONS.medium, // 60 seconds
+      tags: [CACHE_TAGS.products, `product-${slug}`],
+    }
+  )();
+};
+
+async function getProductData(slug: string) {
+  try {
+    return await getCachedProductData(slug);
+  } catch (error) {
+    console.error(`[v0] Error fetching product for slug ${slug}:`, error);
+    // On error, try direct DB fetch without cache
+    try {
+      return await getProductFromDb(slug);
+    } catch (fallbackError) {
+      console.error(`[v0] Fallback fetch also failed:`, fallbackError);
+      return null;
+    }
   }
 }
 
