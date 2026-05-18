@@ -13,31 +13,38 @@ interface SandboxAuthResponse {
   expires_in: number;
 }
 
-interface SandboxGSTResponse {
+// Response from Search GSTIN API (abbreviated field names)
+interface SandboxGSTSearchResponse {
   code: number;
   timestamp: number;
+  transaction_id?: string;
   data?: {
     gstin: string;
-    business_name: string;
-    legal_name: string;
-    state_jurisdiction: string;
-    state_jurisdiction_code: string;
-    center_jurisdiction: string;
-    date_of_registration: string;
-    constitution_of_business: string;
-    taxpayer_type: string;
-    gstin_status: string;
-    date_of_cancellation?: string;
-    filing_status?: Array<{
-      return_type: string;
-      financial_year: string;
-      tax_period: string;
-      date_of_filing: string;
-      status: string;
-    }>;
-    address?: string;
-    nature_of_business_activities?: string[];
-    trade_name?: string;
+    lgnm?: string; // Legal name
+    tradeNam?: string; // Trade name
+    stj?: string; // State jurisdiction
+    stjCd?: string; // State jurisdiction code
+    ctj?: string; // Center jurisdiction
+    ctjCd?: string; // Center jurisdiction code
+    rgdt?: string; // Registration date
+    dty?: string; // Dealer type / taxpayer type
+    cxdt?: string; // Cancellation date
+    sts?: string; // Status (Active/Cancelled/Suspended)
+    ctb?: string; // Constitution of business
+    nba?: string[]; // Nature of business activities
+    pradr?: {
+      addr?: {
+        bnm?: string;
+        st?: string;
+        loc?: string;
+        bno?: string;
+        dst?: string;
+        stcd?: string;
+        pncd?: string;
+      };
+      ntr?: string;
+    };
+    einvoiceStatus?: string;
   };
   message?: string;
   error?: {
@@ -65,7 +72,7 @@ export interface GSTVerificationResult {
   };
 }
 
-// Cache for access tokens (in-memory for now, consider Redis for production)
+// Cache for access tokens
 let cachedToken: { token: string; expiresAt: number } | null = null;
 
 /**
@@ -74,6 +81,7 @@ let cachedToken: { token: string; expiresAt: number } | null = null;
 async function getAccessToken(): Promise<string> {
   // Return cached token if still valid (with 5 minute buffer)
   if (cachedToken && cachedToken.expiresAt > Date.now() + 5 * 60 * 1000) {
+    console.log("[v0] Using cached Sandbox token");
     return cachedToken.token;
   }
 
@@ -81,8 +89,11 @@ async function getAccessToken(): Promise<string> {
   const apiSecret = process.env.SANDBOX_API_SECRET;
 
   if (!apiKey || !apiSecret) {
+    console.error("[v0] Sandbox API credentials not configured");
     throw new Error("Sandbox API credentials not configured");
   }
+
+  console.log("[v0] Authenticating with Sandbox API...");
 
   const response = await fetch(`${SANDBOX_BASE_URL}/authenticate`, {
     method: "POST",
@@ -96,11 +107,12 @@ async function getAccessToken(): Promise<string> {
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error("[v0] Sandbox auth error:", errorText);
-    throw new Error("Failed to authenticate with Sandbox API");
+    console.error("[v0] Sandbox auth error:", response.status, errorText);
+    throw new Error(`Failed to authenticate with Sandbox API: ${response.status}`);
   }
 
   const data: SandboxAuthResponse = await response.json();
+  console.log("[v0] Sandbox authentication successful");
   
   // Cache the token
   cachedToken = {
@@ -131,6 +143,9 @@ export async function verifyGSTNumber(gstin: string): Promise<GSTVerificationRes
   try {
     const accessToken = await getAccessToken();
 
+    console.log("[v0] Verifying GST number:", gstin);
+
+    // Use the Search GSTIN endpoint
     const response = await fetch(`${SANDBOX_BASE_URL}/gst/compliance/public/search/gstin`, {
       method: "POST",
       headers: {
@@ -144,39 +159,87 @@ export async function verifyGSTNumber(gstin: string): Promise<GSTVerificationRes
       }),
     });
 
-    const data: SandboxGSTResponse = await response.json();
+    const responseText = await response.text();
+    console.log("[v0] Sandbox API response status:", response.status);
+    console.log("[v0] Sandbox API response:", responseText);
 
-    // Handle API errors
-    if (data.code !== 200 || !data.data) {
-      const errorMessage = data.error?.message || data.message || "GST number not found or invalid";
+    let data: SandboxGSTSearchResponse;
+    try {
+      data = JSON.parse(responseText);
+    } catch {
+      console.error("[v0] Failed to parse Sandbox response");
       return {
         valid: false,
-        verified: true,
-        error: errorMessage,
+        verified: false,
+        error: "Failed to parse API response. Please try again.",
       };
     }
 
-    // Check if GST is active
+    // Handle various error responses
+    if (response.status === 422) {
+      return {
+        valid: false,
+        verified: true,
+        error: "Invalid GST number format",
+      };
+    }
+
+    if (response.status === 401 || response.status === 403) {
+      // Clear cached token on auth errors
+      cachedToken = null;
+      return {
+        valid: false,
+        verified: false,
+        error: "GST verification service temporarily unavailable",
+      };
+    }
+
+    // Check if GSTIN was found
+    if (!data.data || !data.data.gstin) {
+      // GST not found in database
+      const errorMsg = data.message || data.error?.message || "GST number not found in government database";
+      return {
+        valid: false,
+        verified: true,
+        error: errorMsg,
+      };
+    }
+
     const gstData = data.data;
-    const isActive = gstData.gstin_status?.toLowerCase() === "active";
+    
+    // Check GST status - accept only Active GSTs
+    const status = gstData.sts?.toLowerCase() || "";
+    const isActive = status === "active" || status === "act";
+
+    // Build address string
+    let address = "";
+    if (gstData.pradr?.addr) {
+      const addr = gstData.pradr.addr;
+      const parts = [addr.bno, addr.bnm, addr.st, addr.loc, addr.dst, addr.pncd].filter(Boolean);
+      address = parts.join(", ");
+    }
+
+    // Get state from state jurisdiction
+    const stateName = gstData.stj || STATE_CODES[gstin.substring(0, 2)] || "";
+    const stateCode = gstData.stjCd || gstin.substring(0, 2);
 
     if (!isActive) {
       return {
         valid: false,
         verified: true,
-        error: `GST is ${gstData.gstin_status || "inactive"}. Only active GST numbers are accepted.`,
+        error: `GST is ${gstData.sts || "inactive"}. Only active GST numbers are accepted.`,
         data: {
           gstin: gstData.gstin,
-          businessName: gstData.business_name || gstData.trade_name || "",
-          legalName: gstData.legal_name || "",
-          state: gstData.state_jurisdiction || "",
-          stateCode: gstData.state_jurisdiction_code || gstin.substring(0, 2),
-          registrationDate: gstData.date_of_registration || "",
-          constitutionOfBusiness: gstData.constitution_of_business || "",
-          taxpayerType: gstData.taxpayer_type || "",
-          status: gstData.gstin_status || "",
-          address: gstData.address,
-          tradeName: gstData.trade_name,
+          businessName: gstData.tradeNam || gstData.lgnm || "",
+          legalName: gstData.lgnm || "",
+          state: stateName,
+          stateCode: stateCode,
+          registrationDate: gstData.rgdt || "",
+          constitutionOfBusiness: gstData.ctb || "",
+          taxpayerType: gstData.dty || "",
+          status: gstData.sts || "",
+          address: address,
+          tradeName: gstData.tradeNam,
         },
       };
     }
@@ -186,27 +249,26 @@ export async function verifyGSTNumber(gstin: string): Promise<GSTVerificationRes
       verified: true,
       data: {
         gstin: gstData.gstin,
-        businessName: gstData.business_name || gstData.trade_name || "",
-        legalName: gstData.legal_name || "",
-        state: gstData.state_jurisdiction || "",
-        stateCode: gstData.state_jurisdiction_code || gstin.substring(0, 2),
-        registrationDate: gstData.date_of_registration || "",
-        constitutionOfBusiness: gstData.constitution_of_business || "",
-        taxpayerType: gstData.taxpayer_type || "",
-        status: gstData.gstin_status || "",
-        address: gstData.address,
-        tradeName: gstData.trade_name,
+        businessName: gstData.tradeNam || gstData.lgnm || "",
+        legalName: gstData.lgnm || "",
+        state: stateName,
+        stateCode: stateCode,
+        registrationDate: gstData.rgdt || "",
+        constitutionOfBusiness: gstData.ctb || "",
+        taxpayerType: gstData.dty || "",
+        status: gstData.sts || "Active",
+        address: address,
+        tradeName: gstData.tradeNam,
       },
     };
   } catch (error) {
     console.error("[v0] GST verification error:", error);
     
-    // If API fails, fall back to format validation only
-    // This ensures the system remains usable even if Sandbox API is down
+    // If API fails, return error but mark as not verified
     return {
-      valid: formatValidation.valid,
+      valid: false,
       verified: false,
-      error: "Could not verify GST with government database. Please try again later.",
+      error: "Could not verify GST with government database. Please try again.",
     };
   }
 }
@@ -233,12 +295,7 @@ export function validateGSTFormat(gstin: string): { valid: boolean; error?: stri
   }
 
   const stateCode = upperGST.substring(0, 2);
-  const validStateCodes = [
-    "01", "02", "03", "04", "05", "06", "07", "08", "09", "10",
-    "11", "12", "13", "14", "15", "16", "17", "18", "19", "20",
-    "21", "22", "23", "24", "26", "27", "28", "29", "30",
-    "31", "32", "33", "34", "35", "36", "37", "38"
-  ];
+  const validStateCodes = Object.keys(STATE_CODES);
 
   if (!validStateCodes.includes(stateCode)) {
     return { valid: false, error: "Invalid state code in GST number" };
@@ -246,3 +303,44 @@ export function validateGSTFormat(gstin: string): { valid: boolean; error?: stri
 
   return { valid: true, stateCode };
 }
+
+// State codes mapping
+const STATE_CODES: { [key: string]: string } = {
+  "01": "Jammu & Kashmir",
+  "02": "Himachal Pradesh",
+  "03": "Punjab",
+  "04": "Chandigarh",
+  "05": "Uttarakhand",
+  "06": "Haryana",
+  "07": "Delhi",
+  "08": "Rajasthan",
+  "09": "Uttar Pradesh",
+  "10": "Bihar",
+  "11": "Sikkim",
+  "12": "Arunachal Pradesh",
+  "13": "Nagaland",
+  "14": "Manipur",
+  "15": "Mizoram",
+  "16": "Tripura",
+  "17": "Meghalaya",
+  "18": "Assam",
+  "19": "West Bengal",
+  "20": "Jharkhand",
+  "21": "Odisha",
+  "22": "Chattisgarh",
+  "23": "Madhya Pradesh",
+  "24": "Gujarat",
+  "26": "Dadra & Nagar Haveli and Daman & Diu",
+  "27": "Maharashtra",
+  "28": "Andhra Pradesh (Old)",
+  "29": "Karnataka",
+  "30": "Goa",
+  "31": "Lakshadweep",
+  "32": "Kerala",
+  "33": "Tamil Nadu",
+  "34": "Puducherry",
+  "35": "Andaman & Nicobar Islands",
+  "36": "Telangana",
+  "37": "Andhra Pradesh",
+  "38": "Ladakh",
+};

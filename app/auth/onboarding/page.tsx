@@ -522,7 +522,7 @@ export default function OnboardingPage() {
                           <AlertCircle className="h-4 w-4 shrink-0" />
                           {gstValidation.error}
                           {gstValidation.verified === false && gstNumber.length === 15 && (
-                            <span className="text-xs opacity-75"> (API unavailable)</span>
+                            <span className="text-xs opacity-75"> - Please try again</span>
                           )}
                         </p>
                       )}
