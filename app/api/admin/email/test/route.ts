@@ -166,11 +166,13 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const isConnected = await verifyEmailConnection();
+    const result = await verifyEmailConnection();
 
     return NextResponse.json({
-      connected: isConnected,
+      connected: result.success,
+      error: result.error,
       email: COMPANY_EMAIL,
+      smtpUser: process.env.SMTP_USER || "Not configured",
     });
   } catch (error) {
     console.error("Error verifying email connection:", error);

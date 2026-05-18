@@ -31,7 +31,9 @@ const emailTypes = [
 export default function EmailSettingsPage() {
   const { data: session, status } = useSession();
   const [connectionStatus, setConnectionStatus] = useState<"checking" | "connected" | "disconnected">("checking");
+  const [connectionError, setConnectionError] = useState<string | null>(null);
   const [companyEmail, setCompanyEmail] = useState("");
+  const [smtpUser, setSmtpUser] = useState("");
   const [testEmail, setTestEmail] = useState("");
   const [selectedType, setSelectedType] = useState("welcome");
   const [isSending, setIsSending] = useState(false);
@@ -43,13 +45,19 @@ export default function EmailSettingsPage() {
 
   const checkConnection = async () => {
     setConnectionStatus("checking");
+    setConnectionError(null);
     try {
       const res = await fetch("/api/admin/email/test");
       const data = await res.json();
       setConnectionStatus(data.connected ? "connected" : "disconnected");
       setCompanyEmail(data.email || "");
+      setSmtpUser(data.smtpUser || "");
+      if (data.error) {
+        setConnectionError(data.error);
+      }
     } catch {
       setConnectionStatus("disconnected");
+      setConnectionError("Failed to check connection");
     }
   };
 
@@ -149,8 +157,14 @@ export default function EmailSettingsPage() {
                 </span>
               </h3>
               <p className="text-sm text-muted-foreground">
-                {companyEmail ? `Sending from: ${companyEmail}` : "Gmail SMTP"}
+                {smtpUser ? `SMTP User: ${smtpUser}` : "Gmail SMTP"}
+                {companyEmail && companyEmail !== smtpUser && ` | From: ${companyEmail}`}
               </p>
+              {connectionError && connectionStatus === "disconnected" && (
+                <p className="text-sm text-red-600 mt-1">
+                  Error: {connectionError}
+                </p>
+              )}
             </div>
           </div>
           <Button
