@@ -3,10 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
-
-// GST Number validation regex
-// Format: 2 digits (state code) + 10 chars (PAN) + 1 digit (entity number) + Z + 1 check digit
-const GST_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+import { verifyGSTNumber, validateGSTFormat } from "@/lib/sandbox-gst";
 
 // State codes mapping for GST
 const STATE_CODES: { [key: string]: string } = {
@@ -49,32 +46,7 @@ const STATE_CODES: { [key: string]: string } = {
   "38": "Ladakh",
 };
 
-function validateGSTNumber(gst: string): { valid: boolean; error?: string; state?: string } {
-  if (!gst) {
-    return { valid: false, error: "GST number is required" };
-  }
-
-  const upperGST = gst.toUpperCase().trim();
-
-  if (upperGST.length !== 15) {
-    return { valid: false, error: "GST number must be exactly 15 characters" };
-  }
-
-  if (!GST_REGEX.test(upperGST)) {
-    return { valid: false, error: "Invalid GST number format" };
-  }
-
-  const stateCode = upperGST.substring(0, 2);
-  const stateName = STATE_CODES[stateCode];
-
-  if (!stateName) {
-    return { valid: false, error: "Invalid state code in GST number" };
-  }
-
-  return { valid: true, state: stateName };
-}
-
-// POST - Submit GST number
+// POST - Submit GST number with verification
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -85,11 +57,15 @@ export async function POST(request: NextRequest) {
 
     const { gstNumber, businessName, businessType } = await request.json();
 
-    // Validate GST number format
-    const validation = validateGSTNumber(gstNumber);
-    if (!validation.valid) {
+    // Verify GST number with Sandbox API
+    const verification = await verifyGSTNumber(gstNumber);
+    
+    if (!verification.valid) {
       return NextResponse.json(
-        { error: validation.error },
+        { 
+          error: verification.error || "Invalid GST number",
+          verified: verification.verified,
+        },
         { status: 400 }
       );
     }
@@ -115,21 +91,38 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Update user with GST details
+    // Update user with GST details from verification
     user.gstNumber = gstNumber.toUpperCase();
-    user.businessName = businessName;
+    user.businessName = businessName || verification.data?.businessName || verification.data?.legalName || "";
     user.businessType = businessType || "other";
     user.isGstVerified = true;
     user.isOnboardingComplete = true;
+    
+    // Store additional verified data if available
+    if (verification.data) {
+      user.gstVerifiedData = {
+        legalName: verification.data.legalName,
+        tradeName: verification.data.tradeName,
+        state: verification.data.state,
+        stateCode: verification.data.stateCode,
+        registrationDate: verification.data.registrationDate,
+        constitutionOfBusiness: verification.data.constitutionOfBusiness,
+        taxpayerType: verification.data.taxpayerType,
+        status: verification.data.status,
+        verifiedAt: new Date(),
+      };
+    }
+    
     await user.save();
 
     return NextResponse.json({
       message: "GST details saved successfully",
       gstNumber: user.gstNumber,
       businessName: user.businessName,
-      state: validation.state,
+      state: verification.data?.state || STATE_CODES[gstNumber.substring(0, 2)],
       isGstVerified: true,
       isOnboardingComplete: true,
+      verificationData: verification.data,
     });
   } catch (error) {
     console.error("GST submission error:", error);
@@ -176,7 +169,7 @@ export async function PUT(request: NextRequest) {
   }
 }
 
-// GET - Validate GST number format (public endpoint for real-time validation)
+// GET - Verify GST number (real-time validation with Sandbox API)
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const gstNumber = searchParams.get("gst");
@@ -188,11 +181,27 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const validation = validateGSTNumber(gstNumber);
+  // First do format validation
+  const formatValidation = validateGSTFormat(gstNumber);
+  if (!formatValidation.valid) {
+    return NextResponse.json({
+      valid: false,
+      verified: false,
+      error: formatValidation.error,
+    });
+  }
+
+  // Then verify with Sandbox API
+  const verification = await verifyGSTNumber(gstNumber);
 
   return NextResponse.json({
-    valid: validation.valid,
-    error: validation.error,
-    state: validation.state,
+    valid: verification.valid,
+    verified: verification.verified,
+    error: verification.error,
+    state: verification.data?.state || STATE_CODES[gstNumber.substring(0, 2)],
+    businessName: verification.data?.businessName,
+    legalName: verification.data?.legalName,
+    status: verification.data?.status,
+    taxpayerType: verification.data?.taxpayerType,
   });
 }

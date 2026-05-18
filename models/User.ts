@@ -25,6 +25,17 @@ export interface IUser extends Document {
   isOnboardingComplete: boolean;
   businessName?: string;
   businessType?: "retailer" | "wholesaler" | "distributor" | "manufacturer" | "other";
+  gstVerifiedData?: {
+    legalName?: string;
+    tradeName?: string;
+    state?: string;
+    stateCode?: string;
+    registrationDate?: string;
+    constitutionOfBusiness?: string;
+    taxpayerType?: string;
+    status?: string;
+    verifiedAt?: Date;
+  };
   addresses: {
     _id: mongoose.Types.ObjectId;
     name: string;
@@ -76,6 +87,18 @@ const PushDeviceSchema = new Schema({
   platform: { type: String, enum: ["ios", "android", "web", "app"], default: "web" },
   registeredAt: { type: Date, default: Date.now },
 });
+
+const GstVerifiedDataSchema = new Schema({
+  legalName: { type: String },
+  tradeName: { type: String },
+  state: { type: String },
+  stateCode: { type: String },
+  registrationDate: { type: String },
+  constitutionOfBusiness: { type: String },
+  taxpayerType: { type: String },
+  status: { type: String },
+  verifiedAt: { type: Date },
+}, { _id: false });
 
 const UserSchema = new Schema<IUser>(
   {
@@ -158,6 +181,9 @@ const UserSchema = new Schema<IUser>(
     businessType: {
       type: String,
       enum: ["retailer", "wholesaler", "distributor", "manufacturer", "other"],
+    },
+    gstVerifiedData: {
+      type: GstVerifiedDataSchema,
     },
     addresses: [AddressSchema],
     // Notification preferences for app store compliance

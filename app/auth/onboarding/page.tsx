@@ -48,8 +48,13 @@ export default function OnboardingPage() {
   const [businessType, setBusinessType] = useState("");
   const [gstValidation, setGstValidation] = useState<{
     valid: boolean;
+    verified?: boolean;
     error?: string;
     state?: string;
+    businessName?: string;
+    legalName?: string;
+    status?: string;
+    taxpayerType?: string;
   } | null>(null);
   const [isValidatingGst, setIsValidatingGst] = useState(false);
 
@@ -81,26 +86,34 @@ export default function OnboardingPage() {
     }
   }, [resendCooldown]);
 
-  // GST validation with debounce
+  // GST validation with debounce - verifies with Sandbox API
   useEffect(() => {
     if (gstNumber.length === 15) {
       const timer = setTimeout(async () => {
         setIsValidatingGst(true);
+        setGstValidation(null);
         try {
           const res = await fetch(`/api/auth/gst?gst=${gstNumber}`);
           const data = await res.json();
           setGstValidation(data);
+          
+          // Auto-fill business name if returned from API
+          if (data.valid && data.businessName && !businessName) {
+            setBusinessName(data.businessName);
+          }
         } catch {
-          setGstValidation({ valid: false, error: "Failed to validate GST" });
+          setGstValidation({ valid: false, verified: false, error: "Failed to verify GST. Please try again." });
         } finally {
           setIsValidatingGst(false);
         }
       }, 500);
       return () => clearTimeout(timer);
+    } else if (gstNumber.length > 0 && gstNumber.length < 15) {
+      setGstValidation({ valid: false, verified: false, error: `GST number must be 15 characters (${gstNumber.length}/15)` });
     } else {
       setGstValidation(null);
     }
-  }, [gstNumber]);
+  }, [gstNumber, businessName]);
 
   // Handle verification code input
   const handleCodeChange = (index: number, value: string) => {
@@ -480,15 +493,40 @@ export default function OnboardingPage() {
                     )}
                   </div>
                   {gstValidation && (
-                    <p
-                      className={`body-sm mt-1 ${
-                        gstValidation.valid ? "text-stb-success" : "text-destructive"
+                    <div
+                      className={`mt-2 rounded-md p-2 text-sm ${
+                        gstValidation.valid 
+                          ? "bg-stb-success/10 text-stb-success" 
+                          : "bg-destructive/10 text-destructive"
                       }`}
                     >
-                      {gstValidation.valid
-                        ? `Valid GST - ${gstValidation.state}`
-                        : gstValidation.error}
-                    </p>
+                      {gstValidation.valid ? (
+                        <div className="space-y-1">
+                          <p className="flex items-center gap-1.5 font-medium">
+                            <CheckCircle2 className="h-4 w-4" />
+                            GST Verified - {gstValidation.state}
+                          </p>
+                          {gstValidation.legalName && (
+                            <p className="text-xs opacity-90">
+                              Legal Name: {gstValidation.legalName}
+                            </p>
+                          )}
+                          {gstValidation.status && (
+                            <p className="text-xs opacity-90">
+                              Status: {gstValidation.status}
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="flex items-center gap-1.5">
+                          <AlertCircle className="h-4 w-4 shrink-0" />
+                          {gstValidation.error}
+                          {gstValidation.verified === false && gstNumber.length === 15 && (
+                            <span className="text-xs opacity-75"> - Please try again</span>
+                          )}
+                        </p>
+                      )}
+                    </div>
                   )}
                 </div>
 
