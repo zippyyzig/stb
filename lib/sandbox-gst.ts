@@ -145,8 +145,8 @@ export async function verifyGSTNumber(gstin: string): Promise<GSTVerificationRes
 
     console.log("[v0] Verifying GST number:", gstin);
 
-    // Use the Search GSTIN endpoint
-    const response = await fetch(`${SANDBOX_BASE_URL}/gst/compliance/public/search/gstin`, {
+    // Use the Search GSTIN endpoint - correct path is /gst/compliance/public/gstin/search
+    const response = await fetch(`${SANDBOX_BASE_URL}/gst/compliance/public/gstin/search`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
