@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import { randomUUID } from "crypto";
 
 // SMTP Configuration using environment variables
 const transporter = nodemailer.createTransport({
@@ -15,38 +16,67 @@ const transporter = nodemailer.createTransport({
 export const COMPANY_EMAIL = process.env.COMPANY_EMAIL || process.env.SMTP_USER || "";
 export const COMPANY_NAME = process.env.COMPANY_NAME || "Sabka Tech Bazar";
 export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
-export const EMAIL_FROM = process.env.EMAIL_FROM || process.env.SMTP_USER || "";
+// IMPORTANT: For Gmail SMTP, the FROM address MUST match the SMTP_USER to avoid spam
+export const EMAIL_FROM = process.env.SMTP_USER || "";
 
 interface EmailOptions {
   to: string;
   subject: string;
   html: string;
+  text?: string; // Plain text alternative
   replyTo?: string;
 }
 
-export async function sendEmail({ to, subject, html, replyTo }: EmailOptions): Promise<boolean> {
+// Convert HTML to plain text for email
+function htmlToPlainText(html: string): string {
+  return html
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '') // Remove style tags
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '') // Remove script tags
+    .replace(/<[^>]+>/g, ' ') // Remove HTML tags
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&copy;/g, '(c)')
+    .replace(/₹/g, 'Rs.')
+    .replace(/\s+/g, ' ') // Collapse whitespace
+    .replace(/\n\s*\n/g, '\n\n') // Normalize line breaks
+    .trim();
+}
+
+export async function sendEmail({ to, subject, html, text, replyTo }: EmailOptions): Promise<boolean> {
   try {
     // Check if SMTP credentials are configured
     if (!process.env.SMTP_USER || !process.env.SMTP_PASSWORD) {
-      console.error("[v0] Email error: SMTP_USER or SMTP_PASSWORD not configured");
+      console.error("Email error: SMTP_USER or SMTP_PASSWORD not configured");
       return false;
     }
 
-    const fromAddress = EMAIL_FROM || process.env.SMTP_USER;
-    
-    console.log(`[v0] Sending email to ${to} from ${fromAddress}`);
+    // CRITICAL: Use SMTP_USER as FROM address for Gmail to avoid spam
+    // Gmail requires the FROM address to match the authenticated account
+    const fromAddress = process.env.SMTP_USER;
+    const messageId = `<${randomUUID()}@${process.env.SMTP_HOST || "gmail.com"}>`;
     
     await transporter.sendMail({
       from: `"${COMPANY_NAME}" <${fromAddress}>`,
       to,
       subject,
       html,
-      replyTo: replyTo || COMPANY_EMAIL,
+      text: text || htmlToPlainText(html), // Always include plain text
+      replyTo: replyTo || COMPANY_EMAIL || fromAddress,
+      headers: {
+        'Message-ID': messageId,
+        'X-Mailer': 'Sabka Tech Bazar Mailer',
+        'X-Priority': '3', // Normal priority
+        'Precedence': 'bulk',
+      },
     });
-    console.log(`[v0] Email sent successfully to ${to}`);
+    console.log(`Email sent successfully to ${to}`);
     return true;
   } catch (error) {
-    console.error("[v0] Error sending email:", error);
+    console.error("Error sending email:", error);
     return false;
   }
 }

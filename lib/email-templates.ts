@@ -78,16 +78,16 @@ function baseTemplate(content: string, preheader: string = ""): string {
 export function welcomeEmailTemplate(customerName: string): string {
   const content = `
     <div class="content">
-      <h2>Welcome to ${COMPANY_NAME}! 🎉</h2>
+      <h2>Welcome to ${COMPANY_NAME}!</h2>
       <p>Dear <strong>${customerName}</strong>,</p>
-      <p>Thank you for creating an account with us! We're thrilled to have you as part of our community.</p>
+      <p>Thank you for creating an account with us! We are thrilled to have you as part of our community.</p>
       
       <div class="info-box">
-        <h3>What's Next?</h3>
-        <p>✓ Browse our extensive collection of tech products</p>
-        <p>✓ Add items to your wishlist for later</p>
-        <p>✓ Enjoy exclusive member discounts</p>
-        <p>✓ Track your orders in real-time</p>
+        <h3>What You Can Do Now</h3>
+        <p>- Browse our extensive collection of tech products</p>
+        <p>- Add items to your wishlist for later</p>
+        <p>- Enjoy exclusive member discounts</p>
+        <p>- Track your orders in real-time</p>
       </div>
       
       <p class="text-center">
@@ -919,10 +919,10 @@ export function newsletterSubscriptionTemplate(email: string): string {
       
       <div class="info-box">
         <h3>What to Expect</h3>
-        <p>✓ Exclusive deals and discounts</p>
-        <p>✓ New product announcements</p>
-        <p>✓ Tech tips and guides</p>
-        <p>✓ Special member-only offers</p>
+        <p>- Exclusive deals and discounts</p>
+        <p>- New product announcements</p>
+        <p>- Tech tips and guides</p>
+        <p>- Special member-only offers</p>
       </div>
       
       <p>You're now subscribed with: <strong>${email}</strong></p>
