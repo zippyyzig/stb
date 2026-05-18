@@ -14,38 +14,44 @@ interface SandboxAuthResponse {
 }
 
 // Response from Search GSTIN API (abbreviated field names)
+// Note: The actual response has nested data: { data: { data: { gstin, lgnm, ... } } }
+interface SandboxGSTData {
+  gstin: string;
+  lgnm?: string; // Legal name
+  tradeNam?: string; // Trade name
+  stj?: string; // State jurisdiction
+  stjCd?: string; // State jurisdiction code
+  ctj?: string; // Center jurisdiction
+  ctjCd?: string; // Center jurisdiction code
+  rgdt?: string; // Registration date
+  dty?: string; // Dealer type / taxpayer type
+  cxdt?: string; // Cancellation date
+  sts?: string; // Status (Active/Cancelled/Suspended)
+  ctb?: string; // Constitution of business
+  nba?: string[]; // Nature of business activities
+  pradr?: {
+    addr?: {
+      bnm?: string;
+      st?: string;
+      loc?: string;
+      bno?: string;
+      dst?: string;
+      stcd?: string;
+      pncd?: string;
+    };
+    ntr?: string;
+  };
+  einvoiceStatus?: string;
+}
+
 interface SandboxGSTSearchResponse {
   code: number;
   timestamp: number;
   transaction_id?: string;
   data?: {
-    gstin: string;
-    lgnm?: string; // Legal name
-    tradeNam?: string; // Trade name
-    stj?: string; // State jurisdiction
-    stjCd?: string; // State jurisdiction code
-    ctj?: string; // Center jurisdiction
-    ctjCd?: string; // Center jurisdiction code
-    rgdt?: string; // Registration date
-    dty?: string; // Dealer type / taxpayer type
-    cxdt?: string; // Cancellation date
-    sts?: string; // Status (Active/Cancelled/Suspended)
-    ctb?: string; // Constitution of business
-    nba?: string[]; // Nature of business activities
-    pradr?: {
-      addr?: {
-        bnm?: string;
-        st?: string;
-        loc?: string;
-        bno?: string;
-        dst?: string;
-        stcd?: string;
-        pncd?: string;
-      };
-      ntr?: string;
-    };
-    einvoiceStatus?: string;
-  };
+    data?: SandboxGSTData;
+    status_cd?: string;
+  } | SandboxGSTData; // Can be either nested or flat
   message?: string;
   error?: {
     message: string;
@@ -145,18 +151,19 @@ export async function verifyGSTNumber(gstin: string): Promise<GSTVerificationRes
 
     console.log("[v0] Verifying GST number:", gstin);
 
-    // Use the Search GSTIN endpoint - correct path is /gst/compliance/public/gstin/search
+    // Use the Search GSTIN endpoint
+    const requestBody = { gstin: gstin.toUpperCase() };
+    console.log("[v0] Request body:", JSON.stringify(requestBody));
+
     const response = await fetch(`${SANDBOX_BASE_URL}/gst/compliance/public/gstin/search`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Authorization": accessToken,
         "x-api-key": process.env.SANDBOX_API_KEY!,
-        "x-api-version": "1.0",
+        "x-api-version": "1.0.0",
       },
-      body: JSON.stringify({
-        gstin: gstin.toUpperCase(),
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     const responseText = await response.text();
@@ -194,8 +201,20 @@ export async function verifyGSTNumber(gstin: string): Promise<GSTVerificationRes
       };
     }
 
-    // Check if GSTIN was found
-    if (!data.data || !data.data.gstin) {
+    // Check if GSTIN was found - handle both nested and flat response structures
+    // API returns: { data: { data: { gstin, ... }, status_cd: "1" } }
+    let gstData: SandboxGSTData | undefined;
+    
+    if (data.data) {
+      // Check if it's nested (data.data.data) or flat (data.data)
+      if ('data' in data.data && (data.data as { data?: SandboxGSTData }).data?.gstin) {
+        gstData = (data.data as { data: SandboxGSTData }).data;
+      } else if ('gstin' in data.data) {
+        gstData = data.data as SandboxGSTData;
+      }
+    }
+    
+    if (!gstData || !gstData.gstin) {
       // GST not found in database
       const errorMsg = data.message || data.error?.message || "GST number not found in government database";
       return {
@@ -204,8 +223,6 @@ export async function verifyGSTNumber(gstin: string): Promise<GSTVerificationRes
         error: errorMsg,
       };
     }
-
-    const gstData = data.data;
     
     // Check GST status - accept only Active GSTs
     const status = gstData.sts?.toLowerCase() || "";
