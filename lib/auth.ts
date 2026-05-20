@@ -159,6 +159,74 @@ export const authOptions: NextAuthOptions = {
         };
       },
     }),
+    // Apple Sign-In provider for iOS App Store compliance (Guideline 4.8)
+    CredentialsProvider({
+      id: "apple-firebase",
+      name: "Apple",
+      credentials: {
+        email: { label: "Email", type: "email" },
+        name: { label: "Name", type: "text" },
+        appleId: { label: "Apple ID", type: "text" },
+      },
+      async authorize(credentials) {
+        if (!credentials?.appleId) {
+          throw new Error("Apple authentication failed");
+        }
+
+        await dbConnect();
+
+        // Apple may not always return email (only on first sign-in)
+        // So we search by appleId first, then by email if provided
+        let user = await User.findOne({ appleId: credentials.appleId });
+        
+        if (!user && credentials.email) {
+          user = await User.findOne({ email: credentials.email.toLowerCase() });
+        }
+
+        if (!user) {
+          // For Apple Sign-In, email might be hidden/private relay
+          // If no email provided, generate a placeholder based on appleId
+          const userEmail = credentials.email?.toLowerCase() || 
+            `apple_${credentials.appleId.slice(0, 8)}@privaterelay.appleid.com`;
+          
+          user = await User.create({
+            email: userEmail,
+            name: credentials.name || "Apple User",
+            appleId: credentials.appleId,
+            role: "customer",
+            isActive: true,
+            isEmailVerified: true, // Apple email is verified
+            isOnboardingComplete: false,
+            isGstVerified: false,
+          });
+        } else if (!user.appleId) {
+          // Link Apple account to existing email account
+          user.appleId = credentials.appleId;
+          await user.save();
+        }
+
+        if (!user.isActive) {
+          throw new Error("Your account has been deactivated");
+        }
+
+        // Only customers can use Apple sign-in
+        if (user.role !== "customer") {
+          throw new Error("Admins must use email/password to sign in");
+        }
+
+        return {
+          id: user._id.toString(),
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          image: user.avatar,
+          isEmailVerified: user.isEmailVerified || false,
+          isOnboardingComplete: user.isOnboardingComplete || false,
+          gstNumber: user.gstNumber,
+          isGstVerified: user.isGstVerified || false,
+        };
+      },
+    }),
   ],
   session: {
     strategy: "jwt",

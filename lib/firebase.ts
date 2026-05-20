@@ -1,5 +1,5 @@
 import { initializeApp, getApps } from "firebase/app";
-import { getAuth, GoogleAuthProvider } from "firebase/auth";
+import { getAuth, GoogleAuthProvider, OAuthProvider } from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -27,4 +27,9 @@ googleProvider.setCustomParameters({
 googleProvider.addScope("email");
 googleProvider.addScope("profile");
 
-export { app, auth, googleProvider };
+// Apple Sign-In provider for iOS App Store compliance (Guideline 4.8)
+const appleProvider = new OAuthProvider("apple.com");
+appleProvider.addScope("email");
+appleProvider.addScope("name");
+
+export { app, auth, googleProvider, appleProvider };

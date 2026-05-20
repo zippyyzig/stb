@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { signInWithPopup } from "firebase/auth";
-import { auth, googleProvider } from "@/lib/firebase";
-import { isMedianApp, nativeGoogleSignIn } from "@/lib/native-app";
+import { auth, googleProvider, appleProvider } from "@/lib/firebase";
+import { isMedianApp, nativeGoogleSignIn, nativeAppleSignIn, getPlatform } from "@/lib/native-app";
 import { signIn } from "next-auth/react";
 import { Input } from "@/components/ui/input";
 import {
@@ -40,12 +40,16 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword]     = useState(false);
   const [isLoading, setIsLoading]           = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [isAppleLoading, setIsAppleLoading] = useState(false);
   const [errorMessage, setErrorMessage]     = useState("");
   const [isNativeApp, setIsNativeApp]       = useState(false);
+  const [showAppleSignIn, setShowAppleSignIn] = useState(false);
 
-  // Detect if running inside Median.co native app
+  // Detect if running inside Median.co native app and if on iOS
   useEffect(() => {
     setIsNativeApp(isMedianApp());
+    const platform = getPlatform();
+    setShowAppleSignIn(platform === "ios");
   }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -181,6 +185,81 @@ export default function RegisterPage() {
     }
   };
 
+  // Apple Sign-In handler (for iOS App Store compliance - Guideline 4.8)
+  const handleAppleSignIn = async () => {
+    if (isAppleLoading) return;
+
+    setIsAppleLoading(true);
+    setErrorMessage("");
+
+    try {
+      if (isNativeApp) {
+        const nativeResult = await nativeAppleSignIn();
+
+        if (!nativeResult) {
+          setErrorMessage("Apple Sign-Up is not available. Please use another method.");
+          setIsAppleLoading(false);
+          return;
+        }
+
+        const signInResult = await signIn("apple-firebase", {
+          email: nativeResult.email || undefined,
+          name: nativeResult.fullName 
+            ? `${nativeResult.fullName.givenName || ""} ${nativeResult.fullName.familyName || ""}`.trim() 
+            : undefined,
+          appleId: nativeResult.user || nativeResult.authorizationCode,
+          redirect: false,
+        });
+
+        if (signInResult?.error) {
+          setErrorMessage(signInResult.error);
+          setIsAppleLoading(false);
+        } else {
+          router.push("/auth/onboarding");
+          router.refresh();
+        }
+        return;
+      }
+
+      // Web browser: use Firebase popup for Apple Sign-In
+      const result = await signInWithPopup(auth, appleProvider);
+      const user = result.user;
+      
+      const signInResult = await signIn("apple-firebase", {
+        email: user.email || undefined,
+        name: user.displayName || undefined,
+        appleId: user.uid,
+        redirect: false,
+      });
+      
+      if (signInResult?.error) {
+        setErrorMessage(signInResult.error);
+        setIsAppleLoading(false);
+      } else {
+        router.push("/auth/onboarding");
+        router.refresh();
+      }
+    } catch (err) {
+      const firebaseError = err as { code?: string; message?: string };
+      const errorCode = firebaseError.code || "";
+      const msg = firebaseError.message || "";
+      
+      if (errorCode === "auth/popup-closed-by-user" || msg.toLowerCase().includes("cancel")) {
+        setIsAppleLoading(false);
+        return;
+      }
+      
+      if (errorCode === "auth/popup-blocked") {
+        setErrorMessage("Popup was blocked. Please allow popups for this site and try again.");
+        setIsAppleLoading(false);
+        return;
+      }
+      
+      setErrorMessage(msg || "Failed to sign up with Apple. Please try again.");
+      setIsAppleLoading(false);
+    }
+  };
+
   /* ── Shared form JSX ────────────────────────────────────────────── */
   const FormBody = (
     <>
@@ -209,6 +288,25 @@ export default function RegisterPage() {
         )}
         Sign up with Google
       </button>
+
+      {/* Apple Sign-In button (iOS App Store compliance) */}
+      {showAppleSignIn && (
+        <button
+          type="button"
+          onClick={handleAppleSignIn}
+          disabled={isAppleLoading}
+          className="mb-4 flex h-12 w-full items-center justify-center gap-3 rounded-2xl border-2 border-foreground bg-foreground text-sm font-semibold text-background shadow-sm transition-all hover:bg-foreground/90 disabled:opacity-70 press-active"
+        >
+          {isAppleLoading ? (
+            <Loader2 className="h-4 w-4 animate-spin text-background" />
+          ) : (
+            <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
+            </svg>
+          )}
+          Sign up with Apple
+        </button>
+      )}
 
       <div className="relative my-4 flex items-center">
         <div className="flex-1 border-t border-border" />

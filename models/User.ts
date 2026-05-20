@@ -12,6 +12,7 @@ export interface IUser extends Document {
   isActive: boolean;
   avatar?: string;
   googleId?: string;
+  appleId?: string;  // Apple Sign-In ID for iOS App Store compliance
   lastLoginAt?: Date;
   passwordResetToken?: string;
   passwordResetExpires?: Date;
@@ -112,7 +113,8 @@ const UserSchema = new Schema<IUser>(
     password: {
       type: String,
       required: function (this: IUser) {
-        return !this.googleId;
+        // Password not required for social login users
+        return !this.googleId && !this.appleId;
       },
     },
     name: {
@@ -137,6 +139,10 @@ const UserSchema = new Schema<IUser>(
       type: String,
     },
     googleId: {
+      type: String,
+      sparse: true,
+    },
+    appleId: {
       type: String,
       sparse: true,
     },
