@@ -124,12 +124,36 @@ function LoginForm() {
         router.refresh();
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "";
-      if (msg.toLowerCase().includes("cancel")) {
+      const firebaseError = err as { code?: string; message?: string };
+      const errorCode = firebaseError.code || "";
+      const msg = firebaseError.message || "";
+      
+      // Handle specific Firebase error codes
+      if (errorCode === "auth/popup-closed-by-user" || msg.toLowerCase().includes("cancel")) {
         // User dismissed the picker — not an error
         setIsGoogleLoading(false);
         return;
       }
+      
+      if (errorCode === "auth/popup-blocked") {
+        setErrorMessage("Popup was blocked. Please allow popups for this site and try again.");
+        setIsGoogleLoading(false);
+        return;
+      }
+      
+      if (errorCode === "auth/unauthorized-domain") {
+        setErrorMessage("This domain is not authorized for Google Sign-In. Please contact support.");
+        setIsGoogleLoading(false);
+        return;
+      }
+      
+      // For redirect_uri_mismatch and other OAuth errors
+      if (msg.includes("redirect_uri_mismatch") || errorCode.includes("redirect")) {
+        setErrorMessage("Google Sign-In configuration error. Please contact support.");
+        setIsGoogleLoading(false);
+        return;
+      }
+      
       setErrorMessage(msg || "Failed to sign in with Google. Please try again.");
       setIsGoogleLoading(false);
     }

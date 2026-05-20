@@ -15,11 +15,16 @@ const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0
 const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
 
-// Web Client ID — used by Firebase web popup sign-in
-// For Android native (Median.co), use the Android Client ID separately
+// Configure Google provider for better UX
+// DO NOT set client_id here - Firebase uses its own Web Client ID 
+// (configured in Firebase Console > Authentication > Sign-in method > Google)
+// Setting a custom client_id causes redirect_uri_mismatch errors
 googleProvider.setCustomParameters({
-  client_id: process.env.NEXT_PUBLIC_GOOGLE_WEB_CLIENT_ID ||
-    "393630939714-ccgciu2tmtf7me0souh2vt7a1ctqe1bf.apps.googleusercontent.com",
+  prompt: "select_account", // Always show account picker for better UX
 });
+
+// Add scopes if needed (email and profile are included by default)
+googleProvider.addScope("email");
+googleProvider.addScope("profile");
 
 export { app, auth, googleProvider };
