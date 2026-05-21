@@ -16,9 +16,12 @@ import {
   RefreshCcw,
   AlertCircle,
   Check,
+  Smartphone,
+  ArrowLeft,
+  Info,
 } from "lucide-react";
 
-type OnboardingStep = "verify-email" | "gst-details" | "complete";
+type OnboardingStep = "verify-email" | "gst-details" | "gst-otp" | "complete";
 
 const BUSINESS_TYPES = [
   { value: "retailer", label: "Retailer" },
@@ -44,6 +47,7 @@ export default function OnboardingPage() {
 
   // GST state
   const [gstNumber, setGstNumber] = useState("");
+  const [gstUsername, setGstUsername] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [businessType, setBusinessType] = useState("");
   const [gstValidation, setGstValidation] = useState<{
@@ -57,6 +61,12 @@ export default function OnboardingPage() {
     taxpayerType?: string;
   } | null>(null);
   const [isValidatingGst, setIsValidatingGst] = useState(false);
+
+  // GST OTP state
+  const [gstOtp, setGstOtp] = useState(["", "", "", "", "", ""]);
+  const [gstOtpResendCooldown, setGstOtpResendCooldown] = useState(0);
+  const gstOtpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const [isRequestingOtp, setIsRequestingOtp] = useState(false);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -78,13 +88,21 @@ export default function OnboardingPage() {
     }
   }, [session, router]);
 
-  // Resend cooldown timer
+  // Resend cooldown timer for email
   useEffect(() => {
     if (resendCooldown > 0) {
       const timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000);
       return () => clearTimeout(timer);
     }
   }, [resendCooldown]);
+
+  // Resend cooldown timer for GST OTP
+  useEffect(() => {
+    if (gstOtpResendCooldown > 0) {
+      const timer = setTimeout(() => setGstOtpResendCooldown(gstOtpResendCooldown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [gstOtpResendCooldown]);
 
   // GST validation with debounce - verifies with Sandbox API
   useEffect(() => {
@@ -115,7 +133,7 @@ export default function OnboardingPage() {
     }
   }, [gstNumber, businessName]);
 
-  // Handle verification code input
+  // Handle email verification code input
   const handleCodeChange = (index: number, value: string) => {
     if (value.length > 1) {
       // Handle paste
@@ -143,6 +161,37 @@ export default function OnboardingPage() {
   const handleCodeKeyDown = (index: number, e: React.KeyboardEvent) => {
     if (e.key === "Backspace" && !verificationCode[index] && index > 0) {
       inputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  // Handle GST OTP input
+  const handleGstOtpChange = (index: number, value: string) => {
+    if (value.length > 1) {
+      // Handle paste
+      const pastedCode = value.slice(0, 6).split("");
+      const newCode = [...gstOtp];
+      pastedCode.forEach((char, i) => {
+        if (index + i < 6) {
+          newCode[index + i] = char;
+        }
+      });
+      setGstOtp(newCode);
+      const nextIndex = Math.min(index + pastedCode.length, 5);
+      gstOtpInputRefs.current[nextIndex]?.focus();
+    } else {
+      const newCode = [...gstOtp];
+      newCode[index] = value;
+      setGstOtp(newCode);
+      if (value && index < 5) {
+        gstOtpInputRefs.current[index + 1]?.focus();
+      }
+    }
+    setError("");
+  };
+
+  const handleGstOtpKeyDown = (index: number, e: React.KeyboardEvent) => {
+    if (e.key === "Backspace" && !gstOtp[index] && index > 0) {
+      gstOtpInputRefs.current[index - 1]?.focus();
     }
   };
 
@@ -184,7 +233,7 @@ export default function OnboardingPage() {
     }
   };
 
-  // Resend verification code
+  // Resend email verification code
   const handleResendCode = async () => {
     if (resendCooldown > 0) return;
 
@@ -215,8 +264,8 @@ export default function OnboardingPage() {
     }
   };
 
-  // Submit GST details
-  const handleSubmitGST = async () => {
+  // Request GST OTP - sends OTP to registered mobile/email of GST account
+  const handleRequestGstOtp = async () => {
     if (!gstNumber || gstNumber.length !== 15) {
       setError("Please enter a valid 15-character GST number");
       return;
@@ -227,33 +276,144 @@ export default function OnboardingPage() {
       return;
     }
 
-    setIsLoading(true);
+    if (!gstUsername.trim()) {
+      setError("Please enter your GST Portal username");
+      return;
+    }
+
+    setIsRequestingOtp(true);
     setError("");
 
     try {
-      const res = await fetch("/api/auth/gst", {
+      const res = await fetch("/api/auth/gst/otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ gstNumber, businessName, businessType }),
+        body: JSON.stringify({ 
+          gstin: gstNumber, 
+          username: gstUsername.trim() 
+        }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || "Failed to save GST details");
+        setError(data.error || "Failed to send OTP");
         return;
       }
 
-      setSuccess("GST details saved successfully!");
+      setSuccess("OTP sent to your GST registered mobile and email!");
+      setGstOtpResendCooldown(60);
+      setCurrentStep("gst-otp");
+      setTimeout(() => setSuccess(""), 3000);
+    } catch {
+      setError("Failed to send OTP. Please try again.");
+    } finally {
+      setIsRequestingOtp(false);
+    }
+  };
+
+  // Verify GST OTP
+  const handleVerifyGstOtp = async () => {
+    const otp = gstOtp.join("");
+    if (otp.length !== 6) {
+      setError("Please enter the complete 6-digit OTP");
+      return;
+    }
+
+    setIsLoading(true);
+    setError("");
+
+    try {
+      const res = await fetch("/api/auth/gst/otp", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ otp }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        if (data.attemptsRemaining !== undefined) {
+          setError(`${data.error}. ${data.attemptsRemaining} attempts remaining.`);
+        } else {
+          setError(data.error || "OTP verification failed");
+        }
+        return;
+      }
+
+      // GST verified successfully - now save business details
+      const saveRes = await fetch("/api/auth/gst", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ gstNumber, businessName, businessType }),
+      });
+
+      if (!saveRes.ok) {
+        const saveData = await saveRes.json();
+        setError(saveData.error || "Failed to save business details");
+        return;
+      }
+
+      setSuccess("GST verified successfully!");
       await update(); // Refresh session
       setTimeout(() => {
         setCurrentStep("complete");
+        setSuccess("");
       }, 1500);
     } catch {
       setError("An error occurred. Please try again.");
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Resend GST OTP
+  const handleResendGstOtp = async () => {
+    if (gstOtpResendCooldown > 0) return;
+
+    setIsRequestingOtp(true);
+    setError("");
+
+    try {
+      const res = await fetch("/api/auth/gst/otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          gstin: gstNumber, 
+          username: gstUsername.trim() 
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || "Failed to resend OTP");
+        return;
+      }
+
+      setSuccess("New OTP sent to your GST registered mobile and email!");
+      setGstOtpResendCooldown(60);
+      setGstOtp(["", "", "", "", "", ""]);
+      gstOtpInputRefs.current[0]?.focus();
+      setTimeout(() => setSuccess(""), 3000);
+    } catch {
+      setError("Failed to resend OTP");
+    } finally {
+      setIsRequestingOtp(false);
+    }
+  };
+
+  // Go back from OTP step to GST details
+  const handleBackToGstDetails = async () => {
+    // Cancel the OTP verification request
+    try {
+      await fetch("/api/auth/gst/otp", { method: "DELETE" });
+    } catch {
+      // Ignore errors
+    }
+    setGstOtp(["", "", "", "", "", ""]);
+    setError("");
+    setCurrentStep("gst-details");
   };
 
   // Skip GST and complete onboarding
@@ -295,6 +455,14 @@ export default function OnboardingPage() {
     );
   }
 
+  // Determine progress step for visual indicator
+  const getProgressStep = () => {
+    if (currentStep === "verify-email") return 1;
+    if (currentStep === "gst-details" || currentStep === "gst-otp") return 2;
+    return 3;
+  };
+  const progressStep = getProgressStep();
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12">
       <div className="w-full max-w-lg">
@@ -315,12 +483,12 @@ export default function OnboardingPage() {
         <div className="mb-8 flex items-center justify-center gap-4">
           <div
             className={`flex h-10 w-10 items-center justify-center rounded-full border-2 transition-colors ${
-              currentStep === "verify-email"
+              progressStep === 1
                 ? "border-primary bg-primary text-white"
                 : "border-stb-success bg-stb-success text-white"
             }`}
           >
-            {currentStep === "verify-email" ? (
+            {progressStep === 1 ? (
               <Mail className="h-5 w-5" />
             ) : (
               <Check className="h-5 w-5" />
@@ -328,19 +496,19 @@ export default function OnboardingPage() {
           </div>
           <div
             className={`h-1 w-16 rounded-full transition-colors ${
-              currentStep !== "verify-email" ? "bg-stb-success" : "bg-border"
+              progressStep > 1 ? "bg-stb-success" : "bg-border"
             }`}
           />
           <div
             className={`flex h-10 w-10 items-center justify-center rounded-full border-2 transition-colors ${
-              currentStep === "gst-details"
+              progressStep === 2
                 ? "border-primary bg-primary text-white"
-                : currentStep === "complete"
+                : progressStep === 3
                 ? "border-stb-success bg-stb-success text-white"
                 : "border-border bg-muted text-muted-foreground"
             }`}
           >
-            {currentStep === "complete" ? (
+            {progressStep === 3 ? (
               <Check className="h-5 w-5" />
             ) : (
               <FileText className="h-5 w-5" />
@@ -348,12 +516,12 @@ export default function OnboardingPage() {
           </div>
           <div
             className={`h-1 w-16 rounded-full transition-colors ${
-              currentStep === "complete" ? "bg-stb-success" : "bg-border"
+              progressStep === 3 ? "bg-stb-success" : "bg-border"
             }`}
           />
           <div
             className={`flex h-10 w-10 items-center justify-center rounded-full border-2 transition-colors ${
-              currentStep === "complete"
+              progressStep === 3
                 ? "border-stb-success bg-stb-success text-white"
                 : "border-border bg-muted text-muted-foreground"
             }`}
@@ -449,7 +617,7 @@ export default function OnboardingPage() {
                 </div>
                 <h2 className="heading-md">Business Details</h2>
                 <p className="body-sm mt-2 text-muted-foreground">
-                  Add your GST number to unlock B2B wholesale prices
+                  Verify your GST to unlock B2B wholesale prices
                 </p>
               </div>
 
@@ -504,7 +672,7 @@ export default function OnboardingPage() {
                         <div className="space-y-1">
                           <p className="flex items-center gap-1.5 font-medium">
                             <CheckCircle2 className="h-4 w-4" />
-                            GST Verified - {gstValidation.state}
+                            GST Found - {gstValidation.state}
                           </p>
                           {gstValidation.legalName && (
                             <p className="text-xs opacity-90">
@@ -529,6 +697,33 @@ export default function OnboardingPage() {
                     </div>
                   )}
                 </div>
+
+                {/* GST Portal Username - Required for OTP */}
+                {gstValidation?.valid && (
+                  <div>
+                    <label htmlFor="gstUsername" className="body-sm mb-1.5 block font-medium">
+                      GST Portal Username <span className="text-destructive">*</span>
+                    </label>
+                    <Input
+                      id="gstUsername"
+                      type="text"
+                      placeholder="Your GST portal username/email"
+                      value={gstUsername}
+                      onChange={(e) => setGstUsername(e.target.value)}
+                      className="h-11"
+                    />
+                    <div className="mt-2 flex items-start gap-2 rounded-md bg-blue-50 p-2 text-xs text-blue-700 dark:bg-blue-950/30 dark:text-blue-400">
+                      <Info className="h-4 w-4 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-medium">OTP Verification Required</p>
+                        <p className="mt-0.5 opacity-90">
+                          An OTP will be sent to your mobile number and email registered with this GST number. 
+                          Make sure API access is enabled in your GST portal (View Profile &gt; Manage API Access).
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Business Name */}
                 <div>
@@ -588,27 +783,100 @@ export default function OnboardingPage() {
 
               <div className="flex flex-col gap-3">
                 <Button
-                  onClick={handleSubmitGST}
-                  disabled={isLoading || !gstValidation?.valid}
+                  onClick={handleRequestGstOtp}
+                  disabled={isRequestingOtp || !gstValidation?.valid || !gstUsername.trim()}
                   className="w-full gap-2"
                   size="lg"
                 >
-                  {isLoading ? (
+                  {isRequestingOtp ? (
                     <Loader2 className="h-5 w-5 animate-spin" />
                   ) : (
                     <>
-                      Save GST Details
-                      <ArrowRight className="h-5 w-5" />
+                      Send OTP to Verify
+                      <Smartphone className="h-5 w-5" />
                     </>
                   )}
                 </Button>
 
                 <button
                   onClick={handleSkipGST}
-                  disabled={isLoading}
+                  disabled={isLoading || isRequestingOtp}
                   className="text-sm text-muted-foreground transition-colors hover:text-foreground"
                 >
                   Skip for now, I&apos;ll add later
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Step 2b: GST OTP Verification */}
+          {currentStep === "gst-otp" && (
+            <div className="space-y-6">
+              <div className="text-center">
+                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-stb-red-light">
+                  <Smartphone className="h-8 w-8 text-primary" />
+                </div>
+                <h2 className="heading-md">Verify GST OTP</h2>
+                <p className="body-sm mt-2 text-muted-foreground">
+                  Enter the 6-digit OTP sent to your GST registered mobile and email
+                </p>
+                <p className="body-sm mt-1 font-medium text-foreground">
+                  {gstNumber}
+                </p>
+              </div>
+
+              {/* OTP Input */}
+              <div className="flex justify-center gap-2">
+                {gstOtp.map((digit, index) => (
+                  <input
+                    key={index}
+                    ref={(el) => { gstOtpInputRefs.current[index] = el; }}
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
+                    value={digit}
+                    onChange={(e) => handleGstOtpChange(index, e.target.value.replace(/\D/g, ""))}
+                    onKeyDown={(e) => handleGstOtpKeyDown(index, e)}
+                    className="h-12 w-11 rounded-lg border-2 border-border bg-background text-center text-xl font-bold focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 sm:h-14 sm:w-12"
+                  />
+                ))}
+              </div>
+
+              <Button
+                onClick={handleVerifyGstOtp}
+                disabled={isLoading || gstOtp.join("").length !== 6}
+                className="w-full gap-2"
+                size="lg"
+              >
+                {isLoading ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <>
+                    Verify OTP
+                    <ArrowRight className="h-5 w-5" />
+                  </>
+                )}
+              </Button>
+
+              <div className="flex flex-col items-center gap-3">
+                <button
+                  onClick={handleResendGstOtp}
+                  disabled={isRequestingOtp || gstOtpResendCooldown > 0}
+                  className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-primary disabled:opacity-50"
+                >
+                  <RefreshCcw className={`h-4 w-4 ${isRequestingOtp ? 'animate-spin' : ''}`} />
+                  {gstOtpResendCooldown > 0
+                    ? `Resend OTP in ${gstOtpResendCooldown}s`
+                    : "Resend OTP"}
+                </button>
+
+                <button
+                  onClick={handleBackToGstDetails}
+                  disabled={isLoading}
+                  className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Change GST Number
                 </button>
               </div>
             </div>

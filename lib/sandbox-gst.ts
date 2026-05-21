@@ -78,6 +78,22 @@ export interface GSTVerificationResult {
   };
 }
 
+export interface GSTOTPRequestResult {
+  success: boolean;
+  error?: string;
+  message?: string;
+}
+
+export interface GSTOTPVerifyResult {
+  success: boolean;
+  verified: boolean;
+  error?: string;
+  message?: string;
+  taxpayerToken?: string;
+  tokenExpiry?: string;
+  sessionExpiry?: string;
+}
+
 // Cache for access tokens
 let cachedToken: { token: string; expiresAt: number } | null = null;
 
@@ -292,6 +308,209 @@ export function validateGSTFormat(gstin: string): { valid: boolean; error?: stri
   }
 
   return { valid: true, stateCode };
+}
+
+/**
+ * Request OTP for GST taxpayer authentication
+ * Sends OTP to the registered mobile number and email of the GST account
+ * 
+ * Note: The taxpayer must have API access enabled on their GST portal
+ * Path: View Profile > Manage API Access
+ */
+export async function requestGSTOTP(gstin: string, username: string): Promise<GSTOTPRequestResult> {
+  try {
+    const accessToken = await getAccessToken();
+    const upperGST = gstin.toUpperCase().trim();
+
+    const response = await fetch(`${SANDBOX_BASE_URL}/gst/compliance/tax-payer/otp`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": accessToken,
+        "x-api-key": process.env.SANDBOX_API_KEY!,
+        "x-api-version": "1.0.0",
+        "x-source": "primary",
+        "accept": "application/json",
+      },
+      body: JSON.stringify({
+        username: username.trim(),
+        gstin: upperGST,
+      }),
+    });
+
+    const responseText = await response.text();
+    
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch {
+      console.error("[v0] GST OTP request parse error:", responseText);
+      return {
+        success: false,
+        error: "Failed to parse API response. Please try again.",
+      };
+    }
+
+    // Handle error responses
+    if (response.status === 401 || response.status === 403) {
+      cachedToken = null;
+      return {
+        success: false,
+        error: "GST verification service temporarily unavailable. Please try again.",
+      };
+    }
+
+    if (response.status === 400) {
+      return {
+        success: false,
+        error: data.message || "Invalid request. Please check your GST number and username.",
+      };
+    }
+
+    if (response.status === 404) {
+      return {
+        success: false,
+        error: "GST account not found or API access is not enabled on the GST portal.",
+      };
+    }
+
+    if (response.status === 422) {
+      return {
+        success: false,
+        error: data.message || "Invalid GSTIN pattern or username format.",
+      };
+    }
+
+    if (response.status !== 200 || (data.code && data.code !== 200)) {
+      return {
+        success: false,
+        error: data.message || "Failed to send OTP. Please try again.",
+      };
+    }
+
+    return {
+      success: true,
+      message: "OTP sent to your registered mobile number and email address.",
+    };
+  } catch (error) {
+    console.error("[v0] GST OTP request error:", error);
+    return {
+      success: false,
+      error: "Could not send OTP. Please try again.",
+    };
+  }
+}
+
+/**
+ * Verify OTP for GST taxpayer authentication
+ * Returns a taxpayer access token valid for 6 hours if successful
+ */
+export async function verifyGSTOTP(
+  gstin: string, 
+  username: string, 
+  otp: string
+): Promise<GSTOTPVerifyResult> {
+  try {
+    const accessToken = await getAccessToken();
+    const upperGST = gstin.toUpperCase().trim();
+
+    const response = await fetch(
+      `${SANDBOX_BASE_URL}/gst/compliance/tax-payer/otp/verify?otp=${encodeURIComponent(otp.trim())}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": accessToken,
+          "x-api-key": process.env.SANDBOX_API_KEY!,
+          "x-api-version": "1.0.0",
+          "x-source": "primary",
+          "accept": "application/json",
+        },
+        body: JSON.stringify({
+          username: username.trim(),
+          gstin: upperGST,
+        }),
+      }
+    );
+
+    const responseText = await response.text();
+    
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch {
+      console.error("[v0] GST OTP verify parse error:", responseText);
+      return {
+        success: false,
+        verified: false,
+        error: "Failed to parse API response. Please try again.",
+      };
+    }
+
+    // Handle error responses
+    if (response.status === 401 || response.status === 403) {
+      cachedToken = null;
+      return {
+        success: false,
+        verified: false,
+        error: "GST verification service temporarily unavailable. Please try again.",
+      };
+    }
+
+    if (response.status === 400) {
+      // Check if it's an invalid OTP error
+      const message = data.message?.toLowerCase() || "";
+      if (message.includes("otp") || message.includes("invalid")) {
+        return {
+          success: false,
+          verified: false,
+          error: "Invalid OTP. Please check and try again.",
+        };
+      }
+      return {
+        success: false,
+        verified: false,
+        error: data.message || "Invalid request. Please try again.",
+      };
+    }
+
+    if (response.status === 422) {
+      return {
+        success: false,
+        verified: false,
+        error: data.message || "Invalid OTP format or expired session.",
+      };
+    }
+
+    if (response.status !== 200 || (data.code && data.code !== 200)) {
+      return {
+        success: false,
+        verified: false,
+        error: data.message || "OTP verification failed. Please try again.",
+      };
+    }
+
+    // Extract taxpayer token from response
+    const taxpayerToken = data.data?.access_token || data.access_token;
+    const tokenExpiry = data.data?.token_expiry || data.token_expiry;
+    const sessionExpiry = data.data?.session_expiry || data.session_expiry;
+
+    return {
+      success: true,
+      verified: true,
+      message: "GST verification successful. Your GST number has been verified.",
+      taxpayerToken,
+      tokenExpiry,
+      sessionExpiry,
+    };
+  } catch (error) {
+    console.error("[v0] GST OTP verify error:", error);
+    return {
+      success: false,
+      verified: false,
+      error: "Could not verify OTP. Please try again.",
+    };
+  }
 }
 
 // State codes mapping
