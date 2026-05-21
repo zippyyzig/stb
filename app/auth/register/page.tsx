@@ -6,7 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { signInWithPopup } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
-import { isMedianApp, nativeGoogleSignIn } from "@/lib/native-app";
+import { isMedianApp, nativeGoogleSignIn, nativeAppleSignIn } from "@/lib/native-app";
 import { signIn } from "next-auth/react";
 import { Input } from "@/components/ui/input";
 import {
@@ -40,6 +40,7 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword]     = useState(false);
   const [isLoading, setIsLoading]           = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [isAppleLoading, setIsAppleLoading] = useState(false);
   const [errorMessage, setErrorMessage]     = useState("");
   const [isNativeApp, setIsNativeApp]       = useState(false);
 
@@ -156,6 +157,82 @@ export default function RegisterPage() {
     }
   };
 
+  // Sign up with Apple handler - Required for iOS App Store compliance
+  const handleAppleSignIn = async () => {
+    if (isAppleLoading) return;
+
+    setIsAppleLoading(true);
+    setErrorMessage("");
+
+    try {
+      if (isNativeApp) {
+        // Median.co native app: use native Apple Sign-In
+        const nativeResult = await nativeAppleSignIn();
+
+        if (!nativeResult) {
+          setErrorMessage("Sign in with Apple is not available. Please use another method.");
+          setIsAppleLoading(false);
+          return;
+        }
+
+        // Decode identity token to get user info
+        let email = nativeResult.email || "";
+        let name = "";
+
+        // Try to get name from fullName object
+        if (nativeResult.fullName) {
+          const givenName = nativeResult.fullName.givenName || "";
+          const familyName = nativeResult.fullName.familyName || "";
+          name = `${givenName} ${familyName}`.trim();
+        }
+
+        // If no name provided, try to decode from identityToken
+        if (!name && nativeResult.identityToken) {
+          try {
+            const parts = nativeResult.identityToken.split(".");
+            if (parts.length >= 2) {
+              const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+              const payload = JSON.parse(atob(base64));
+              email = email || payload.email || "";
+            }
+          } catch (decodeError) {
+            console.error("[Apple] Failed to decode identity token:", decodeError);
+          }
+        }
+
+        // Sign in via NextAuth
+        const signInResult = await signIn("apple", {
+          email: email,
+          name: name || email.split("@")[0],
+          appleId: nativeResult.user || nativeResult.authorizationCode,
+          identityToken: nativeResult.identityToken,
+          redirect: false,
+        });
+
+        if (signInResult?.error) {
+          setErrorMessage(signInResult.error);
+          setIsAppleLoading(false);
+        } else {
+          router.push("/auth/onboarding");
+          router.refresh();
+        }
+        return;
+      }
+
+      // Web browser: Apple Sign-In not available (requires native SDK)
+      setErrorMessage("Sign in with Apple is only available in the mobile app.");
+      setIsAppleLoading(false);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "";
+      if (msg.toLowerCase().includes("cancel")) {
+        setIsAppleLoading(false);
+        return;
+      }
+      setErrorMessage(msg || "Failed to sign up with Apple. Please try again.");
+      setIsAppleLoading(false);
+    }
+  };
+
   /* ── Shared form JSX ────────────────────────────────────────────── */
   const FormBody = (
     <>
@@ -184,6 +261,25 @@ export default function RegisterPage() {
         )}
         Sign up with Google
       </button>
+
+      {/* Apple button - Required for iOS App Store compliance */}
+      {isNativeApp && (
+        <button
+          type="button"
+          onClick={handleAppleSignIn}
+          disabled={isAppleLoading}
+          className="mb-4 flex h-12 w-full items-center justify-center gap-3 rounded-2xl border-2 border-border bg-black text-sm font-semibold text-white shadow-sm transition-all hover:bg-neutral-800 disabled:opacity-70 press-active"
+        >
+          {isAppleLoading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
+            </svg>
+          )}
+          Sign up with Apple
+        </button>
+      )}
 
       <div className="relative my-4 flex items-center">
         <div className="flex-1 border-t border-border" />

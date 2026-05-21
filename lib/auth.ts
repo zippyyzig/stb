@@ -159,6 +159,82 @@ export const authOptions: NextAuthOptions = {
         };
       },
     }),
+    // Sign in with Apple - Required for iOS App Store compliance (Guideline 4.8)
+    CredentialsProvider({
+      id: "apple",
+      name: "Apple",
+      credentials: {
+        email: { label: "Email", type: "email" },
+        name: { label: "Name", type: "text" },
+        appleId: { label: "Apple ID", type: "text" },
+        identityToken: { label: "Identity Token", type: "text" },
+      },
+      async authorize(credentials) {
+        if (!credentials?.appleId) {
+          throw new Error("Apple authentication failed");
+        }
+
+        await dbConnect();
+
+        // Apple may not always provide email (privacy features)
+        // On first sign-in, email is provided. On subsequent sign-ins, it may be hidden.
+        const searchQuery = credentials.email
+          ? {
+              $or: [
+                { appleId: credentials.appleId },
+                { email: credentials.email.toLowerCase() },
+              ],
+            }
+          : { appleId: credentials.appleId };
+
+        let user = await User.findOne(searchQuery);
+
+        if (!user) {
+          if (!credentials.email) {
+            // Apple hides email on subsequent sign-ins, but we need it for first-time users
+            throw new Error("Could not retrieve email from Apple. Please try again or use another sign-in method.");
+          }
+
+          // Create new customer account for Apple sign-in
+          // Apple users are automatically email verified
+          user = await User.create({
+            email: credentials.email.toLowerCase(),
+            name: credentials.name || credentials.email.split("@")[0],
+            appleId: credentials.appleId,
+            role: "customer",
+            isActive: true,
+            isEmailVerified: true, // Apple email is already verified
+            isOnboardingComplete: false,
+            isGstVerified: false,
+          });
+        } else if (!user.appleId) {
+          // Link Apple account to existing email account
+          user.appleId = credentials.appleId;
+          await user.save();
+        }
+
+        if (!user.isActive) {
+          throw new Error("Your account has been deactivated");
+        }
+
+        // Only customers can use Apple sign-in
+        if (user.role !== "customer") {
+          throw new Error("Admins must use email/password to sign in");
+        }
+
+        return {
+          id: user._id.toString(),
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          image: user.avatar,
+          isEmailVerified: user.isEmailVerified || false,
+          isOnboardingComplete: user.isOnboardingComplete || false,
+          gstNumber: user.gstNumber,
+          isGstVerified: user.isGstVerified || false,
+        };
+      },
+    }),
   ],
   session: {
     strategy: "jwt",
