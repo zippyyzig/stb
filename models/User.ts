@@ -12,6 +12,7 @@ export interface IUser extends Document {
   isActive: boolean;
   avatar?: string;
   googleId?: string;
+  appleId?: string;
   lastLoginAt?: Date;
   passwordResetToken?: string;
   passwordResetExpires?: Date;
@@ -153,6 +154,10 @@ const UserSchema = new Schema<IUser>(
       type: String,
     },
     googleId: {
+      type: String,
+      sparse: true,
+    },
+    appleId: {
       type: String,
       sparse: true,
     },
