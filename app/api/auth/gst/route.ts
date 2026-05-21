@@ -57,25 +57,48 @@ export async function POST(request: NextRequest) {
 
     const { gstNumber, businessName, businessType } = await request.json();
 
-    // Verify GST number with Sandbox API
-    const verification = await verifyGSTNumber(gstNumber);
-    
-    if (!verification.valid) {
-      return NextResponse.json(
-        { 
-          error: verification.error || "Invalid GST number",
-          verified: verification.verified,
-        },
-        { status: 400 }
-      );
-    }
-
     await dbConnect();
 
     const user = await User.findById(session.user.id);
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Check if GST was verified via OTP
+    const isOtpVerified = user.isGstOtpVerified && user.gstNumber === gstNumber.toUpperCase();
+
+    // If not OTP verified, verify GST number with Sandbox API (public lookup)
+    if (!isOtpVerified) {
+      const verification = await verifyGSTNumber(gstNumber);
+      
+      if (!verification.valid) {
+        return NextResponse.json(
+          { 
+            error: verification.error || "Invalid GST number",
+            verified: verification.verified,
+          },
+          { status: 400 }
+        );
+      }
+
+      // Store verification data from public API
+      if (verification.data) {
+        user.gstVerifiedData = {
+          legalName: verification.data.legalName,
+          tradeName: verification.data.tradeName,
+          state: verification.data.state,
+          stateCode: verification.data.stateCode,
+          registrationDate: verification.data.registrationDate,
+          constitutionOfBusiness: verification.data.constitutionOfBusiness,
+          taxpayerType: verification.data.taxpayerType,
+          status: verification.data.status,
+          verifiedAt: new Date(),
+        };
+      }
+      
+      // Mark as verified via public API (not OTP)
+      user.gstVerificationMethod = "public_api";
     }
 
     // Check if GST is already registered to another user
@@ -91,27 +114,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Update user with GST details from verification
+    // Update user with GST details
     user.gstNumber = gstNumber.toUpperCase();
-    user.businessName = businessName || verification.data?.businessName || verification.data?.legalName || "";
+    user.businessName = businessName || user.gstVerifiedData?.tradeName || user.gstVerifiedData?.legalName || "";
     user.businessType = businessType || "other";
     user.isGstVerified = true;
     user.isOnboardingComplete = true;
-    
-    // Store additional verified data if available
-    if (verification.data) {
-      user.gstVerifiedData = {
-        legalName: verification.data.legalName,
-        tradeName: verification.data.tradeName,
-        state: verification.data.state,
-        stateCode: verification.data.stateCode,
-        registrationDate: verification.data.registrationDate,
-        constitutionOfBusiness: verification.data.constitutionOfBusiness,
-        taxpayerType: verification.data.taxpayerType,
-        status: verification.data.status,
-        verifiedAt: new Date(),
-      };
-    }
     
     await user.save();
 
@@ -119,10 +127,11 @@ export async function POST(request: NextRequest) {
       message: "GST details saved successfully",
       gstNumber: user.gstNumber,
       businessName: user.businessName,
-      state: verification.data?.state || STATE_CODES[gstNumber.substring(0, 2)],
+      state: user.gstVerifiedData?.state || STATE_CODES[gstNumber.substring(0, 2)],
       isGstVerified: true,
+      isGstOtpVerified: user.isGstOtpVerified || false,
       isOnboardingComplete: true,
-      verificationData: verification.data,
+      verificationMethod: user.gstVerificationMethod,
     });
   } catch (error) {
     console.error("GST submission error:", error);

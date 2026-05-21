@@ -36,6 +36,15 @@ export interface IUser extends Document {
     status?: string;
     verifiedAt?: Date;
   };
+  // GST OTP verification tracking
+  isGstOtpVerified?: boolean;
+  gstVerificationMethod?: "otp" | "manual" | "public_api";
+  gstOtpRequest?: {
+    gstin: string;
+    username: string;
+    requestedAt: Date;
+    attempts: number;
+  };
   addresses: {
     _id: mongoose.Types.ObjectId;
     name: string;
@@ -98,6 +107,13 @@ const GstVerifiedDataSchema = new Schema({
   taxpayerType: { type: String },
   status: { type: String },
   verifiedAt: { type: Date },
+}, { _id: false });
+
+const GstOtpRequestSchema = new Schema({
+  gstin: { type: String, required: true },
+  username: { type: String, required: true },
+  requestedAt: { type: Date, default: Date.now },
+  attempts: { type: Number, default: 0 },
 }, { _id: false });
 
 const UserSchema = new Schema<IUser>(
@@ -184,6 +200,18 @@ const UserSchema = new Schema<IUser>(
     },
     gstVerifiedData: {
       type: GstVerifiedDataSchema,
+    },
+    // GST OTP verification
+    isGstOtpVerified: {
+      type: Boolean,
+      default: false,
+    },
+    gstVerificationMethod: {
+      type: String,
+      enum: ["otp", "manual", "public_api"],
+    },
+    gstOtpRequest: {
+      type: GstOtpRequestSchema,
     },
     addresses: [AddressSchema],
     // Notification preferences for app store compliance
