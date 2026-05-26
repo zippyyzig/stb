@@ -43,15 +43,10 @@ function LoginForm() {
   const [isAppleLoading, setIsAppleLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState(error || "");
   const [isNativeApp, setIsNativeApp] = useState(false);
-  const [showAppleSignIn, setShowAppleSignIn] = useState(false);
 
   // Detect if running inside Median.co native app
-  // Apple Sign-In is shown on ALL platforms for App Store compliance (Guideline 4.8)
   useEffect(() => {
     setIsNativeApp(isMedianApp());
-    // Always show Apple Sign-In - required by Apple App Store Guideline 4.8
-    // when using any third-party login (like Google)
-    setShowAppleSignIn(true);
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -275,7 +270,6 @@ function LoginForm() {
             showPassword={showPassword} setShowPassword={setShowPassword}
             isLoading={isLoading} isGoogleLoading={isGoogleLoading}
             isAppleLoading={isAppleLoading}
-            showAppleSignIn={showAppleSignIn}
             handleSubmit={handleSubmit}
             handleGoogleSignIn={handleGoogleSignIn}
             handleAppleSignIn={handleAppleSignIn}
@@ -384,24 +378,22 @@ function LoginForm() {
               Continue with Google
             </button>
 
-            {/* Apple Sign-In button (iOS App Store compliance) */}
-            {showAppleSignIn && (
-              <button
-                type="button"
-                onClick={handleAppleSignIn}
-                disabled={isAppleLoading}
-                className="mb-5 flex h-12 w-full items-center justify-center gap-3 rounded-2xl border-2 border-foreground bg-foreground text-sm font-semibold text-background shadow-sm transition-all hover:bg-foreground/90 disabled:opacity-70 press-active"
-              >
-                {isAppleLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin text-background" />
-                ) : (
-                  <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
-                  </svg>
-                )}
-                Continue with Apple
-              </button>
-            )}
+            {/* Apple Sign-In button (iOS App Store compliance - Guideline 4.8) */}
+            <button
+              type="button"
+              onClick={handleAppleSignIn}
+              disabled={isAppleLoading}
+              className="mb-5 flex h-12 w-full items-center justify-center gap-3 rounded-2xl border-2 border-foreground bg-foreground text-sm font-semibold text-background shadow-sm transition-all hover:bg-foreground/90 disabled:opacity-70 press-active"
+            >
+              {isAppleLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin text-background" />
+              ) : (
+                <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
+                </svg>
+              )}
+              Continue with Apple
+            </button>
 
             <div className="relative my-5 flex items-center">
               <div className="flex-1 border-t border-border" />
@@ -492,7 +484,6 @@ function MobileFormContent({
   showPassword, setShowPassword,
   isLoading, isGoogleLoading,
   isAppleLoading,
-  showAppleSignIn,
   handleSubmit,
   handleGoogleSignIn,
   handleAppleSignIn,
@@ -503,7 +494,6 @@ function MobileFormContent({
   showPassword: boolean; setShowPassword: (v: boolean) => void;
   isLoading: boolean; isGoogleLoading: boolean;
   isAppleLoading: boolean;
-  showAppleSignIn: boolean;
   handleSubmit: (e: React.FormEvent) => void;
   handleGoogleSignIn: () => void;
   handleAppleSignIn: () => void;
@@ -533,24 +523,22 @@ function MobileFormContent({
         )}
         Continue with Google
       </button>
-      {/* Apple Sign-In button (iOS App Store compliance) */}
-      {showAppleSignIn && (
-        <button
-          type="button"
-          onClick={handleAppleSignIn}
-          disabled={isAppleLoading}
-          className="mb-4 flex h-12 w-full items-center justify-center gap-3 rounded-2xl border-2 border-foreground bg-foreground text-sm font-semibold text-background shadow-sm transition-all hover:bg-foreground/90 disabled:opacity-70 press-active"
-        >
-          {isAppleLoading ? (
-            <Loader2 className="h-4 w-4 animate-spin text-background" />
-          ) : (
-            <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
-            </svg>
-          )}
-          Continue with Apple
-        </button>
-      )}
+      {/* Apple Sign-In button (iOS App Store compliance - Guideline 4.8) */}
+      <button
+        type="button"
+        onClick={handleAppleSignIn}
+        disabled={isAppleLoading}
+        className="mb-4 flex h-12 w-full items-center justify-center gap-3 rounded-2xl border-2 border-foreground bg-foreground text-sm font-semibold text-background shadow-sm transition-all hover:bg-foreground/90 disabled:opacity-70 press-active"
+      >
+        {isAppleLoading ? (
+          <Loader2 className="h-4 w-4 animate-spin text-background" />
+        ) : (
+          <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
+          </svg>
+        )}
+        Continue with Apple
+      </button>
       <div className="relative my-5 flex items-center">
         <div className="flex-1 border-t border-border" />
         <span className="mx-4 text-xs font-medium text-muted-foreground">or sign in with email</span>
