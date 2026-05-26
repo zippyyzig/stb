@@ -6,7 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { signInWithPopup } from "firebase/auth";
 import { auth, googleProvider, appleProvider } from "@/lib/firebase";
-import { isMedianApp, nativeGoogleSignIn, nativeAppleSignIn, getPlatform } from "@/lib/native-app";
+import { isMedianApp, nativeGoogleSignIn, nativeAppleSignIn } from "@/lib/native-app";
 import { signIn } from "next-auth/react";
 import { Input } from "@/components/ui/input";
 import {
@@ -45,11 +45,13 @@ export default function RegisterPage() {
   const [isNativeApp, setIsNativeApp]       = useState(false);
   const [showAppleSignIn, setShowAppleSignIn] = useState(false);
 
-  // Detect if running inside Median.co native app and if on iOS
+  // Detect if running inside Median.co native app
+  // Apple Sign-In is shown on ALL platforms for App Store compliance (Guideline 4.8)
   useEffect(() => {
     setIsNativeApp(isMedianApp());
-    const platform = getPlatform();
-    setShowAppleSignIn(platform === "ios");
+    // Always show Apple Sign-In - required by Apple App Store Guideline 4.8
+    // when using any third-party login (like Google)
+    setShowAppleSignIn(true);
   }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
