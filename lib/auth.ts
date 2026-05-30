@@ -62,7 +62,14 @@ export const authOptions: NextAuthOptions = {
         }
 
         if (!user.password) {
-          throw new Error("Please sign in with Google");
+          // User signed up with OAuth (Google or Apple)
+          if (user.googleId) {
+            throw new Error("Please sign in with Google");
+          }
+          if (user.appleId) {
+            throw new Error("Please sign in with Apple");
+          }
+          throw new Error("Please sign in with your social account");
         }
 
         if (!user.isActive) {
@@ -176,22 +183,26 @@ export const authOptions: NextAuthOptions = {
 
         await dbConnect();
 
-        // Apple may not always provide email (privacy features)
-        // On first sign-in, email is provided. On subsequent sign-ins, it may be hidden.
-        const searchQuery = credentials.email
-          ? {
-              $or: [
-                { appleId: credentials.appleId },
-                { email: credentials.email.toLowerCase() },
-              ],
-            }
-          : { appleId: credentials.appleId };
+        // First, try to find user by appleId (for returning users)
+        let user = await User.findOne({ appleId: credentials.appleId });
 
-        let user = await User.findOne(searchQuery);
+        // If not found by appleId but email is provided, try to find by email
+        // This handles the case where user exists but hasn't linked Apple yet
+        if (!user && credentials.email) {
+          user = await User.findOne({ email: credentials.email.toLowerCase() });
+          
+          if (user) {
+            // Link Apple account to existing email account
+            user.appleId = credentials.appleId;
+            await user.save();
+          }
+        }
 
         if (!user) {
+          // New user - we need email to create account
           if (!credentials.email) {
-            // Apple hides email on subsequent sign-ins, but we need it for first-time users
+            // Apple hides email on subsequent sign-ins
+            // This shouldn't happen for truly new users, but handle gracefully
             throw new Error("Could not retrieve email from Apple. Please try again or use another sign-in method.");
           }
 
@@ -207,10 +218,6 @@ export const authOptions: NextAuthOptions = {
             isOnboardingComplete: false,
             isGstVerified: false,
           });
-        } else if (!user.appleId) {
-          // Link Apple account to existing email account
-          user.appleId = credentials.appleId;
-          await user.save();
         }
 
         if (!user.isActive) {
