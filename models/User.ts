@@ -129,7 +129,8 @@ const UserSchema = new Schema<IUser>(
     password: {
       type: String,
       required: function (this: IUser) {
-        return !this.googleId;
+        // Password is NOT required for OAuth users (Google or Apple sign-in)
+        return !this.googleId && !this.appleId;
       },
     },
     name: {

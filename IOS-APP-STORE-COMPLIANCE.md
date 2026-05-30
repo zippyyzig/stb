@@ -2,6 +2,22 @@
 
 This document tracks compliance with Apple's App Store Review Guidelines for the Smart Tech Bazaar iOS app.
 
+## Guideline 2.1(a) - Performance - App Completeness (RESOLVED)
+
+**Status:** FIXED (May 30, 2026)
+
+**Issue:** Apple reported "An error occurred when using Sign in with Apple" on iPad Air 11-inch (M3).
+
+**Root Cause:** Two bugs were identified:
+1. User model required password for Apple users (validation error: "Path `password` is required")
+2. Email retrieval flow failed when Apple hid the email on subsequent sign-ins
+
+**Resolution:**
+1. Fixed `models/User.ts` - Password is now optional for OAuth users (Google OR Apple)
+2. Improved `lib/auth.ts` - Better handling of Apple's privacy features and user lookup
+
+---
+
 ## Guideline 4.8 - Login Services (RESOLVED)
 
 **Status:** IMPLEMENTED (Updated May 26, 2026)
@@ -170,6 +186,7 @@ When resubmitting, include this note in App Store Connect:
 
 | Date | Version | Change |
 |------|---------|--------|
+| 2026-05-30 | 1.0.3 | Fixed: Password validation error for Apple users, improved email handling |
 | 2026-05-26 | 1.0.2 | Fixed: Apple button now visible to ALL users (web + native) |
 | 2026-05-21 | 1.0.1 | Added Sign in with Apple for Guideline 4.8 compliance |
 
