@@ -13,6 +13,7 @@ import {
   Shield,
   Store,
   Bell,
+  Trash2,
 } from "lucide-react";
 
 const menuItems = [
@@ -24,6 +25,7 @@ const menuItems = [
   { title: "Support", href: "/dashboard/support", icon: LifeBuoy, exact: false },
   { title: "Profile", href: "/dashboard/profile", icon: User, exact: false },
   { title: "Security", href: "/dashboard/security", icon: Shield, exact: false },
+  { title: "Delete Account", href: "/dashboard/delete-account", icon: Trash2, exact: false, danger: true },
 ];
 
 export default function DashboardSidebar() {
@@ -62,6 +64,8 @@ export default function DashboardSidebar() {
                     className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-[11px] font-semibold transition-colors xl:text-xs ${
                       active
                         ? "bg-primary text-white"
+                        : item.danger
+                        ? "text-red-400 hover:bg-red-950/40 hover:text-red-300"
                         : "text-[#A3A3A3] hover:bg-[#262626] hover:text-white"
                     }`}
                   >

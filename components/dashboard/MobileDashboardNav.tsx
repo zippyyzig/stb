@@ -23,6 +23,7 @@ import {
   X,
   Package,
   Headphones,
+  Trash2,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -65,10 +66,11 @@ export default function MobileDashboardNav() {
     {
       title: "Settings",
       items: [
-        { title: "Profile",    href: "/dashboard/profile",    icon: User,      color: "bg-indigo-50 text-indigo-600" },
-        { title: "Addresses",  href: "/dashboard/addresses",  icon: MapPin,    color: "bg-purple-50 text-purple-600" },
-        { title: "Security",   href: "/dashboard/security",   icon: Shield,    color: "bg-green-50 text-green-600" },
-        { title: "Support",    href: "/dashboard/support",    icon: Headphones, color: "bg-orange-50 text-orange-600" },
+        { title: "Profile",    href: "/dashboard/profile",         icon: User,      color: "bg-indigo-50 text-indigo-600" },
+        { title: "Addresses",  href: "/dashboard/addresses",        icon: MapPin,    color: "bg-purple-50 text-purple-600" },
+        { title: "Security",   href: "/dashboard/security",         icon: Shield,    color: "bg-green-50 text-green-600" },
+        { title: "Support",    href: "/dashboard/support",          icon: Headphones, color: "bg-orange-50 text-orange-600" },
+        { title: "Delete Account", href: "/dashboard/delete-account", icon: Trash2, color: "bg-red-50 text-destructive" },
       ],
     },
     {

@@ -16,6 +16,7 @@ const pageTitles: Record<string, string> = {
   "/dashboard/support/new": "New Ticket",
   "/dashboard/profile": "Profile",
   "/dashboard/security": "Security",
+  "/dashboard/delete-account": "Delete Account",
 };
 
 function getTitle(pathname: string): string {
@@ -30,6 +31,7 @@ function getBackHref(pathname: string): string | null {
   if (pathname.startsWith("/dashboard/orders/") && pathname !== "/dashboard/orders") return "/dashboard/orders";
   if (pathname.startsWith("/dashboard/support/new")) return "/dashboard/support";
   if (pathname.startsWith("/dashboard/support/") && pathname !== "/dashboard/support") return "/dashboard/support";
+  if (pathname === "/dashboard/delete-account") return "/dashboard/security";
   return "/dashboard";
 }
 
