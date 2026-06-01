@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, Suspense } from "react";
+import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -86,176 +86,35 @@ interface FiltersState {
   sortBy: string;
 }
 
-function ProductsContent() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
+// ── FilterSidebar defined OUTSIDE the page component so it never re-mounts ──
+interface FilterSidebarProps {
+  filters: FiltersState;
+  priceRange: [number, number];
+  categories: Category[];
+  brands: Brand[];
+  activeFiltersCount: number;
+  onFilterChange: <K extends keyof FiltersState>(key: K, value: FiltersState[K]) => void;
+  onCategoryToggle: (id: string) => void;
+  onBrandToggle: (id: string) => void;
+  onPriceRangeChange: (value: number[]) => void;
+  onPriceRangeApply: () => void;
+  onClearAll: () => void;
+}
 
-  const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [brands, setBrands] = useState<Brand[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [totalProducts, setTotalProducts] = useState(0);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
-
-  const [filters, setFilters] = useState<FiltersState>({
-    search: searchParams.get("search") || "",
-    categories: searchParams.get("categories")?.split(",").filter(Boolean) || [],
-    brands: searchParams.get("brands")?.split(",").filter(Boolean) || [],
-    priceMin: Number(searchParams.get("priceMin")) || 0,
-    priceMax: Number(searchParams.get("priceMax")) || 100000,
-    inStock: searchParams.get("inStock") === "true",
-    onSale: searchParams.get("onSale") === "true",
-    featured: searchParams.get("featured") === "true",
-    newArrivals: searchParams.get("newArrivals") === "true",
-    sortBy: searchParams.get("sortBy") || "relevance",
-  });
-
-  const [priceRange, setPriceRange] = useState<[number, number]>([
-    filters.priceMin,
-    filters.priceMax,
-  ]);
-
-  // Fetch categories and brands on mount
-  useEffect(() => {
-    const fetchFiltersData = async () => {
-      try {
-        const [catRes, brandRes] = await Promise.all([
-          fetch("/api/categories"),
-          fetch("/api/brands"),
-        ]);
-        const catData = await catRes.json();
-        const brandData = await brandRes.json();
-        setCategories(catData.categories || []);
-        setBrands(brandData.brands || []);
-      } catch (error) {
-        console.error("Error fetching filter data:", error);
-      }
-    };
-    fetchFiltersData();
-  }, []);
-
-  // Build query string from filters
-  const buildQueryString = useCallback(() => {
-    const params = new URLSearchParams();
-    if (filters.search) params.set("search", filters.search);
-    if (filters.categories.length) params.set("categories", filters.categories.join(","));
-    if (filters.brands.length) params.set("brands", filters.brands.join(","));
-    if (filters.priceMin > 0) params.set("priceMin", String(filters.priceMin));
-    if (filters.priceMax < 100000) params.set("priceMax", String(filters.priceMax));
-    if (filters.inStock) params.set("inStock", "true");
-    if (filters.onSale) params.set("onSale", "true");
-    if (filters.featured) params.set("featured", "true");
-    if (filters.newArrivals) params.set("newArrivals", "true");
-    if (filters.sortBy !== "relevance") params.set("sortBy", filters.sortBy);
-    params.set("page", String(page));
-    params.set("limit", "20");
-    return params.toString();
-  }, [filters, page]);
-
-  // Fetch products
-  const fetchProducts = useCallback(async (reset = false) => {
-    setIsLoading(true);
-    try {
-      const queryString = buildQueryString();
-      const res = await fetch(`/api/products?${queryString}`);
-      const data = await res.json();
-
-      if (reset) {
-        setProducts(data.products || []);
-      } else {
-        setProducts((prev) => [...prev, ...(data.products || [])]);
-      }
-      setTotalProducts(data.total || 0);
-      setHasMore((data.products?.length || 0) === 20);
-    } catch (error) {
-      console.error("Error fetching products:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [buildQueryString]);
-
-  // Fetch products when filters change
-  useEffect(() => {
-    setPage(1);
-    fetchProducts(true);
-    // Update URL
-    const queryString = buildQueryString();
-    router.replace(`/products?${queryString}`, { scroll: false });
-  }, [filters]);
-
-  // Fetch more products when page changes (load more)
-  useEffect(() => {
-    if (page > 1) {
-      fetchProducts(false);
-    }
-  }, [page]);
-
-  const handleFilterChange = <K extends keyof FiltersState>(
-    key: K,
-    value: FiltersState[K]
-  ) => {
-    setFilters((prev) => ({ ...prev, [key]: value }));
-  };
-
-  const handleCategoryToggle = (categoryId: string) => {
-    setFilters((prev) => ({
-      ...prev,
-      categories: prev.categories.includes(categoryId)
-        ? prev.categories.filter((c) => c !== categoryId)
-        : [...prev.categories, categoryId],
-    }));
-  };
-
-  const handleBrandToggle = (brandId: string) => {
-    setFilters((prev) => ({
-      ...prev,
-      brands: prev.brands.includes(brandId)
-        ? prev.brands.filter((b) => b !== brandId)
-        : [...prev.brands, brandId],
-    }));
-  };
-
-  const handlePriceRangeChange = (value: number[]) => {
-    setPriceRange([value[0], value[1]]);
-  };
-
-  const applyPriceRange = () => {
-    setFilters((prev) => ({
-      ...prev,
-      priceMin: priceRange[0],
-      priceMax: priceRange[1],
-    }));
-  };
-
-  const clearAllFilters = () => {
-    setFilters({
-      search: "",
-      categories: [],
-      brands: [],
-      priceMin: 0,
-      priceMax: 100000,
-      inStock: false,
-      onSale: false,
-      featured: false,
-      newArrivals: false,
-      sortBy: "relevance",
-    });
-    setPriceRange([0, 100000]);
-  };
-
-  const activeFiltersCount =
-    filters.categories.length +
-    filters.brands.length +
-    (filters.inStock ? 1 : 0) +
-    (filters.onSale ? 1 : 0) +
-    (filters.featured ? 1 : 0) +
-    (filters.newArrivals ? 1 : 0) +
-    (filters.priceMin > 0 || filters.priceMax < 100000 ? 1 : 0);
-
-  const FilterSidebar = () => (
+function FilterSidebar({
+  filters,
+  priceRange,
+  categories,
+  brands,
+  activeFiltersCount,
+  onFilterChange,
+  onCategoryToggle,
+  onBrandToggle,
+  onPriceRangeChange,
+  onPriceRangeApply,
+  onClearAll,
+}: FilterSidebarProps) {
+  return (
     <div className="space-y-6">
       {/* Search */}
       <div>
@@ -265,7 +124,7 @@ function ProductsContent() {
           <Input
             placeholder="Search products..."
             value={filters.search}
-            onChange={(e) => handleFilterChange("search", e.target.value)}
+            onChange={(e) => onFilterChange("search", e.target.value)}
             className="pl-9"
           />
         </div>
@@ -286,7 +145,7 @@ function ProductsContent() {
                 >
                   <Checkbox
                     checked={filters.categories.includes(cat._id)}
-                    onCheckedChange={() => handleCategoryToggle(cat._id)}
+                    onCheckedChange={() => onCategoryToggle(cat._id)}
                   />
                   <span className="flex-1 text-foreground">{cat.name}</span>
                   {cat.productCount !== undefined && (
@@ -319,7 +178,7 @@ function ProductsContent() {
                 >
                   <Checkbox
                     checked={filters.brands.includes(brand._id)}
-                    onCheckedChange={() => handleBrandToggle(brand._id)}
+                    onCheckedChange={() => onBrandToggle(brand._id)}
                   />
                   <span className="flex-1 text-foreground">{brand.name}</span>
                   {brand.productCount !== undefined && (
@@ -347,7 +206,7 @@ function ProductsContent() {
             <div className="space-y-4 px-1">
               <Slider
                 value={priceRange}
-                onValueChange={handlePriceRangeChange}
+                onValueChange={onPriceRangeChange}
                 min={0}
                 max={100000}
                 step={500}
@@ -358,7 +217,7 @@ function ProductsContent() {
                   type="number"
                   value={priceRange[0]}
                   onChange={(e) =>
-                    setPriceRange([Number(e.target.value), priceRange[1]])
+                    onPriceRangeChange([Number(e.target.value), priceRange[1]])
                   }
                   className="h-8 text-sm"
                   placeholder="Min"
@@ -368,7 +227,7 @@ function ProductsContent() {
                   type="number"
                   value={priceRange[1]}
                   onChange={(e) =>
-                    setPriceRange([priceRange[0], Number(e.target.value)])
+                    onPriceRangeChange([priceRange[0], Number(e.target.value)])
                   }
                   className="h-8 text-sm"
                   placeholder="Max"
@@ -378,7 +237,7 @@ function ProductsContent() {
                 size="sm"
                 variant="outline"
                 className="w-full"
-                onClick={applyPriceRange}
+                onClick={onPriceRangeApply}
               >
                 Apply Price
               </Button>
@@ -399,7 +258,7 @@ function ProductsContent() {
                 <Checkbox
                   checked={filters.inStock}
                   onCheckedChange={(checked) =>
-                    handleFilterChange("inStock", checked === true)
+                    onFilterChange("inStock", checked === true)
                   }
                 />
                 <span className="text-foreground">In Stock Only</span>
@@ -408,7 +267,7 @@ function ProductsContent() {
                 <Checkbox
                   checked={filters.onSale}
                   onCheckedChange={(checked) =>
-                    handleFilterChange("onSale", checked === true)
+                    onFilterChange("onSale", checked === true)
                   }
                 />
                 <span className="text-foreground">On Sale</span>
@@ -417,7 +276,7 @@ function ProductsContent() {
                 <Checkbox
                   checked={filters.featured}
                   onCheckedChange={(checked) =>
-                    handleFilterChange("featured", checked === true)
+                    onFilterChange("featured", checked === true)
                   }
                 />
                 <span className="text-foreground">Featured Products</span>
@@ -426,7 +285,7 @@ function ProductsContent() {
                 <Checkbox
                   checked={filters.newArrivals}
                   onCheckedChange={(checked) =>
-                    handleFilterChange("newArrivals", checked === true)
+                    onFilterChange("newArrivals", checked === true)
                   }
                 />
                 <span className="text-foreground">New Arrivals</span>
@@ -438,16 +297,211 @@ function ProductsContent() {
 
       {/* Clear Filters */}
       {activeFiltersCount > 0 && (
-        <Button
-          variant="outline"
-          className="w-full"
-          onClick={clearAllFilters}
-        >
+        <Button variant="outline" className="w-full" onClick={onClearAll}>
           Clear All Filters ({activeFiltersCount})
         </Button>
       )}
     </div>
   );
+}
+
+// ── Main page content ────────────────────────────────────────────────────────
+function ProductsContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [brands, setBrands] = useState<Brand[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [totalProducts, setTotalProducts] = useState(0);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+
+  const [filters, setFilters] = useState<FiltersState>({
+    search: searchParams.get("search") || "",
+    categories: searchParams.get("categories")?.split(",").filter(Boolean) || [],
+    brands: searchParams.get("brands")?.split(",").filter(Boolean) || [],
+    priceMin: Number(searchParams.get("priceMin")) || 0,
+    priceMax: Number(searchParams.get("priceMax")) || 100000,
+    inStock: searchParams.get("inStock") === "true",
+    onSale: searchParams.get("onSale") === "true",
+    featured: searchParams.get("featured") === "true",
+    newArrivals: searchParams.get("newArrivals") === "true",
+    sortBy: searchParams.get("sortBy") || "relevance",
+  });
+
+  const [priceRange, setPriceRange] = useState<[number, number]>([
+    filters.priceMin,
+    filters.priceMax,
+  ]);
+
+  // Track whether we're doing a "load more" (append) vs fresh fetch (reset)
+  const loadMoreRef = useRef(false);
+
+  // Fetch categories and brands on mount
+  useEffect(() => {
+    const fetchFiltersData = async () => {
+      try {
+        const [catRes, brandRes] = await Promise.all([
+          fetch("/api/categories"),
+          fetch("/api/brands"),
+        ]);
+        const catData = await catRes.json();
+        const brandData = await brandRes.json();
+        setCategories(catData.categories || []);
+        setBrands(brandData.brands || []);
+      } catch (error) {
+        console.error("Error fetching filter data:", error);
+      }
+    };
+    fetchFiltersData();
+  }, []);
+
+  // Core fetch function — reads current state via refs to avoid stale closures
+  const fetchProducts = useCallback(
+    async (currentFilters: FiltersState, currentPage: number, reset: boolean) => {
+      setIsLoading(true);
+      try {
+        const params = new URLSearchParams();
+        if (currentFilters.search) params.set("search", currentFilters.search);
+        if (currentFilters.categories.length)
+          params.set("categories", currentFilters.categories.join(","));
+        if (currentFilters.brands.length)
+          params.set("brands", currentFilters.brands.join(","));
+        if (currentFilters.priceMin > 0)
+          params.set("priceMin", String(currentFilters.priceMin));
+        if (currentFilters.priceMax < 100000)
+          params.set("priceMax", String(currentFilters.priceMax));
+        if (currentFilters.inStock) params.set("inStock", "true");
+        if (currentFilters.onSale) params.set("onSale", "true");
+        if (currentFilters.featured) params.set("featured", "true");
+        if (currentFilters.newArrivals) params.set("newArrivals", "true");
+        if (currentFilters.sortBy !== "relevance")
+          params.set("sortBy", currentFilters.sortBy);
+        params.set("page", String(currentPage));
+        params.set("limit", "20");
+
+        const res = await fetch(`/api/products?${params.toString()}`);
+        const data = await res.json();
+
+        if (reset) {
+          setProducts(data.products || []);
+        } else {
+          setProducts((prev) => [...prev, ...(data.products || [])]);
+        }
+        setTotalProducts(data.total || 0);
+        setHasMore((data.products?.length || 0) === 20);
+
+        // Update URL to reflect current filters (without triggering re-fetch)
+        const urlParams = new URLSearchParams(params);
+        urlParams.delete("page");
+        urlParams.delete("limit");
+        router.replace(`/products${urlParams.toString() ? `?${urlParams.toString()}` : ""}`, {
+          scroll: false,
+        });
+      } catch (error) {
+        console.error("Error fetching products:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [router]
+  );
+
+  // When filters change: reset to page 1 and do a fresh fetch
+  useEffect(() => {
+    loadMoreRef.current = false;
+    setPage(1);
+    fetchProducts(filters, 1, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters]);
+
+  // When page increments (load more): append results
+  useEffect(() => {
+    if (page > 1) {
+      fetchProducts(filters, page, false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]);
+
+  const handleFilterChange = useCallback(
+    <K extends keyof FiltersState>(key: K, value: FiltersState[K]) => {
+      setFilters((prev) => ({ ...prev, [key]: value }));
+    },
+    []
+  );
+
+  const handleCategoryToggle = useCallback((categoryId: string) => {
+    setFilters((prev) => ({
+      ...prev,
+      categories: prev.categories.includes(categoryId)
+        ? prev.categories.filter((c) => c !== categoryId)
+        : [...prev.categories, categoryId],
+    }));
+  }, []);
+
+  const handleBrandToggle = useCallback((brandId: string) => {
+    setFilters((prev) => ({
+      ...prev,
+      brands: prev.brands.includes(brandId)
+        ? prev.brands.filter((b) => b !== brandId)
+        : [...prev.brands, brandId],
+    }));
+  }, []);
+
+  const handlePriceRangeChange = useCallback((value: number[]) => {
+    setPriceRange([value[0], value[1]]);
+  }, []);
+
+  const applyPriceRange = useCallback(() => {
+    setFilters((prev) => ({
+      ...prev,
+      priceMin: priceRange[0],
+      priceMax: priceRange[1],
+    }));
+  }, [priceRange]);
+
+  const clearAllFilters = useCallback(() => {
+    setFilters({
+      search: "",
+      categories: [],
+      brands: [],
+      priceMin: 0,
+      priceMax: 100000,
+      inStock: false,
+      onSale: false,
+      featured: false,
+      newArrivals: false,
+      sortBy: "relevance",
+    });
+    setPriceRange([0, 100000]);
+  }, []);
+
+  const activeFiltersCount =
+    filters.categories.length +
+    filters.brands.length +
+    (filters.inStock ? 1 : 0) +
+    (filters.onSale ? 1 : 0) +
+    (filters.featured ? 1 : 0) +
+    (filters.newArrivals ? 1 : 0) +
+    (filters.priceMin > 0 || filters.priceMax < 100000 ? 1 : 0);
+
+  const sidebarProps: FilterSidebarProps = {
+    filters,
+    priceRange,
+    categories,
+    brands,
+    activeFiltersCount,
+    onFilterChange: handleFilterChange,
+    onCategoryToggle: handleCategoryToggle,
+    onBrandToggle: handleBrandToggle,
+    onPriceRangeChange: handlePriceRangeChange,
+    onPriceRangeApply: applyPriceRange,
+    onClearAll: clearAllFilters,
+  };
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -485,7 +539,7 @@ function ProductsContent() {
                 <h2 className="mb-4 text-base font-semibold text-foreground">
                   Filters
                 </h2>
-                <FilterSidebar />
+                <FilterSidebar {...sidebarProps} />
               </div>
             </aside>
 
@@ -511,7 +565,7 @@ function ProductsContent() {
                       <SheetTitle>Filters</SheetTitle>
                     </SheetHeader>
                     <div className="mt-6">
-                      <FilterSidebar />
+                      <FilterSidebar {...sidebarProps} />
                     </div>
                   </SheetContent>
                 </Sheet>
@@ -625,12 +679,11 @@ function ProductsContent() {
                       variant="secondary"
                       className="cursor-pointer gap-1 pr-1"
                       onClick={() => {
-                        handleFilterChange("priceMin", 0);
-                        handleFilterChange("priceMax", 100000);
+                        setFilters((prev) => ({ ...prev, priceMin: 0, priceMax: 100000 }));
                         setPriceRange([0, 100000]);
                       }}
                     >
-                      ₹{filters.priceMin.toLocaleString()} - ₹{filters.priceMax.toLocaleString()}
+                      {"\u20B9"}{filters.priceMin.toLocaleString()} - {"\u20B9"}{filters.priceMax.toLocaleString()}
                       <X className="h-3 w-3" />
                     </Badge>
                   )}
@@ -686,23 +739,22 @@ function ProductsContent() {
                     ))}
                   </div>
 
+                  {/* Loading overlay for filter change */}
+                  {isLoading && (
+                    <div className="mt-4 flex justify-center">
+                      <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                    </div>
+                  )}
+
                   {/* Load More */}
-                  {hasMore && (
+                  {!isLoading && hasMore && (
                     <div className="mt-8 flex justify-center">
                       <Button
                         variant="outline"
                         size="lg"
                         onClick={() => setPage((p) => p + 1)}
-                        disabled={isLoading}
                       >
-                        {isLoading ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Loading...
-                          </>
-                        ) : (
-                          "Load More Products"
-                        )}
+                        Load More Products
                       </Button>
                     </div>
                   )}

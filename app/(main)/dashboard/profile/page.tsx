@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2, Save, Check, BadgeCheck } from "lucide-react";
+import { Loader2, Save, Check, BadgeCheck, Trash2, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import Link from "next/link";
 
 interface UserProfile {
   name: string;
@@ -203,6 +204,29 @@ export default function ProfilePage() {
           Save Changes
         </Button>
       </form>
+
+      {/* Delete Account */}
+      <div className="bg-card rounded-2xl border border-destructive/30 p-5">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <div className="h-10 w-10 rounded-xl bg-destructive/10 flex items-center justify-center shrink-0">
+              <Trash2 className="h-5 w-5 text-destructive" />
+            </div>
+            <div>
+              <h3 className="font-heading font-semibold text-foreground">Delete Account</h3>
+              <p className="text-xs text-muted-foreground mt-1">
+                Permanently delete your account and all associated data. This action cannot be undone.
+              </p>
+            </div>
+          </div>
+          <Link href="/dashboard/delete-account">
+            <Button variant="outline" size="sm" className="text-destructive border-destructive/30 hover:bg-destructive/5 hover:border-destructive shrink-0 gap-1">
+              Delete
+              <ChevronRight className="h-3.5 w-3.5" />
+            </Button>
+          </Link>
+        </div>
+      </div>
     </div>
   );
 }
