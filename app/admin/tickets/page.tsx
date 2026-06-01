@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -84,6 +84,7 @@ export default function TicketsPage() {
   const [search, setSearch] = useState(searchParams.get("search") || "");
   const [statusFilter, setStatusFilter] = useState(searchParams.get("status") || "all");
   const [priorityFilter, setPriorityFilter] = useState(searchParams.get("priority") || "all");
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!session?.user?.role || !["admin", "super_admin"].includes(session.user.role)) {
@@ -91,8 +92,16 @@ export default function TicketsPage() {
       return;
     }
 
-    fetchTickets();
-  }, [session, page, statusFilter, priorityFilter]);
+    // Debounce search, immediate for other filters
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(() => {
+      fetchTickets();
+    }, 300);
+
+    return () => {
+      if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    };
+  }, [session, page, search, statusFilter, priorityFilter]);
 
   const fetchTickets = async () => {
     try {
@@ -120,8 +129,7 @@ export default function TicketsPage() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    setPage(1);
-    fetchTickets();
+    // No-op: search is debounced via useEffect. Kept to satisfy form onSubmit.
   };
 
   if (loading) {
@@ -213,20 +221,15 @@ export default function TicketsPage() {
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-4 rounded-xl border bg-card p-4 shadow-sm">
-        <form onSubmit={handleSearch} className="flex flex-1 items-center gap-2">
-          <div className="relative flex-1 min-w-[200px]">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              type="text"
-              placeholder="Search tickets..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-          <Button type="submit" variant="secondary">
-            Search
-          </Button>
+        <form onSubmit={handleSearch} className="relative flex-1 min-w-[200px]">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder="Search tickets..."
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            className="pl-10"
+          />
         </form>
         
         <div className="flex items-center gap-2">

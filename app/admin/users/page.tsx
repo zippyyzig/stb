@@ -4,11 +4,11 @@ import { authOptions } from "@/lib/auth";
 import Link from "next/link";
 import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
-import { Plus, Search, Edit, Trash2, Shield, User as UserIcon, Eye } from "lucide-react";
+import { Plus, Edit, Shield, User as UserIcon, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import DeleteUserButton from "@/components/admin/DeleteUserButton";
+import UsersFilters from "@/components/admin/UsersFilters";
 
 interface UsersPageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -94,25 +94,7 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
       </div>
 
       {/* Search */}
-      <form
-        className="flex items-center gap-4 rounded-xl border border-border bg-card p-4 shadow-sm"
-        action="/admin/users"
-        method="GET"
-      >
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            type="text"
-            name="search"
-            placeholder="Search users by name or email..."
-            defaultValue={params.search as string}
-            className="h-10 pl-10"
-          />
-        </div>
-        <Button type="submit" variant="secondary">
-          Search
-        </Button>
-      </form>
+      <UsersFilters />
 
       {/* Users Table */}
       <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">

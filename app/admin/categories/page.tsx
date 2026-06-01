@@ -5,12 +5,12 @@ import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
 import Category from "@/models/Category";
 import Product from "@/models/Product";
-import { Plus, Search, Edit, FolderTree, Package } from "lucide-react";
+import { Plus, Edit, FolderTree, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import DeleteCategoryButton from "@/components/admin/DeleteCategoryButton";
 import SeedCategoriesButton from "@/components/admin/SeedCategoriesButton";
+import CategoriesFilters from "@/components/admin/CategoriesFilters";
 
 // Force dynamic rendering for admin pages to always show fresh data
 export const dynamic = "force-dynamic";
@@ -119,35 +119,7 @@ export default async function CategoriesPage({ searchParams }: CategoriesPagePro
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-4 rounded-xl border border-border bg-card p-4 shadow-sm">
-        <form className="relative flex-1" action="/admin/categories" method="GET">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            type="text"
-            name="search"
-            placeholder="Search categories..."
-            defaultValue={params.search as string}
-            className="h-10 pl-10"
-          />
-        </form>
-
-        <Link
-          href="/admin/categories"
-          className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-            !params.parent ? "bg-primary text-white" : "bg-muted text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          All
-        </Link>
-        <Link
-          href="/admin/categories?parent=root"
-          className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-            params.parent === "root" ? "bg-primary text-white" : "bg-muted text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          Root Only
-        </Link>
-      </div>
+      <CategoriesFilters currentParent={params.parent as string | undefined} />
 
       {/* Categories Table */}
       <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
