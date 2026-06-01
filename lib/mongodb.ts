@@ -1,10 +1,8 @@
 import mongoose from "mongoose";
 
-const MONGODB_URI = process.env.MONGODB_URI!;
-
-if (!MONGODB_URI) {
-  throw new Error("Please define the MONGODB_URI environment variable");
-}
+// Read lazily — throwing at module level crashes the entire module graph
+// and makes every API route return 500 before executing a single line.
+const MONGODB_URI = process.env.MONGODB_URI;
 
 interface MongooseCache {
   conn: typeof mongoose | null;
@@ -23,6 +21,12 @@ if (!global.mongoose) {
 }
 
 async function dbConnect(): Promise<typeof mongoose> {
+  if (!MONGODB_URI) {
+    throw new Error(
+      "MONGODB_URI is not set. Add it to your environment variables (Settings → Vars)."
+    );
+  }
+
   if (cached.conn) {
     return cached.conn;
   }
@@ -32,7 +36,7 @@ async function dbConnect(): Promise<typeof mongoose> {
       bufferCommands: false,
     };
 
-    cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
+    cached.promise = mongoose.connect(MONGODB_URI as string, opts).then((mongoose) => {
       return mongoose;
     });
   }
