@@ -250,11 +250,9 @@ export default function ProductFilterSidebar({
     (filters.priceMin > 0 || filters.priceMax < maxPrice ? 1 : 0) +
     (filters.search ? 1 : 0);
 
-  // Notify parent of filter changes on mount
-  useEffect(() => {
-    onFilterChange?.(filters);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // Note: intentionally NOT calling onFilterChange on mount.
+  // The parent (CategoryPageClient) initialises its own filters from searchParams
+  // independently, so firing here would cause a state-desync race on first render.
 
   return (
     <div className="flex h-full flex-col bg-white">
@@ -460,11 +458,20 @@ export default function ProductFilterSidebar({
                 })}
               </div>
 
-              {/* Slider */}
+              {/* Slider — applies immediately on pointer-up via onValueCommit */}
               <div className="px-1">
                 <Slider
                   value={priceRange}
                   onValueChange={(val) => setPriceRange([val[0], val[1]])}
+                  onValueCommit={(val) => {
+                    setPriceRange([val[0], val[1]]);
+                    setFilters((prev) => {
+                      const newFilters = { ...prev, priceMin: val[0], priceMax: val[1] };
+                      updateURL(newFilters);
+                      onFilterChange?.(newFilters);
+                      return newFilters;
+                    });
+                  }}
                   min={0}
                   max={maxPrice}
                   step={100}

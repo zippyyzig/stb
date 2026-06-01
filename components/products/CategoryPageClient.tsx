@@ -367,98 +367,143 @@ function CategoryPageContent({
           {/* ── MAIN CATEGORY PAGE (sectioned) ───────────────────────────── */}
           {!isSubcategory && (
             <>
-              {/* All products section */}
-              <section>
-                <div className="mb-3 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-sm font-extrabold text-foreground md:text-base">
-                      All {categoryName}
-                    </h2>
-                    <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
-                      {allFilteredProducts.length}
-                    </span>
-                  </div>
-                </div>
-
-                {allFilteredProducts.length === 0 ? (
-                  <EmptySection
-                    message={
-                      products.length === 0
-                        ? "No products have been added to this category yet."
-                        : "No products match your current filters."
-                    }
-                  />
-                ) : (
-                  <ProductGrid products={allFilteredProducts} gridCols={gridCols} />
-                )}
-              </section>
-
-              {/* Per-subcategory sections */}
-              {subcategorySections.map(({ sub, products: subProds, total }) => (
-                <section key={sub._id} id={`subcategory-${sub._id}`}>
-                  {/* Section header */}
-                  <div className="mb-3 flex items-center justify-between border-b border-border pb-2">
-                    <div className="flex items-center gap-2">
-                      <h2 className="text-sm font-extrabold text-foreground md:text-base">
-                        {sub.name}
-                      </h2>
-                      <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
-                        {subProds.length}
-                        {subProds.length !== total && (
-                          <span className="font-normal text-muted-foreground">
-                            {" "}/ {total}
-                          </span>
-                        )}
-                      </span>
-                    </div>
-                    <Link
-                      href={`/category/${sub.slug}`}
-                      className="flex items-center gap-0.5 text-[11px] font-semibold text-primary hover:underline"
-                    >
-                      View all
-                      <ChevronRight className="h-3.5 w-3.5" />
-                    </Link>
-                  </div>
-
-                  {subProds.length === 0 ? (
+              {/*
+                Layout logic:
+                - If NO subcategories exist → show a single flat grid of allFilteredProducts
+                - If subcategories exist AND active non-subcategory filters are set
+                  → show "All Results" flat section (because user is searching/filtering across subs)
+                - If subcategories exist AND no cross-category filters active
+                  → show per-subcategory sections + orphan section (no duplicate "All" header)
+              */}
+              {subcategories.length === 0 ? (
+                /* No subcategories — flat list */
+                <>
+                  {allFilteredProducts.length === 0 ? (
                     <EmptySection
                       message={
-                        total === 0
-                          ? `No products added to ${sub.name} yet.`
-                          : `No ${sub.name} products match your filters.`
+                        products.length === 0
+                          ? "No products have been added to this category yet."
+                          : "No products match your current filters."
                       }
                     />
                   ) : (
-                    <ProductGrid products={subProds} gridCols={gridCols} />
+                    <ProductGrid products={allFilteredProducts} gridCols={gridCols} />
                   )}
-                </section>
-              ))}
+                </>
+              ) : (() => {
+                // Determine if cross-category filters are active (search, price, availability etc.)
+                // Subcategory filter alone doesn't collapse into flat view — it just hides sections
+                const hasCrossFilters =
+                  filters.search ||
+                  filters.inStock ||
+                  filters.onSale ||
+                  filters.featured ||
+                  filters.newArrivals ||
+                  filters.bestSeller ||
+                  filters.brands.length > 0 ||
+                  filters.tags.length > 0 ||
+                  filters.priceMin > 0 ||
+                  filters.priceMax < maxPrice;
 
-              {/* Orphan products (belong to main category but no subcategory) */}
-              {orphanProducts.length > 0 && (
-                <section>
-                  <div className="mb-3 flex items-center gap-2 border-b border-border pb-2">
-                    <h2 className="text-sm font-extrabold text-foreground md:text-base">
-                      Other {categoryName}
-                    </h2>
-                    <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
-                      {orphanProducts.length}
-                    </span>
-                  </div>
-                  <ProductGrid products={orphanProducts} gridCols={gridCols} />
-                </section>
-              )}
+                if (hasCrossFilters) {
+                  // Flat "filtered results" view
+                  return (
+                    <section>
+                      <div className="mb-3 flex items-center gap-2">
+                        <h2 className="text-sm font-extrabold text-foreground md:text-base">
+                          Filtered Results
+                        </h2>
+                        <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
+                          {allFilteredProducts.length}
+                        </span>
+                      </div>
+                      {allFilteredProducts.length === 0 ? (
+                        <EmptySection message="No products match your current filters." />
+                      ) : (
+                        <ProductGrid products={allFilteredProducts} gridCols={gridCols} />
+                      )}
+                    </section>
+                  );
+                }
 
-              {/* Completely empty state */}
-              {subcategorySections.length === 0 && allFilteredProducts.length === 0 && (
-                <EmptySection
-                  message={
-                    products.length === 0
-                      ? "No products have been added to this category yet."
-                      : "No products match your current filters."
-                  }
-                />
-              )}
+                // Sectioned view (default)
+                const visibleSections = subcategorySections.filter(
+                  ({ products: subProds, total }) => total > 0 || subProds.length > 0
+                );
+                const totalVisible = visibleSections.reduce(
+                  (sum, s) => sum + s.products.length,
+                  0
+                );
+
+                return (
+                  <>
+                    {/* Per-subcategory sections */}
+                    {visibleSections.map(({ sub, products: subProds, total }) => (
+                      <section key={sub._id} id={`subcategory-${sub._id}`}>
+                        <div className="mb-3 flex items-center justify-between border-b border-border pb-2">
+                          <div className="flex items-center gap-2">
+                            <h2 className="text-sm font-extrabold text-foreground md:text-base">
+                              {sub.name}
+                            </h2>
+                            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
+                              {subProds.length}
+                              {subProds.length !== total && (
+                                <span className="font-normal text-muted-foreground">
+                                  {" "}/ {total}
+                                </span>
+                              )}
+                            </span>
+                          </div>
+                          <Link
+                            href={`/category/${sub.slug}`}
+                            className="flex items-center gap-0.5 text-[11px] font-semibold text-primary hover:underline"
+                          >
+                            View all
+                            <ChevronRight className="h-3.5 w-3.5" />
+                          </Link>
+                        </div>
+                        {subProds.length === 0 ? (
+                          <EmptySection
+                            message={
+                              total === 0
+                                ? `No products added to ${sub.name} yet.`
+                                : `No ${sub.name} products match your filters.`
+                            }
+                          />
+                        ) : (
+                          <ProductGrid products={subProds} gridCols={gridCols} />
+                        )}
+                      </section>
+                    ))}
+
+                    {/* Orphan products */}
+                    {orphanProducts.length > 0 && (
+                      <section>
+                        <div className="mb-3 flex items-center gap-2 border-b border-border pb-2">
+                          <h2 className="text-sm font-extrabold text-foreground md:text-base">
+                            Other {categoryName}
+                          </h2>
+                          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
+                            {orphanProducts.length}
+                          </span>
+                        </div>
+                        <ProductGrid products={orphanProducts} gridCols={gridCols} />
+                      </section>
+                    )}
+
+                    {/* Completely empty */}
+                    {totalVisible === 0 && orphanProducts.length === 0 && (
+                      <EmptySection
+                        message={
+                          products.length === 0
+                            ? "No products have been added to this category yet."
+                            : "No products match your current filters."
+                        }
+                      />
+                    )}
+                  </>
+                );
+              })()}
             </>
           )}
         </div>
