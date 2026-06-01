@@ -2,11 +2,12 @@ import Link from "next/link";
 import Image from "next/image";
 import dbConnect from "@/lib/mongodb";
 import Product from "@/models/Product";
-import { Search, Package, AlertTriangle, TrendingUp, IndianRupee, History } from "lucide-react";
+import { Package, AlertTriangle, TrendingUp, IndianRupee, History } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import StockAdjustButton from "@/components/admin/StockAdjustButton";
 import { formatPrice } from "@/lib/pricing";
+import InventoryFilters from "@/components/admin/InventoryFilters";
 
 // Force dynamic rendering to always show fresh data after stock updates
 export const dynamic = "force-dynamic";
@@ -198,55 +199,10 @@ export default async function InventoryPage({ searchParams }: InventoryPageProps
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-4 rounded-xl border border-border bg-card p-4 shadow-sm">
-        <form className="relative flex-1" action="/admin/inventory" method="GET">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            type="text"
-            name="search"
-            placeholder="Search by name or SKU..."
-            defaultValue={params.search as string}
-            className="h-10 pl-10"
-          />
-          {params.filter && <input type="hidden" name="filter" value={params.filter as string} />}
-          {params.sort && <input type="hidden" name="sort" value={params.sort as string} />}
-        </form>
-
-        <div className="flex gap-2">
-          <Link
-            href="/admin/inventory"
-            className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-              !params.filter ? "bg-primary text-white" : "bg-muted text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            All
-          </Link>
-          <Link
-            href="/admin/inventory?filter=out-of-stock"
-            className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-              params.filter === "out-of-stock" ? "bg-destructive text-white" : "bg-muted text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            Out of Stock
-          </Link>
-          <Link
-            href="/admin/inventory?filter=low-stock"
-            className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-              params.filter === "low-stock" ? "bg-stb-warning text-white" : "bg-muted text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            Low Stock
-          </Link>
-          <Link
-            href="/admin/inventory?filter=in-stock"
-            className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-              params.filter === "in-stock" ? "bg-stb-success text-white" : "bg-muted text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            In Stock
-          </Link>
-        </div>
-      </div>
+      <InventoryFilters
+        currentFilter={params.filter as string | undefined}
+        currentSort={params.sort as string | undefined}
+      />
 
       {/* Inventory Table */}
       <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">

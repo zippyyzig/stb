@@ -5,11 +5,11 @@ import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
 import Brand from "@/models/Brand";
 import Product from "@/models/Product";
-import { Plus, Search, Edit, Tag, Package, Globe } from "lucide-react";
+import { Plus, Edit, Tag, Package, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import DeleteBrandButton from "@/components/admin/DeleteBrandButton";
+import BrandsFilters from "@/components/admin/BrandsFilters";
 
 // Force dynamic rendering for admin pages to always show fresh data
 export const dynamic = "force-dynamic";
@@ -95,18 +95,7 @@ export default async function BrandsPage({ searchParams }: BrandsPageProps) {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-4 rounded-xl border border-border bg-card p-4 shadow-sm">
-        <form className="relative flex-1" action="/admin/brands" method="GET">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            type="text"
-            name="search"
-            placeholder="Search brands..."
-            defaultValue={params.search as string}
-            className="h-10 pl-10"
-          />
-        </form>
-      </div>
+      <BrandsFilters />
 
       {/* Brands Grid */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">

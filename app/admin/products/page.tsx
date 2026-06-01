@@ -3,12 +3,12 @@ import Image from "next/image";
 import dbConnect from "@/lib/mongodb";
 import Product from "@/models/Product";
 import Category from "@/models/Category";
-import { Plus, Search, Edit, Eye } from "lucide-react";
+import { Plus, Edit, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import DeleteProductButton from "@/components/admin/DeleteProductButton";
 import ProductImportExport from "@/components/admin/ProductImportExport";
+import ProductsFilters from "@/components/admin/ProductsFilters";
 import { formatPrice } from "@/lib/pricing";
 
 // Force dynamic rendering for admin pages to always show fresh data
@@ -115,40 +115,11 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-4 rounded-xl border border-border bg-card p-4 shadow-sm">
-        <form className="relative flex-1" action="/admin/products" method="GET">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            type="text"
-            name="search"
-            placeholder="Search products by name or SKU..."
-            defaultValue={params.search as string}
-            className="h-10 pl-10"
-          />
-        </form>
-
-        <select
-          className="h-10 rounded-md border border-border bg-background px-3 text-sm"
-          defaultValue={params.category as string}
-        >
-          <option value="">All Categories</option>
-          {categories.map((cat: { _id: string; name: string; slug: string }) => (
-            <option key={cat._id} value={cat.slug}>
-              {cat.name}
-            </option>
-          ))}
-        </select>
-
-        <select
-          className="h-10 rounded-md border border-border bg-background px-3 text-sm"
-          defaultValue={params.filter as string}
-        >
-          <option value="">All Products</option>
-          <option value="low-stock">Low Stock</option>
-          <option value="out-of-stock">Out of Stock</option>
-          <option value="featured">Featured</option>
-        </select>
-      </div>
+      <ProductsFilters
+        categories={categories}
+        currentCategory={params.category as string | undefined}
+        currentFilter={params.filter as string | undefined}
+      />
 
       {/* Products Table */}
       <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">

@@ -1,8 +1,8 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { useAdminSearch } from "@/hooks/useAdminSearch";
 
 const statusOptions = [
   { value: "", label: "All Status" },
@@ -29,42 +29,24 @@ interface OrderFiltersProps {
   paymentStatus?: string;
 }
 
-export default function OrderFilters({ search, status, paymentStatus }: OrderFiltersProps) {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-
-  function updateParam(key: string, value: string) {
-    const params = new URLSearchParams(searchParams.toString());
-    if (value) {
-      params.set(key, value);
-    } else {
-      params.delete(key);
-    }
-    // Reset to page 1 on filter change
-    params.delete("page");
-    router.push(`/admin/orders?${params.toString()}`);
-  }
-
-  function handleSearch(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const form = e.currentTarget;
-    const value = (form.elements.namedItem("search") as HTMLInputElement).value;
-    updateParam("search", value);
-  }
+export default function OrderFilters({ status, paymentStatus }: OrderFiltersProps) {
+  const { searchValue, setSearchValue, updateParam } = useAdminSearch("/admin/orders");
 
   return (
     <div className="flex flex-wrap items-center gap-4 rounded-xl border border-border bg-card p-4 shadow-sm">
-      <form className="relative flex-1 min-w-48" onSubmit={handleSearch}>
+      {/* Live search */}
+      <div className="relative flex-1 min-w-48">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           type="text"
-          name="search"
           placeholder="Search by order number, name, or phone..."
-          defaultValue={search ?? ""}
+          value={searchValue}
+          onChange={(e) => setSearchValue(e.target.value)}
           className="h-10 pl-10"
         />
-      </form>
+      </div>
 
+      {/* Status — immediate */}
       <select
         value={status ?? ""}
         onChange={(e) => updateParam("status", e.target.value)}
@@ -77,6 +59,7 @@ export default function OrderFilters({ search, status, paymentStatus }: OrderFil
         ))}
       </select>
 
+      {/* Payment status — immediate */}
       <select
         value={paymentStatus ?? ""}
         onChange={(e) => updateParam("paymentStatus", e.target.value)}
