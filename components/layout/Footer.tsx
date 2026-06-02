@@ -42,10 +42,10 @@ const infoLinks = [
 
 const categoryLinks = [
   { name: "Desktop", href: "/category/desktop" },
-  { name: "Laptop", href: "/category/laptop" },
+  { name: "Laptops", href: "/category/laptops" },
   { name: "Networking", href: "/category/networking" },
   { name: "Security", href: "/category/security" },
-  { name: "Printers", href: "/category/printers" },
+  { name: "Printers & Scanners", href: "/category/printers-scanners" },
   { name: "Software", href: "/category/software" },
 ];
 
