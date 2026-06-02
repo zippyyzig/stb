@@ -202,7 +202,7 @@ export default function MostPopularSection({ products, title = "Most Popular" }:
             <h2 className="text-sm font-bold text-foreground md:text-base">{title}</h2>
           </div>
           <Link
-            href="/products?sort=popular"
+            href="/products?sortBy=bestselling"
             className="flex shrink-0 items-center gap-0.5 text-[11px] font-semibold text-primary hover:text-stb-red-dark md:text-xs"
           >
             View All <ChevronRight className="h-3 w-3" />
