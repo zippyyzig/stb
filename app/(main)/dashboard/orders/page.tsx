@@ -174,7 +174,7 @@ export default function OrdersPage() {
               <div className="flex items-center justify-between px-5 py-2.5 bg-muted/40 rounded-b-xl">
                 <div className="flex items-center gap-4 text-xs text-muted-foreground">
                   <span>{new Date(order.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</span>
-                  <span className="capitalize">{order.paymentMethod.replace("_", " ")}</span>
+                  <span className="capitalize">{order.paymentMethod ? order.paymentMethod.replace("_", " ") : "Unknown"}</span>
                   <span className={`font-medium capitalize ${paymentStatusColors[order.paymentStatus] || ""}`}>
                     {order.paymentStatus}
                   </span>

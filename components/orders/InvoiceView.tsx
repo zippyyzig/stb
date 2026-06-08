@@ -285,7 +285,7 @@ export default function InvoiceView({ invoice, onClose, orderId }: InvoiceViewPr
               </div>
               <div>
                 <span className="text-gray-500">Payment:</span>{" "}
-                <span className="font-medium capitalize">{invoice.paymentMethod.replace("_", " ")}</span>
+                <span className="font-medium capitalize">{invoice.paymentMethod ? invoice.paymentMethod.replace("_", " ") : "Unknown"}</span>
               </div>
               <div>
                 <span className="text-gray-500">Status:</span>{" "}

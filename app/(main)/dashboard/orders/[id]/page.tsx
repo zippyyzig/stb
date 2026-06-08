@@ -339,7 +339,7 @@ export default function OrderDetailPage() {
           <div className="space-y-1.5 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Method</span>
-              <span className="font-medium text-foreground capitalize">{order.paymentMethod.replace("_", " ")}</span>
+              <span className="font-medium text-foreground capitalize">{order.paymentMethod ? order.paymentMethod.replace("_", " ") : "Unknown"}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Status</span>
