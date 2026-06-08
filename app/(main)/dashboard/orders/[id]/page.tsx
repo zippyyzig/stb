@@ -325,10 +325,16 @@ export default function OrderDetailPage() {
             <h3 className="font-heading font-semibold text-foreground text-sm">Shipping Address</h3>
           </div>
           <div className="text-sm text-muted-foreground space-y-0.5 leading-relaxed">
-            <p className="font-medium text-foreground">{order.shippingAddress.name}</p>
-            <p>{order.shippingAddress.phone}</p>
-            <p>{order.shippingAddress.address}</p>
-            <p>{order.shippingAddress.city}, {order.shippingAddress.state} - {order.shippingAddress.pincode}</p>
+            {order.shippingAddress ? (
+              <>
+                <p className="font-medium text-foreground">{order.shippingAddress.name}</p>
+                <p>{order.shippingAddress.phone}</p>
+                <p>{order.shippingAddress.address}</p>
+                <p>{order.shippingAddress.city}, {order.shippingAddress.state} - {order.shippingAddress.pincode}</p>
+              </>
+            ) : (
+              <p className="text-muted-foreground">Address not available</p>
+            )}
           </div>
         </div>
         <div className="bg-card rounded-xl border border-border p-4">

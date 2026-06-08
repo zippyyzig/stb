@@ -374,14 +374,18 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
             <h2 className="heading-md mb-4">Shipping Address</h2>
             <div className="flex items-start gap-3">
               <MapPin className="h-4 w-4 text-muted-foreground mt-1" />
-              <div className="text-sm">
-                <p className="font-medium">{order.shippingAddress.name}</p>
-                <p className="text-muted-foreground">{order.shippingAddress.address}</p>
-                <p className="text-muted-foreground">
-                  {order.shippingAddress.city}, {order.shippingAddress.state} - {order.shippingAddress.pincode}
-                </p>
-                <p className="text-muted-foreground mt-1">{order.shippingAddress.phone}</p>
-              </div>
+              {order.shippingAddress ? (
+                <div className="text-sm">
+                  <p className="font-medium">{order.shippingAddress.name}</p>
+                  <p className="text-muted-foreground">{order.shippingAddress.address}</p>
+                  <p className="text-muted-foreground">
+                    {order.shippingAddress.city}, {order.shippingAddress.state} - {order.shippingAddress.pincode}
+                  </p>
+                  <p className="text-muted-foreground mt-1">{order.shippingAddress.phone}</p>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">Address not available</p>
+              )}
             </div>
           </div>
 
@@ -391,7 +395,7 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Method</span>
-                <span className="font-medium uppercase">{order.paymentMethod}</span>
+                <span className="font-medium uppercase">{order.paymentMethod ? order.paymentMethod.replace("_", " ") : "Unknown"}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Status</span>

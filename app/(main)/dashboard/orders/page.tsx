@@ -180,7 +180,9 @@ export default function OrdersPage() {
                   </span>
                 </div>
                 <span className="text-xs text-muted-foreground">
-                  {order.shippingAddress.city}, {order.shippingAddress.state}
+                  {order.shippingAddress
+                    ? `${order.shippingAddress.city}, ${order.shippingAddress.state}`
+                    : "Address not available"}
                 </span>
               </div>
             </Link>
