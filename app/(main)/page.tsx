@@ -33,10 +33,10 @@ import {
 // demand makes the build independent of the database; freshness and speed still
 // come from the per-query `unstable_cache` wrappers in lib/data.ts.
 //
-// `revalidate` turns the on-demand render into an ISR render: the first visitor
-// after a deploy pays the database cost once, then everyone is served cached
-// HTML until the window expires (stale-while-revalidate).
-export const revalidate = 300;
+// `revalidate` alone does NOT skip the build: the route is still prerendered at
+// build time and hits the 60s limit ("Failed to build /(main)/page: / after 3
+// attempts"). `force-dynamic` is what actually keeps the build off the database.
+export const dynamic = "force-dynamic";
 
 // Resolve a data fetch, falling back to an empty list if it fails, so a
 // transient MongoDB error never aborts the build or blanks the page.
