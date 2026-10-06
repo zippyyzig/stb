@@ -218,7 +218,9 @@ export default async function OrderSuccessPage({
                 <div>
                   <h3 className="font-medium text-foreground">Shipping To</h3>
                   <p className="text-sm text-muted-foreground">
-                    {order.shippingAddress.name}, {order.shippingAddress.city}
+                    {order.shippingAddress
+                      ? `${order.shippingAddress.name}, ${order.shippingAddress.city}`
+                      : "Address not available"}
                   </p>
                 </div>
               </div>

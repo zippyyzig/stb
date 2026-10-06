@@ -282,6 +282,6 @@ https://smarttechbazaar.com/api/health
 | Info | Value |
 |------|-------|
 | Email | smarttechbazaar@gmail.com |
-| Phone | +91-9353919299 |
+| Phone | +91-6363677588 |
 | Address | 2nd Floor, No. 94/1, Behind Sharda Theater, SP Road, Bangalore 560002 |
 | Website | https://smarttechbazaar.com |

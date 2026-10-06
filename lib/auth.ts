@@ -4,6 +4,15 @@ import bcrypt from "bcryptjs";
 import dbConnect from "./mongodb";
 import User, { type UserRole } from "@/models/User";
 
+// Normalize NEXTAUTH_URL before NextAuth reads it. A trailing slash (e.g.
+// "https://smarttechbazaar.com/") produces malformed callback URLs with a double
+// slash ("...com//api/auth/callback/..."), which breaks the sign-in callback and
+// surfaces as an "unexpected error" after the provider returns. Strip it here so
+// the value is always well-formed regardless of how it was entered.
+if (process.env.NEXTAUTH_URL) {
+  process.env.NEXTAUTH_URL = process.env.NEXTAUTH_URL.replace(/\/+$/, "");
+}
+
 declare module "next-auth" {
   interface User {
     id: string;

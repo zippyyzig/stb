@@ -101,7 +101,7 @@ export default function Header() {
             <div className="flex items-center gap-4 text-[11px] text-foreground/70">
               <span className="flex items-center gap-1">
                 <Phone className="h-3 w-3" />
-                +91 93539 19299
+                +91 63636 77588
               </span>
               <span className="flex items-center gap-1">
                 <MapPin className="h-3 w-3" />

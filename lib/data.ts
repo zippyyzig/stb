@@ -6,6 +6,53 @@ import Brand from "@/models/Brand";
 import Banner from "@/models/Banner";
 import Settings from "@/models/Settings";
 import { CACHE_TAGS, CACHE_DURATIONS } from "@/lib/cache";
+import {
+  SECTION_PRODUCT_LIMIT,
+  SECTION_CANDIDATE_LIMIT,
+  HOMEPAGE_SECTIONS,
+  HOMEPAGE_CATEGORY_SLUGS,
+  isExcludedSection,
+  isPlaceholderSection,
+  slugifySectionTitle,
+} from "@/lib/section-matching";
+
+// Point at /api/media instead of embedding the image itself.
+//
+// Most images in this catalogue live inside the document as an inline base64
+// data URI (~873KB per product image, and every one of the 43 brand logos).
+// Selecting those fields in a list query is what broke the site:
+//   - `unstable_cache` rejects entries over 2MB, and it throws AFTER returning
+//     the value, so `getBrands()` (43 logos = 4,051,200 bytes) produced an
+//     unhandled rejection that aborted the render — the homepage never finished
+//     loading.
+//   - the transfer alone took 13s-90s per query (the same query projecting only
+//     `name` returns in ~210ms), which also blew the 60s static-generation
+//     budget and failed `next build`.
+//
+// Referencing the blob by URL keeps these payloads small and cacheable, and the
+// browser fetches each image lazily, in parallel, then caches it immutably.
+// /api/media transparently redirects images that are already hosted on
+// ImageKit/Blob, so nothing regresses for those.
+export function productImageUrl(id: string, index = 0): string {
+  return `/api/media/product/${id}?i=${index}`;
+}
+
+export function brandLogoUrl(id: string): string {
+  return `/api/media/brand/${id}`;
+}
+
+export function categoryImageUrl(id: string): string {
+  return `/api/media/category/${id}`;
+}
+
+// Aliases used by admin routes for clarity.
+export const productMediaUrl = productImageUrl;
+export const brandMediaUrl = brandLogoUrl;
+export const categoryMediaUrl = categoryImageUrl;
+
+function bannerImageUrl(id: string, field: "image" | "imageMobile"): string {
+  return `/api/media/banner/${id}?f=${field}`;
+}
 
 // ============================================
 // PRODUCT DATA FUNCTIONS
@@ -31,17 +78,111 @@ interface ProductData {
   views?: number;
 }
 
+const SECTION_PRODUCT_SORT = { isFeatured: -1, soldCount: -1, createdAt: -1 } as const;
+
+function findSectionCandidates(filter: Record<string, unknown>) {
+  return Product.find(filter)
+    .select(PRODUCT_LIST_PROJECTION)
+    .populate("brand", "name")
+    .sort(SECTION_PRODUCT_SORT)
+    .limit(SECTION_CANDIDATE_LIMIT)
+    .lean() as unknown as Promise<Record<string, unknown>[]>;
+}
+
+// Runs async tasks with a hard concurrency cap, preserving input order.
+//
+// The Mongo pool is deliberately small (`maxPoolSize: 5`), and the homepage
+// already fans out ~10 top-level fetches in parallel. Firing one more query per
+// rail on top of that saturated the pool and every rail failed with
+// "MongoWaitQueueTimeoutError", which the page surfaced as "No Products
+// Available". Running the rails one at a time keeps them inside the pool budget:
+// the top-level homepage loader is itself already running a few fetches at once,
+// so any nesting here multiplies out past `maxPoolSize` and starves the pool.
+// Each rail query measures ~250ms, so serialising them costs ~2s total.
+const SECTION_QUERY_CONCURRENCY = 1;
+
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  limit: number,
+  task: (item: T, index: number) => Promise<R>
+): Promise<R[]> {
+  const results = new Array<R>(items.length);
+  let next = 0;
+
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (true) {
+      const index = next++;
+      if (index >= items.length) return;
+      results[index] = await task(items[index], index);
+    }
+  });
+
+  await Promise.all(workers);
+  return results;
+}
+
+// The catalogue holds genuine duplicates (ten identical "iBall Computer Case"
+// rows), so a rail is de-duplicated by id *and* by name to avoid showing the
+// same product ten times.
+function normalizeProductName(name: unknown): string {
+  return String(name ?? "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+/**
+ * Loads the products for one homepage rail.
+ *
+ * The filter is a plain category match: every product filed under any of the
+ * given category ids. Callers pass the rail's whole category subtree, since
+ * products live on leaf categories rather than on the parent.
+ */
+async function fetchSectionProducts(
+  categoryIds: unknown[]
+): Promise<Record<string, unknown>[]> {
+  if (categoryIds.length === 0) return [];
+
+  const candidates = await findSectionCandidates({
+    isActive: { $ne: false },
+    category: { $in: categoryIds },
+  });
+
+  const seenIds = new Set<string>();
+  const seenNames = new Set<string>();
+  const products: Record<string, unknown>[] = [];
+
+  for (const candidate of candidates) {
+    if (products.length >= SECTION_PRODUCT_LIMIT) break;
+
+    const id = String((candidate._id as { toString(): string })?.toString() ?? "");
+    const name = normalizeProductName(candidate.name);
+    if (!id || seenIds.has(id) || (name && seenNames.has(name))) continue;
+
+    seenIds.add(id);
+    if (name) seenNames.add(name);
+    products.push(candidate);
+  }
+
+  return products;
+}
+
 // Lean projection for product lists (only fields we need)
 const PRODUCT_LIST_PROJECTION = {
   _id: 1,
   name: 1,
   slug: 1,
-  images: { $slice: 2 }, // Only first 2 images
+  // `images` is deliberately NOT projected. The images are inline base64 data
+  // URIs averaging ~873KB each, so even `$slice: 1` made a 10-product rail
+  // transfer ~4MB and take tens of seconds, and pushed the cached result past
+  // the 2MB `unstable_cache` limit. The card now loads each image from
+  // /api/media/product/<id>, so this query stays at ~210ms.
   priceB2C: 1,
   priceB2B: 1,
   mrp: 1,
   stock: 1,
   brand: 1,
+  category: 1, // required by the homepage-section grouping below
   sku: 1,
   shortDescription: 1,
   soldCount: 1,
@@ -56,13 +197,20 @@ function mapProductToData(p: Record<string, unknown>): ProductData {
     ? brandObj.name 
     : (typeof brandObj === "string" ? brandObj : "Generic");
   const brandLogo = typeof brandObj === "object" && brandObj?.logo ? brandObj.logo : undefined;
-  
+
+  const id = (p._id as { toString(): string }).toString();
+  // `images` is only present when a caller explicitly projects it (e.g. the
+  // product detail page). List queries omit it, so fall back to the media route.
+  const images = Array.isArray(p.images) ? (p.images as string[]) : undefined;
+
   return {
-    id: (p._id as { toString(): string }).toString(),
+    id,
     name: p.name as string,
     slug: p.slug as string,
-    image: (p.images as string[])?.[0] || "https://picsum.photos/280/280",
-    secondImage: (p.images as string[])?.[1],
+    image: images?.[0] || productImageUrl(id, 0),
+    // Only offer a hover image when we actually know a second one exists.
+    // Guessing would make single-image products flash a placeholder on hover.
+    secondImage: images?.[1],
     priceB2C: (p.priceB2C as number) || (p.mrp as number),
     priceB2B: (p.priceB2B as number) || (p.priceB2C as number) || (p.mrp as number),
     mrp: p.mrp as number,
@@ -88,7 +236,7 @@ export const getBestSellers = unstable_cache(
       isBestSeller: true,
     })
       .select(PRODUCT_LIST_PROJECTION)
-      .populate("brand", "name logo")
+      .populate("brand", "name")
       .sort({ soldCount: -1 })
       .limit(10)
       .lean();
@@ -100,7 +248,7 @@ export const getBestSellers = unstable_cache(
         _id: { $nin: products.map((p) => p._id) },
       })
         .select(PRODUCT_LIST_PROJECTION)
-        .populate("brand", "name logo")
+        .populate("brand", "name")
         .sort({ soldCount: -1 })
         .limit(10 - products.length)
         .lean();
@@ -121,7 +269,7 @@ export const getMostPopular = unstable_cache(
 
     const products = await Product.find({ isActive: true })
       .select(PRODUCT_LIST_PROJECTION)
-      .populate("brand", "name logo")
+      .populate("brand", "name")
       .sort({ views: -1, isFeatured: -1 })
       .limit(10)
       .lean();
@@ -208,13 +356,127 @@ export const getCategories = unstable_cache(
     return categories.map((cat) => ({
       id: cat._id.toString(),
       name: cat.name,
-      image: cat.image || "https://images.unsplash.com/photo-1587202372775-e229f172b9d7?w=200&h=200&fit=crop",
+      // 29 categories store `image` as a base64 data URI; fetch it by URL so
+      // this cached payload stays small. /api/media redirects the rest.
+      image: categoryImageUrl(cat._id.toString()),
       slug: cat.slug,
       productCount: cat.productCount,
     }));
   },
   ["categories"],
   { revalidate: CACHE_DURATIONS.long, tags: [CACHE_TAGS.categories] }
+);
+
+// The homepage "Shop by Category" rail: exactly the main categories listed in
+// HOMEPAGE_CATEGORY_SLUGS, in that order.
+//
+// getCategories() above cannot be used for this, because it takes the first 14
+// *root* categories by sort order — and the catalogue has far more than 14 root
+// categories (narrow ones such as "EZVIZ", "Security Camera", "Mouses" and
+// "Audio Products" were created at the root too), so the rail was filled with
+// those instead of the real top-level categories.
+//
+// The product count is a full subtree count, since products are filed on leaf
+// categories and a top-level category holds none of its own.
+export const getHomepageCategories = unstable_cache(
+  async (): Promise<CategoryData[]> => {
+    await dbConnect();
+
+    // `image` is NOT selected: this reads EVERY active category, and 29 of them
+    // store the image as an inline base64 data URI. The tiles load it from
+    // /api/media/category/<id> instead.
+    const all = (await Category.find({ isActive: { $ne: false } })
+      .select("_id name slug parent")
+      .lean()) as unknown as {
+      _id: { toString(): string };
+      name: string;
+      slug: string;
+      parent?: { toString(): string } | null;
+    }[];
+
+    if (all.length === 0) return [];
+
+    // Index children by parent so subtree ids resolve without extra queries.
+    const childrenByParent = new Map<string, string[]>();
+    for (const cat of all) {
+      if (!cat.parent) continue;
+      const key = cat.parent.toString();
+      const siblings = childrenByParent.get(key) ?? [];
+      siblings.push(cat._id.toString());
+      childrenByParent.set(key, siblings);
+    }
+
+    const subtreeIds = (rootId: string): string[] => {
+      const ids: string[] = [];
+      const queue = [rootId];
+      while (queue.length > 0) {
+        const current = queue.shift() as string;
+        ids.push(current);
+        for (const child of childrenByParent.get(current) ?? []) {
+          queue.push(child);
+        }
+      }
+      return ids;
+    };
+
+    const bySlug = new Map(all.map((c) => [c.slug, c]));
+
+    // Resolve the wanted categories first, then count products for all of them
+    // in a single grouped query rather than one query per tile.
+    const wanted = HOMEPAGE_CATEGORY_SLUGS.map((slug) => bySlug.get(slug)).filter(
+      (c): c is (typeof all)[number] => c !== undefined
+    );
+
+    if (wanted.length === 0) return [];
+
+    // Reuse the ids exactly as they came back from Mongo, so no ObjectId has to
+    // be reconstructed from a string for the count query.
+    const rawIdByString = new Map(all.map((c) => [c._id.toString(), c._id]));
+
+    const idToRoot = new Map<string, string>();
+    for (const cat of wanted) {
+      const rootId = cat._id.toString();
+      for (const id of subtreeIds(rootId)) {
+        // First owner wins, so a shared descendant cannot be counted twice.
+        if (!idToRoot.has(id)) idToRoot.set(id, rootId);
+      }
+    }
+
+    const counts = await Product.aggregate<{ _id: unknown; n: number }>([
+      {
+        $match: {
+          isActive: { $ne: false },
+          category: {
+            $in: Array.from(idToRoot.keys()).map((id) => rawIdByString.get(id)),
+          },
+        },
+      },
+      { $group: { _id: "$category", n: { $sum: 1 } } },
+    ]);
+
+    const countByRoot = new Map<string, number>();
+    for (const row of counts) {
+      const rootId = idToRoot.get(String(row._id));
+      if (!rootId) continue;
+      countByRoot.set(rootId, (countByRoot.get(rootId) ?? 0) + row.n);
+    }
+
+    return wanted.map((cat) => {
+      const id = cat._id.toString();
+      return {
+        id,
+        name: cat.name,
+        image: categoryImageUrl(id),
+        slug: cat.slug,
+        productCount: countByRoot.get(id) ?? 0,
+      };
+    });
+  },
+  ["homepage-categories"],
+  {
+    revalidate: CACHE_DURATIONS.long,
+    tags: [CACHE_TAGS.categories, CACHE_TAGS.products],
+  }
 );
 
 // ============================================
@@ -234,8 +496,12 @@ export const getBrands = unstable_cache(
   async (): Promise<BrandData[]> => {
     await dbConnect();
 
+    // `logo` is NOT selected: every one of the 43 logos is an inline base64
+    // data URI, and returning them made this function's cached payload
+    // 4,051,200 bytes — over the 2MB `unstable_cache` limit, which threw an
+    // unhandled rejection that aborted the homepage render entirely.
     const brands = await Brand.find({ isActive: true })
-      .select("_id name logo slug")
+      .select("_id name slug")
       .sort({ sortOrder: 1, name: 1 })
       .limit(20)
       .lean();
@@ -243,7 +509,7 @@ export const getBrands = unstable_cache(
     return brands.map((brand) => ({
       id: brand._id.toString(),
       name: brand.name,
-      logo: brand.logo || `https://picsum.photos/seed/${brand.slug}/120/60`,
+      logo: brandLogoUrl(brand._id.toString()),
       slug: brand.slug,
     }));
   },
@@ -256,8 +522,9 @@ export const getHotBrands = unstable_cache(
   async (): Promise<BrandData[]> => {
     await dbConnect();
 
+    // See getBrands above: `logo` is a base64 blob, so it is fetched by URL.
     const brands = await Brand.find({ isActive: true })
-      .select("_id name logo slug productCount")
+      .select("_id name slug productCount")
       .sort({ productCount: -1, sortOrder: 1 })
       .limit(12)
       .lean();
@@ -265,7 +532,7 @@ export const getHotBrands = unstable_cache(
     return brands.map((brand) => ({
       id: brand._id.toString(),
       name: brand.name,
-      logo: brand.logo || `https://picsum.photos/seed/${brand.slug}/120/60`,
+      logo: brandLogoUrl(brand._id.toString()),
       slug: brand.slug,
       productCount: brand.productCount || 0,
     }));
@@ -305,15 +572,19 @@ export const getHeroSliderBanners = unstable_cache(
   async (): Promise<BannerData[]> => {
     await dbConnect();
 
+    // Banner artwork is also stored inline (a full-width hero is the largest
+    // blob in the database), so it is fetched by URL rather than selected here.
+    // `banners.find({})` without a projection did not return at all; the same
+    // query with one returns in ~208ms.
     const banners = await Banner.find(getBannersQuery("hero_slider"))
-      .select("_id image imageMobile title link")
+      .select("_id title link")
       .sort({ sortOrder: 1 })
       .lean();
 
     return banners.map((b) => ({
       id: b._id.toString(),
-      image: b.image,
-      imageMobile: b.imageMobile,
+      image: bannerImageUrl(b._id.toString(), "image"),
+      imageMobile: bannerImageUrl(b._id.toString(), "imageMobile"),
       alt: b.title || "Banner",
       href: b.link || "/",
     }));
@@ -327,15 +598,16 @@ export const getAdBanners = unstable_cache(
   async (): Promise<BannerData[]> => {
     await dbConnect();
 
+    // See getHeroSliderBanners: artwork is fetched by URL, not selected here.
     const banners = await Banner.find(getBannersQuery("ad_banner"))
-      .select("_id image imageMobile title link")
+      .select("_id title link")
       .sort({ sortOrder: 1 })
       .lean();
 
     return banners.map((b) => ({
       id: b._id.toString(),
-      image: b.image,
-      imageMobile: b.imageMobile,
+      image: bannerImageUrl(b._id.toString(), "image"),
+      imageMobile: bannerImageUrl(b._id.toString(), "imageMobile"),
       alt: b.title || "Ad Banner",
       href: b.link || "/",
     }));
@@ -349,16 +621,17 @@ export const getPromoBanners = unstable_cache(
   async (): Promise<BannerData[]> => {
     await dbConnect();
 
+    // See getHeroSliderBanners: artwork is fetched by URL, not selected here.
     const banners = await Banner.find(getBannersQuery("promo"))
-      .select("_id image imageMobile title link")
+      .select("_id title link")
       .sort({ sortOrder: 1 })
       .limit(1)
       .lean();
 
     return banners.map((b) => ({
       id: b._id.toString(),
-      image: b.image,
-      imageMobile: b.imageMobile,
+      image: bannerImageUrl(b._id.toString(), "image"),
+      imageMobile: bannerImageUrl(b._id.toString(), "imageMobile"),
       alt: b.title || "Promo Banner",
       href: b.link || "/",
     }));
@@ -405,45 +678,42 @@ export const getHomepageSections = unstable_cache(
     if (homepageSettings?.value && Array.isArray(homepageSettings.value) && homepageSettings.value.length > 0) {
       const sections = homepageSettings.value as HomepageSection[];
       const enabledSections = sections
-        .filter((s) => s.enabled)
+        .filter(
+          (s) =>
+            s.enabled &&
+            !isExcludedSection(s.title, s.slug) &&
+            // The live settings document holds a junk row literally titled
+            // "category"; such placeholders would render a meaningless rail.
+            !isPlaceholderSection(s.title)
+        )
         .sort((a, b) => a.sortOrder - b.sortOrder);
 
       const sectionData: SectionData[] = [];
 
-      // Batch fetch all products for all sections at once
-      const allCategoryIds = enabledSections.map(s => s.categoryId).filter(Boolean);
-      const allProductIds = enabledSections.flatMap(s => s.productIds || []);
-      
-      const [categoryProducts, specificProducts] = await Promise.all([
-        allCategoryIds.length > 0 
-          ? Product.find({ category: { $in: allCategoryIds }, isActive: true })
+      // Fetch each section's products with a per-section LIMIT, in parallel.
+      // Previously this ran one unbounded `Product.find({ category: { $in: ... } })`
+      // which pulled every product of every featured category into memory just to
+      // slice 10 off the front — a full collection scan on large catalogues.
+      const sectionProducts = await mapWithConcurrency(
+        enabledSections,
+        SECTION_QUERY_CONCURRENCY,
+        (section) => {
+          if (section.productIds && section.productIds.length > 0) {
+            return Product.find({ _id: { $in: section.productIds }, isActive: true })
               .select(PRODUCT_LIST_PROJECTION)
-              .populate("brand", "name logo")
-              .sort({ isFeatured: -1, soldCount: -1 })
-              .lean()
-          : [],
-        allProductIds.length > 0
-          ? Product.find({ _id: { $in: allProductIds }, isActive: true })
-              .select(PRODUCT_LIST_PROJECTION)
-              .populate("brand", "name logo")
-              .lean()
-          : [],
-      ]);
+              .populate("brand", "name")
+              .limit(SECTION_PRODUCT_LIMIT)
+              .lean() as unknown as Promise<Record<string, unknown>[]>;
+          }
 
-      for (const section of enabledSections) {
-        let products: typeof categoryProducts;
-
-        if (section.productIds && section.productIds.length > 0) {
-          products = specificProducts.filter(p => 
-            section.productIds!.includes(p._id.toString())
-          ).slice(0, 10);
-        } else if (section.categoryId) {
-          products = categoryProducts.filter(p => 
-            p.category?.toString() === section.categoryId
-          ).slice(0, 10);
-        } else {
-          continue;
+          // Plain category filter: the rail shows its own category's products.
+          return fetchSectionProducts(section.categoryId ? [section.categoryId] : []);
         }
+      );
+
+      for (let i = 0; i < enabledSections.length; i++) {
+        const section = enabledSections[i];
+        const products = sectionProducts[i];
 
         if (products.length === 0) continue;
 
@@ -479,37 +749,46 @@ export const getHomepageSections = unstable_cache(
           localField: "_id",
           foreignField: "category",
           as: "products",
+          // Only need to know whether at least one product exists, so fetch a
+          // single _id instead of whole documents.
           pipeline: [
             { $match: { isActive: true } },
-            { $limit: 10 },
+            { $limit: 1 },
+            { $project: { _id: 1 } },
           ],
         },
       },
       { $match: { "products.0": { $exists: true } } },
       { $sort: { sortOrder: 1 } },
-      { $limit: 4 },
-    ]);
+      // Fetch a few extra so dropping excluded categories below still leaves 4.
+      { $limit: 12 },
+      { $project: { _id: 1, name: 1, slug: 1 } },
+    ]).then((cats: { _id: { toString(): string }; name: string; slug: string }[]) =>
+      cats.filter((cat) => !isExcludedSection(cat.name, cat.slug)).slice(0, 4)
+    );
 
     const sectionData: SectionData[] = [];
 
-    // Batch fetch all data at once
+    // Fetch subcategories in one query, and each category's products with a
+    // per-category LIMIT in parallel, so we never load the whole catalogue.
     const categoryIds = categoriesWithProducts.map(c => c._id);
-    const [allProducts, allSubcategories] = await Promise.all([
-      Product.find({ category: { $in: categoryIds }, isActive: true })
-        .select(PRODUCT_LIST_PROJECTION)
-        .populate("brand", "name logo")
-        .sort({ isFeatured: -1, soldCount: -1 })
-        .lean(),
-      Category.find({ parent: { $in: categoryIds }, isActive: true })
-        .select("_id name slug parent")
-        .sort({ sortOrder: 1 })
-        .lean(),
-    ]);
+    const perCategoryProducts = await mapWithConcurrency(
+      categoriesWithProducts,
+      SECTION_QUERY_CONCURRENCY,
+      (cat) => fetchSectionProducts([cat._id])
+    );
 
-    for (const cat of categoriesWithProducts) {
-      const products = allProducts
-        .filter(p => p.category?.toString() === cat._id.toString())
-        .slice(0, 10);
+    const allSubcategories = await Category.find({
+      parent: { $in: categoryIds },
+      isActive: true,
+    })
+      .select("_id name slug parent")
+      .sort({ sortOrder: 1 })
+      .lean();
+
+    for (let i = 0; i < categoriesWithProducts.length; i++) {
+      const cat = categoriesWithProducts[i];
+      const products = perCategoryProducts[i];
 
       const subcategories = allSubcategories.filter(
         s => s.parent?.toString() === cat._id.toString()
@@ -535,4 +814,256 @@ export const getHomepageSections = unstable_cache(
   },
   ["homepage-sections"],
   { revalidate: CACHE_DURATIONS.medium, tags: [CACHE_TAGS.products, CACHE_TAGS.categories, CACHE_TAGS.settings] }
+);
+
+// ============================================
+// NEW ARRIVALS
+// ============================================
+
+// Newest products for the homepage rail. Prefers products explicitly flagged as
+// new arrivals in the admin, then tops the row up with the most recently created
+// products so the section is never half-empty.
+export const getNewArrivals = unstable_cache(
+  async (): Promise<ProductData[]> => {
+    await dbConnect();
+
+    // Deliberately ONE query, not a flagged-then-top-up pair. Product images are
+    // stored as inline base64 data URIs, so each page of 10 products transfers
+    // ~1.15MB and takes ~13s; issuing two of those sequentially while the other
+    // rails compete for the 5-socket pool pushed this past the timeout and left
+    // the section empty. `isActive: { $ne: false }` matches the rails so
+    // products that simply lack the field are not silently dropped.
+    const products = await Product.find({
+      isActive: { $ne: false },
+      isNewArrival: true,
+    })
+      .select(PRODUCT_LIST_PROJECTION)
+      .populate("brand", "name")
+      .sort({ createdAt: -1 })
+      .limit(SECTION_PRODUCT_LIMIT)
+      .lean();
+
+    // Only fall back to "newest overall" when nothing is flagged at all, so the
+    // rail still renders on a catalogue that never sets `isNewArrival`.
+    if (products.length > 0) {
+      return products.map(mapProductToData);
+    }
+
+    const newest = await Product.find({ isActive: { $ne: false } })
+      .select(PRODUCT_LIST_PROJECTION)
+      .populate("brand", "name")
+      .sort({ createdAt: -1 })
+      .limit(SECTION_PRODUCT_LIMIT)
+      .lean();
+
+    return newest.map(mapProductToData);
+  },
+  ["new-arrivals"],
+  { revalidate: CACHE_DURATIONS.medium, tags: [CACHE_TAGS.products] }
+);
+
+// ============================================
+// CURATED CATEGORY SECTIONS
+// ============================================
+
+// The homepage always shows these category rails, in `HOMEPAGE_SECTIONS` order.
+// Each rail is a plain category filter: its products are every product filed
+// under one of the rail's configured categories or any of their descendants.
+
+type CategoryNode = {
+  _id: { toString(): string };
+  name: string;
+  slug: string;
+  parent?: { toString(): string } | null;
+};
+
+// Get the curated homepage category rails - cached
+export const getCuratedSections = unstable_cache(
+  async (): Promise<SectionData[]> => {
+    await dbConnect();
+
+    const categories = (await Category.find({ isActive: { $ne: false } })
+      .select("_id name slug parent")
+      .sort({ sortOrder: 1, name: 1 })
+      .lean()) as unknown as CategoryNode[];
+
+    if (categories.length === 0) return [];
+
+    // Index children by parent id so we can walk the tree without extra queries.
+    const childrenByParent = new Map<string, CategoryNode[]>();
+    for (const cat of categories) {
+      const key = cat.parent ? cat.parent.toString() : "root";
+      const siblings = childrenByParent.get(key) ?? [];
+      siblings.push(cat);
+      childrenByParent.set(key, siblings);
+    }
+
+    // Products can live on leaf categories, so a rail must include every
+    // descendant of the matched category, not just the category itself.
+    // `skip` prunes whole sub-branches that are nested correctly but hold the
+    // wrong products.
+    const collectDescendantIds = (rootId: string, skip: Set<string>): string[] => {
+      if (skip.has(rootId)) return [];
+      const ids: string[] = [];
+      const queue = [rootId];
+      while (queue.length > 0) {
+        const current = queue.shift() as string;
+        ids.push(current);
+        for (const child of childrenByParent.get(current) ?? []) {
+          const childId = child._id.toString();
+          if (skip.has(childId)) continue;
+          queue.push(childId);
+        }
+      }
+      return ids;
+    };
+
+    const categoryBySlug = new Map(categories.map((c) => [c.slug, c]));
+
+    const resolved: {
+      config: (typeof HOMEPAGE_SECTIONS)[number];
+      category: CategoryNode | null;
+      categoryIds: string[];
+    }[] = [];
+
+    for (const config of HOMEPAGE_SECTIONS) {
+      if (isExcludedSection(config.title, config.slug)) continue;
+
+      // Every configured slug contributes its whole subtree, because products
+      // are filed on leaf categories rather than on the parent.
+      const ids = new Set<string>();
+      let linkedCategory: CategoryNode | null = null;
+
+      const skip = new Set(
+        (config.excludeCategorySlugs ?? [])
+          .map((slug) => categoryBySlug.get(slug))
+          .filter((c): c is CategoryNode => c !== undefined)
+          .map((c) => c._id.toString())
+      );
+
+      for (const slug of config.categorySlugs) {
+        const category = categoryBySlug.get(slug);
+        if (!category) continue;
+
+        // The first slug that exists becomes the rail's linked category, which
+        // drives the section link and its subcategory tabs.
+        if (!linkedCategory) linkedCategory = category;
+
+        for (const id of collectDescendantIds(category._id.toString(), skip)) {
+          ids.add(id);
+        }
+      }
+
+      if (ids.size === 0) continue;
+
+      resolved.push({
+        config,
+        category: linkedCategory,
+        categoryIds: Array.from(ids),
+      });
+    }
+
+    if (resolved.length === 0) return [];
+
+    // Load the products for every rail in ONE query and bucket them in memory.
+    //
+    // One query per rail (even capped to 2 in flight) was too slow against this
+    // cluster: eight rails serialised behind a 5-socket pool blew past the
+    // homepage's 20s fetch budget, so `curatedSections` came back empty and the
+    // page fell through to the admin sections / empty state. A single query over
+    // the union of the rails' categories is one round trip instead of eight.
+    const allCategoryIds = Array.from(
+      new Set(resolved.flatMap((section) => section.categoryIds))
+    );
+
+    // Deliberately unsorted: asking Mongo to sort this union blew the server's
+    // 32MB in-memory sort budget ("Sort exceeded memory limit ... did not opt in
+    // to external sorting") because there is no index covering it. The result set
+    // is small enough to order in JS below.
+    const candidates = (await Product.find({
+      isActive: { $ne: false },
+      category: { $in: allCategoryIds },
+    })
+      .select(PRODUCT_LIST_PROJECTION)
+      .populate("brand", "name")
+      .lean()) as unknown as Record<string, unknown>[];
+
+    const rank = (product: Record<string, unknown>) => ({
+      featured: product.isFeatured ? 1 : 0,
+      sold: Number(product.soldCount ?? 0),
+    });
+
+    candidates.sort((a, b) => {
+      const left = rank(a);
+      const right = rank(b);
+      return right.featured - left.featured || right.sold - left.sold;
+    });
+
+    // Bucket by category so each rail can be filled from the shared result set.
+    const byCategory = new Map<string, Record<string, unknown>[]>();
+    for (const product of candidates) {
+      const key = String(product.category ?? "");
+      if (!key) continue;
+      const bucket = byCategory.get(key);
+      if (bucket) bucket.push(product);
+      else byCategory.set(key, [product]);
+    }
+
+    const productsPerSection = resolved.map((section) => {
+      const seenIds = new Set<string>();
+      const seenNames = new Set<string>();
+      const products: Record<string, unknown>[] = [];
+
+      for (const categoryId of section.categoryIds) {
+        for (const candidate of byCategory.get(categoryId) ?? []) {
+          if (products.length >= SECTION_PRODUCT_LIMIT) return products;
+
+          const id = String(
+            (candidate._id as { toString(): string })?.toString() ?? ""
+          );
+          const name = normalizeProductName(candidate.name);
+          // The catalogue holds genuine duplicates (ten identical "iBall
+          // Computer Case" rows), so de-duplicate by name as well as by id.
+          if (!id || seenIds.has(id) || (name && seenNames.has(name))) continue;
+
+          seenIds.add(id);
+          if (name) seenNames.add(name);
+          products.push(candidate);
+        }
+      }
+
+      return products;
+    });
+
+    const sectionData: SectionData[] = [];
+
+    for (let i = 0; i < resolved.length; i++) {
+      const section = resolved[i];
+      const products = productsPerSection[i];
+      if (products.length === 0) continue;
+
+      const category = section.category;
+      // Only offer subcategory tabs that actually hold products.
+      const children = category
+        ? (childrenByParent.get(category._id.toString()) ?? []).slice(0, 8)
+        : [];
+
+      sectionData.push({
+        title: section.config.title,
+        slug: category?.slug ?? slugifySectionTitle(section.config.title),
+        subcategories: [
+          { name: `All ${section.config.title}`, isActive: true },
+          ...children.map((sub) => ({
+            name: sub.name,
+            href: category ? `/category/${category.slug}/${sub.slug}` : undefined,
+          })),
+        ],
+        products: products.map(mapProductToData),
+      });
+    }
+
+    return sectionData;
+  },
+  ["curated-sections"],
+  { revalidate: CACHE_DURATIONS.medium, tags: [CACHE_TAGS.products, CACHE_TAGS.categories] }
 );

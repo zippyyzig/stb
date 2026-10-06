@@ -164,7 +164,7 @@ AppReview@2026
 ```
 **Phone Number**  (include country code)
 ```
-+91 93539 19299
++91 63636 77588
 ```
 **Email**
 ```

@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { cache } from "react";
 import { notFound } from "next/navigation";
 import { unstable_cache } from "next/cache";
 import Header from "@/components/layout/Header";
@@ -17,9 +18,11 @@ import { siteConfig, getCanonicalUrl } from "@/lib/site-config";
 import { generateProductSchema, generateOrganizationSchema } from "@/lib/schema";
 import { CACHE_TAGS, CACHE_DURATIONS } from "@/lib/cache";
 
-// Use dynamic rendering to avoid caching 404 responses
-// Data is cached separately via unstable_cache with proper tags
-export const dynamic = "force-dynamic";
+// Incrementally-static: the rendered page is cached and served from the edge,
+// then revalidated in the background. Every admin product mutation calls
+// revalidateTag(`product-<slug>`) + revalidatePath(`/product/<slug>`), so edits
+// and newly-created products still appear immediately.
+export const revalidate = 3600;
 
 // Allow dynamic paths that weren't generated at build time
 // This ensures new products are accessible immediately without 404
@@ -34,14 +37,25 @@ interface ProductPageProps {
 const getProductFromDb = async (slug: string) => {
   await dbConnect();
 
+  // `-images` is the single most important part of this query. Most images in
+  // this catalogue are stored as inline base64 data URIs on the document itself
+  // (~873KB each), so selecting them made this page a 1.6MB payload that took
+  // ~10s to render. The gallery now loads each image from /api/media/product/
+  // <id>?i=<n> instead, which the browser fetches in parallel and caches
+  // immutably. `imageCount` below is computed server-side so we know how many
+  // URLs to emit without ever transferring a blob.
+  const projection = "-images";
+
   // First try to find by slug with isActive: true
   let product = await Product.findOne({ slug, isActive: true })
+    .select(projection)
     .populate("category", "name slug")
     .lean();
 
   // If not found, try without isActive filter (in case it's set to false by default)
   if (!product) {
     product = await Product.findOne({ slug })
+      .select(projection)
       .populate("category", "name slug")
       .lean();
     
@@ -55,27 +69,50 @@ const getProductFromDb = async (slug: string) => {
     return null;
   }
 
+  // How many images this product has, without downloading any of them.
+  const [imageMeta] = await Product.aggregate<{ count: number }>([
+    { $match: { _id: product._id } },
+    { $project: { count: { $size: { $ifNull: ["$images", []] } } } },
+  ]);
+  const imageCount = Math.min(imageMeta?.count ?? 0, 8);
+  const productId = String(product._id);
+  const imageUrls = Array.from(
+    { length: imageCount },
+    (_, i) => `/api/media/product/${productId}?i=${i}`
+  );
+
   // Get related products from same category (only if category exists)
-  let relatedProducts: typeof product[] = [];
-  
+  let relatedProducts: unknown[] = [];
+
   // Handle case where category might be an ObjectId or a populated object
   const categoryId = product.category && typeof product.category === 'object' && '_id' in product.category
     ? product.category._id
     : product.category;
-  
+
   if (categoryId) {
+    // Only select the fields the related-products carousel actually renders.
+    // Previously this pulled entire documents (full HTML description, every
+    // spec, all images) for 6 products and shipped them to the browser.
     relatedProducts = await Product.find({
       category: categoryId,
       _id: { $ne: product._id },
       isActive: true,
     })
+      .select("_id name slug priceB2C priceB2B mrp stock sku brand")
       .limit(6)
       .lean();
   }
 
+  // The carousel only ever shows the first image, so emit one media URL per
+  // related product rather than the base64 blobs (6 x ~873KB).
+  const relatedWithImages = (relatedProducts as { _id: unknown }[]).map((p) => ({
+    ...p,
+    images: [`/api/media/product/${String(p._id)}?i=0`],
+  }));
+
   return {
-    product: JSON.parse(JSON.stringify(product)),
-    relatedProducts: JSON.parse(JSON.stringify(relatedProducts)),
+    product: { ...JSON.parse(JSON.stringify(product)), images: imageUrls },
+    relatedProducts: JSON.parse(JSON.stringify(relatedWithImages)),
   };
 };
 
@@ -91,9 +128,25 @@ const getCachedProductData = (slug: string) => {
   )();
 };
 
-async function getProductData(slug: string) {
+// Wrapped in React `cache()` so the work is deduped within a single request.
+// generateMetadata() and the page component both need this data; without the
+// memo each page view ran the whole product + related-products query twice.
+const getProductData = cache(async (slug: string) => {
   try {
-    return await getCachedProductData(slug);
+    const cached = await getCachedProductData(slug);
+
+    // IMPORTANT: unstable_cache caches whatever the function returns, including a
+    // `null` "not found" result, for the full revalidate window. If a product URL
+    // was ever requested before the product existed (a prefetch, a crawler, or a
+    // draft that was later activated), that negative result would stick and the
+    // page would keep returning 404 even after the product is live. To avoid that,
+    // never trust a cached `null`: re-verify directly against the database before
+    // serving a 404. A real, freshly-created product will be found here.
+    if (cached?.product) {
+      return cached;
+    }
+
+    return await getProductFromDb(slug);
   } catch (error) {
     console.error(`[v0] Error fetching product for slug ${slug}:`, error);
     // On error, try direct DB fetch without cache
@@ -104,7 +157,7 @@ async function getProductData(slug: string) {
       return null;
     }
   }
-}
+});
 
 export async function generateMetadata({
   params,

@@ -7,6 +7,7 @@ import BrandsSection from "@/components/sections/BrandsSection";
 import AdBannerSlider from "@/components/sections/AdBannerSlider";
 import BestSellersSection from "@/components/sections/BestSellersSection";
 import MostPopularSection from "@/components/sections/MostPopularSection";
+import NewArrivalsSection from "@/components/sections/NewArrivalsSection";
 import HotBrandsSection from "@/components/sections/HotBrandsSection";
 import FeaturesSection from "@/components/sections/FeaturesSection";
 import JsonLd from "@/components/seo/JsonLd";
@@ -16,23 +17,112 @@ import {
   generateLocalBusinessSchema 
 } from "@/lib/schema";
 import {
-  getHomepageSections,
-  getCategories,
+  getHomepageCategories,
   getBrands,
   getHeroSliderBanners,
   getAdBanners,
   getBestSellers,
   getMostPopular,
   getHotBrands,
+  getNewArrivals,
+  getCuratedSections,
 } from "@/lib/data";
 
-// Enable ISR with 60 second revalidation for fast loads with fresh data
-export const revalidate = 60;
+// Render on demand instead of prerendering at build time.
+//
+// Next.js gives every statically generated page a hard 60s budget
+// (`staticPageGenerationTimeout`). Product images and brand logos are stored in
+// Mongo as inline base64 data URIs (~873KB per product), so the homepage rails
+// transfer megabytes and blow past that budget — `next build` failed with
+// "Failed to build /(main)/page: / after 3 attempts", and each retry piled more
+// concurrent queries onto the 5-socket pool, adding MongoWaitQueueTimeoutError.
+//
+// Rendering on demand makes the build independent of the database. Freshness and
+// speed still come from the per-query `unstable_cache` wrappers in lib/data.ts,
+// so this is not an uncached page.
+//
+// `revalidate` turns the on-demand render into an ISR render: the first visitor
+// after a deploy pays the database cost once, then every subsequent visitor is
+// served the cached HTML instantly until the window expires and the page is
+// rebuilt in the background (stale-while-revalidate). Nobody waits on Mongo.
+export const revalidate = 300;
+
+// Resolve a data fetch, falling back to an empty list if it fails.
+// A transient MongoDB error must not abort the whole production build (or blank
+// out the page) — the affected section simply renders empty and is refilled on
+// the next revalidation.
+async function safeList<T>(
+  load: () => Promise<T[]>,
+  label: string
+): Promise<T[]> {
+  // Keep an unavailable database from blocking the first paint indefinitely, but
+  // stay well above the real cost of these queries.
+  //
+  // Product images and brand logos are stored in Mongo as inline base64 data
+  // URIs, so a single page of 10 products transfers ~1.15MB and a page of brands
+  // ~1.07MB. Measured: the same query projecting only `name` returns in 210ms,
+  // but including `images` takes ~13s — the time is pure document transfer, not
+  // query planning (the required indexes already exist). Fetches that issue two
+  // such queries (best sellers falls back to a second lookup) therefore need
+  // more than 26s, which is why the old 20s cap silently emptied those rails.
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    const timeout = new Promise<never>((_, reject) => {
+      timer = setTimeout(
+        () => reject(new Error("Homepage data fetch timed out")),
+        60000
+      );
+    });
+    return await Promise.race([load(), timeout]);
+  } catch (error) {
+    console.error(`[v0] Homepage data fetch failed (${label}):`, error);
+    return [];
+  } finally {
+    // Always cancel the timer. Leaving it pending kept a 20s timer alive for
+    // every one of the parallel fetches below, which held the request open for
+    // the full timeout even when all the queries had already resolved in
+    // milliseconds (observed as a consistent "GET / 200 in ~20000ms").
+    clearTimeout(timer);
+  }
+}
+
+// How many homepage fetches may be in flight at once.
+//
+// The Mongo pool is capped at `maxPoolSize: 5` and keeps only one socket warm,
+// so firing all nine fetches at once forced the driver to open four more sockets
+// simultaneously. Each new socket pays a 1.7s-7.9s TLS handshake, so the last
+// fetches to get a socket blew the 20s budget above and returned empty — which
+// is why the category rails and New Arrivals silently vanished from the page
+// while the first few sections rendered fine. Running them a few at a time
+// reuses warm sockets: measured queries take ~250ms each.
+const HOMEPAGE_FETCH_CONCURRENCY = 2;
+
+// Run the homepage fetches in small batches, preserving result order. The
+// per-fetch timeout starts when the fetch actually runs, not when the page began.
+async function loadInBatches<T>(
+  tasks: (() => Promise<T[]>)[]
+): Promise<T[][]> {
+  const results: T[][] = new Array(tasks.length);
+  let next = 0;
+
+  const workers = Array.from(
+    { length: Math.min(HOMEPAGE_FETCH_CONCURRENCY, tasks.length) },
+    async () => {
+      while (true) {
+        const index = next++;
+        if (index >= tasks.length) return;
+        results[index] = await tasks[index]();
+      }
+    }
+  );
+
+  await Promise.all(workers);
+  return results;
+}
 
 export default async function HomePage() {
   // Fetch all data in parallel using cached functions
   const [
-    productSections,
     categories,
     brands,
     heroSliderBanners,
@@ -40,16 +130,39 @@ export default async function HomePage() {
     bestSellers,
     mostPopular,
     hotBrands,
-  ] = await Promise.all([
-    getHomepageSections(),
-    getCategories(),
-    getBrands(),
-    getHeroSliderBanners(),
-    getAdBanners(),
-    getBestSellers(),
-    getMostPopular(),
-    getHotBrands(),
-  ]);
+    newArrivals,
+    curatedSections,
+  ] = (await loadInBatches<any>([
+    () => safeList(getHomepageCategories, "homepageCategories"),
+    () => safeList(getBrands, "brands"),
+    () => safeList(getHeroSliderBanners, "heroSliderBanners"),
+    () => safeList(getAdBanners, "adBanners"),
+    () => safeList(getBestSellers, "bestSellers"),
+    () => safeList(getMostPopular, "mostPopular"),
+    () => safeList(getHotBrands, "hotBrands"),
+    () => safeList(getNewArrivals, "newArrivals"),
+    () => safeList(getCuratedSections, "curatedSections"),
+  ])) as [
+    Awaited<ReturnType<typeof getHomepageCategories>>,
+    Awaited<ReturnType<typeof getBrands>>,
+    Awaited<ReturnType<typeof getHeroSliderBanners>>,
+    Awaited<ReturnType<typeof getAdBanners>>,
+    Awaited<ReturnType<typeof getBestSellers>>,
+    Awaited<ReturnType<typeof getMostPopular>>,
+    Awaited<ReturnType<typeof getHotBrands>>,
+    Awaited<ReturnType<typeof getNewArrivals>>,
+    Awaited<ReturnType<typeof getCuratedSections>>,
+  ];
+
+  // The homepage rails come solely from the category configuration in
+  // lib/section-matching.ts. The admin-configured `homepage_sections` collection
+  // is deliberately not rendered here: it held narrow, brand-level rows
+  // ("PixaPlay", "EZVIZ", "Audio Products") that replaced the main category
+  // sections the homepage is meant to show.
+  const [leadSections, restSections] = [
+    curatedSections.slice(0, 2),
+    curatedSections.slice(2),
+  ];
 
   // Schema markup for homepage
   const schemas = [
@@ -79,41 +192,16 @@ export default async function HomePage() {
           <BestSellersSection products={bestSellers} />
         )}
 
-        {/* Static Ad Banners Grid - 3 promotional banners */}
-        <AdBannerSlider 
-          banners={[
-            {
-              id: "cables-banner",
-              image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Cables%20Banner%20%281%29.jpg-3QEaRBpxlFsQB5qXtVdQ7IvUlIX8YJ.jpeg",
-              imageMobile: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/cable%20%20banner%20350x150_.jpg-iOIFSa6BhKJCLhyvZjP1b09gpv9NIq.jpeg",
-              alt: "High-quality data and power cables engineered for durability and lightning-fast transmission",
-              href: "/category/cables",
-            },
-            {
-              id: "desktop-banner",
-              image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Desktop%20Banners.jpg-NxXCuf56a4qUEYkHIIWBsFRhr6iXXh.jpeg",
-              imageMobile: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/desktop%20banner%20350x150_.jpg-0qYnJo29CBIxL3DVP7Gebud7t82m01.jpeg",
-              alt: "Powerful Workstations and sleek all-in-ones designed to anchor your home or office productivity",
-              href: "/category/desktop",
-            },
-            {
-              id: "display-banner",
-              image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Display%20Banner%20%281%29.jpg-gu1oIcOl6i73BkGckGoNbiuO40Ppe2.jpeg",
-              imageMobile: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/display%20%20banner%20350x150_.jpg-wcYFeg5A0mH7uTmDHFP7LVulsMLZd1.jpeg",
-              alt: "Crystal-clear monitors and immersive screens that bring every pixel to life with stunning detail",
-              href: "/category/display",
-            },
-          ]} 
-          showAsGrid={true}
-        />
+        {/* New Arrivals */}
+        <NewArrivalsSection products={newArrivals} />
 
         {/* Dynamic Ad Banner Slider - 1500x300 banners from database */}
         {adBanners.length > 0 && (
           <AdBannerSlider banners={adBanners} />
         )}
 
-        {/* First 2 Product Sections */}
-        {productSections.slice(0, 2).map((section) => (
+        {/* Category rails - Desktop / Laptops */}
+        {leadSections.map((section) => (
           <ProductSection key={section.slug} section={section} />
         ))}
 
@@ -168,8 +256,9 @@ export default async function HomePage() {
           ]} 
         />
 
-        {/* Remaining Product Sections */}
-        {productSections.slice(2).map((section) => (
+        {/* Category rails - Storage / Display / Peripherals / Printers &
+            Scanners / Security / Networking */}
+        {restSections.map((section) => (
           <ProductSection key={section.slug} section={section} />
         ))}
 
@@ -177,7 +266,10 @@ export default async function HomePage() {
         <BrandsSection brands={brands} />
 
         {/* Show message if no products */}
-        {productSections.length === 0 && bestSellers.length === 0 && mostPopular.length === 0 && (
+        {curatedSections.length === 0 &&
+          newArrivals.length === 0 &&
+          bestSellers.length === 0 &&
+          mostPopular.length === 0 && (
           <div className="mx-auto max-w-7xl px-4 py-20 text-center">
             <h2 className="heading-lg mb-4">No Products Available</h2>
             <p className="body-md text-muted-foreground">

@@ -253,7 +253,7 @@ export default function InvoicePage() {
           <div>
             <p className="font-medium text-green-800">Payment Confirmed</p>
             <p className="text-sm text-green-700">
-              This invoice has been paid via {invoice.paymentMethod.replace("_", " ").toUpperCase()}
+              This invoice has been paid via {invoice.paymentMethod ? invoice.paymentMethod.replace("_", " ").toUpperCase() : "Unknown"}
             </p>
           </div>
         </div>

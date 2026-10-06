@@ -359,6 +359,17 @@ export function triggerHapticFeedback(type: "light" | "medium" | "heavy" = "medi
   }
 }
 
+// Native bridge methods may return rejected promises when the Median SDK is
+// present but not fully initialized. Always consume those rejections so a
+// browser/WebView SDK issue cannot surface as an uncaught app error.
+function consumeNativeResult(result: unknown, label: string): void {
+  if (result && typeof (result as PromiseLike<unknown>).then === "function") {
+    Promise.resolve(result).catch((error) => {
+      console.warn(`[v0] Native ${label} call unavailable:`, error);
+    });
+  }
+}
+
 // Set status bar style
 export function setStatusBarStyle(style: "light" | "dark"): void {
   if (!isMedianApp()) return;
@@ -367,9 +378,9 @@ export function setStatusBarStyle(style: "light" | "dark"): void {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const median = (window as any).median;
     if (median?.statusbar?.set) {
-      median.statusbar.set({
+      consumeNativeResult(median.statusbar.set({
         style: style === "light" ? "lightContent" : "darkContent",
-      });
+      }), "statusbar");
     }
   } catch (error) {
     console.error("Failed to set status bar style:", error);
@@ -399,7 +410,7 @@ export function setBadgeCount(count: number): void {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const median = (window as any).median;
     if (median?.badge?.set) {
-      median.badge.set(count);
+      consumeNativeResult(median.badge.set(count), "badge");
     }
   } catch (error) {
     console.error("Failed to set badge count:", error);
@@ -517,13 +528,11 @@ export interface SocialLoginError {
   message?: string;
 }
 
-// Web Client ID for Google Sign-In via Median.co Social Login plugin
-// IMPORTANT: For Median.co Social Login, you MUST use the WEB Client ID (not Android)
-// The Android Client ID is only for configuring SHA-1 in Google Cloud Console
-// Median's native SDK validates the token server-side using the Web Client ID
-const GOOGLE_WEB_CLIENT_ID =
-  (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_GOOGLE_WEB_CLIENT_ID) ||
-  "393630939714-ccgciu2tmtf7me0souh2vt7a1ctqe1bf.apps.googleusercontent.com";
+// NOTE: The Google Web/Server Client ID is intentionally NOT referenced here.
+// For Median.co Social Login, the client ID must be configured in the Median App
+// Studio dashboard (Native Plugins → Social Login → Google). It must never be
+// passed to median.socialLogin.google.login() from JavaScript — doing so causes a
+// duplicate account chooser and sign-in failures on Android.
 
 // Track if a Google Sign-In is currently in progress to prevent duplicate calls
 let googleSignInInProgress = false;
@@ -702,17 +711,23 @@ export function nativeGoogleSignIn(): Promise<GoogleLoginResult | null> {
         reject(new Error("Google Sign-In timed out. Please try again."));
       }, 60000);
 
-      console.log("[Median] Calling median.socialLogin.google.login with Web Client ID:", GOOGLE_WEB_CLIENT_ID);
+      console.log("[Median] Calling median.socialLogin.google.login (callback-only mode)");
       
-      // IMPORTANT: According to Median.co documentation, the callback MUST be passed
-      // as a STRING containing the name of a globally registered window function.
-      // Passing a direct function reference causes "legacy mode" errors.
-      // The function must be accessible as window["functionName"].
-      // Do NOT pass redirectUri here — that would open a second webview causing the
-      // double account chooser issue.
+      // IMPORTANT: Per Median's Social Login docs, google.login() accepts ONLY a
+      // `callback`, passed as a DIRECT FUNCTION REFERENCE:
+      //   median.socialLogin.google.login({ 'callback': googleLoginCallback });
+      //
+      // - Do NOT pass `clientId`. The Google client IDs (iOS/Android) are configured
+      //   in the Median App Studio dashboard. Passing one here makes the native SDK
+      //   re-authorize for a server token, producing a SECOND account chooser and a
+      //   final "unexpected error".
+      // - Do NOT pass `redirectUri` together with `callback` (mixing modes also
+      //   double-prompts).
+      // - Pass the function itself, not a string name. The string form is not part
+      //   of the documented API and can prevent the native bridge from delivering
+      //   the result, leaving the native layer to re-prompt.
       median.socialLogin.google.login({
-        clientId: GOOGLE_WEB_CLIENT_ID,
-        callback: "handleMedianGoogleCallback",
+        callback: handleMedianGoogleCallback,
       });
       
       console.log("[Median] Login initiated, waiting for native callback...");

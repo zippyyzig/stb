@@ -299,7 +299,7 @@ quality products and excellent service.
 
 Based in Bangalore, serving customers across India.
 
-Contact: smarttechbazaar@gmail.com | +91-9353919299
+Contact: smarttechbazaar@gmail.com | +91-6363677588
 ```
 
 ### Screenshots Required
@@ -443,7 +443,7 @@ These justify the app is not just a web wrapper:
 | Info | Value |
 |------|-------|
 | Email | smarttechbazaar@gmail.com |
-| Phone | +91-9353919299 |
+| Phone | +91-6363677588 |
 | Address | 2nd Floor, No. 94/1, Behind Sharda Theater, SP Road, Bangalore 560002 |
 | Facebook | https://www.facebook.com/profile.php?id=61588955768910 |
 | Instagram | https://www.instagram.com/smarttechbazaar_india/ |

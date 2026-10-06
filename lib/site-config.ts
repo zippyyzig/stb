@@ -12,7 +12,7 @@ export const siteConfig = {
     name: "Smart Tech Bazaar",
     legalName: "Smart Tech Bazaar Private Limited",
     email: "smarttechbazaar@gmail.com",
-    phone: "+91-9353919299",
+    phone: "+91-6363677588",
     address: {
       streetAddress: "2nd Floor, No. 94/1, Behind Sharda Theater, SP Road",
       addressLocality: "Bangalore",

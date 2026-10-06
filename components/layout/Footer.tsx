@@ -50,9 +50,9 @@ const categoryLinks = [
 ];
 
 const contactDetails = [
-  { department: "Sales", number: "9353919299" },
-  { department: "Billing", number: "9353919299" },
-  { department: "Support", number: "9353919299" },
+  { department: "Sales", number: "6363677588" },
+  { department: "Billing", number: "6363677588" },
+  { department: "Support", number: "6363677588" },
 ];
 
 export default function Footer() {
@@ -133,11 +133,11 @@ export default function Footer() {
         <div className="border-b border-white/10 px-4 py-5">
           <Image src="/logo.png" alt="Smart Tech Bazaar" width={110} height={36} className="h-8 w-auto object-contain brightness-0 invert" />
           <div className="mt-3 flex flex-col gap-2.5">
-            <a href="tel:+919353919299" className="flex items-center gap-2.5 text-xs text-white/70 press-active">
+            <a href="tel:+916363677588" className="flex items-center gap-2.5 text-xs text-white/70 press-active">
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/10">
                 <Phone className="h-3.5 w-3.5 text-primary" />
               </div>
-              +91 93539 19299
+              +91 63636 77588
             </a>
             <a href="mailto:smarttechbazaar@gmail.com" className="flex items-center gap-2.5 text-xs text-white/70 press-active">
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/10">
@@ -232,7 +232,7 @@ export default function Footer() {
                 </div>
                 <div className="flex items-center gap-2 text-xs text-white/60">
                   <Phone className="h-3.5 w-3.5 shrink-0 text-primary" />
-                  <a href="tel:+919353919299" className="hover:text-white">+91 93539 19299</a>
+                  <a href="tel:+916363677588" className="hover:text-white">+91 63636 77588</a>
                 </div>
                 <div className="flex items-center gap-2 text-xs text-white/60">
                   <Mail className="h-3.5 w-3.5 shrink-0 text-primary" />
