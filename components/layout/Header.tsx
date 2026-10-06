@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useSession } from "next-auth/react";
@@ -11,51 +11,31 @@ import {
   Search,
   Heart,
   ShoppingCart,
-  Menu,
-  X,
   User,
   LogOut,
   Settings,
   Package,
-  ChevronDown,
   Home,
-  Grid3X3,
-  Phone,
+  LayoutGrid,
+  Store,
   MapPin,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
-  SheetTrigger,
   SheetClose,
 } from "@/components/ui/sheet";
+import { NAV_CATEGORIES } from "@/lib/nav-categories";
 
-const navCategories = [
-  { name: "Desktop", slug: "desktop" },
-  { name: "Laptops", slug: "laptops" },
-  { name: "Storage", slug: "storage" },
-  { name: "Display", slug: "display" },
-  { name: "Peripherals", slug: "peripherals" },
-  { name: "Printers & Scanners", slug: "printers-scanners" },
-  { name: "Security", slug: "security" },
-  { name: "Networking", slug: "networking" },
-  { name: "Software", slug: "software" },
-  { name: "Mobility", slug: "mobility" },
-  { name: "Cables", slug: "cables" },
-  { name: "Connectors & Converters", slug: "connectors-converters" },
-  { name: "Accessories", slug: "accessories" },
-  { name: "Refurbished Laptops", slug: "refurbished-laptops" },
-];
-
-const mobileNavItems = [
-  { name: "Home", href: "/", icon: Home },
-  { name: "Shop", href: "/products", icon: Grid3X3 },
-  { name: "Wishlist", href: "/wishlist", icon: Heart },
-  { name: "Cart", href: "/cart", icon: ShoppingCart },
-  { name: "Account", href: "/dashboard", icon: User },
+const utilityLinks = [
+  { name: "Orders", href: "/dashboard/orders" },
+  { name: "Contact us", href: "/support" },
+  { name: "Resource Center", href: "/shipping" },
+  { name: "Find a store", href: "/about" },
 ];
 
 export default function Header() {
@@ -64,12 +44,12 @@ export default function Header() {
   const pathname = usePathname();
   const { cartCount } = useCart();
   const { wishlistCount } = useWishlist();
-  const [searchQuery, setSearchQuery] = useState("");
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [searchFocused, setSearchFocused] = useState(false);
-  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const [categorySheetOpen, setCategorySheetOpen] = useState(false);
+  const stripRef = useRef<HTMLDivElement>(null);
 
   const isAdmin = session?.user?.role === "admin" || session?.user?.role === "super_admin";
+  const firstName = session?.user?.name?.split(" ")[0];
 
   useEffect(() => {
     if (
@@ -83,364 +63,357 @@ export default function Header() {
     }
   }, [status, session, router]);
 
-  // Close menus when clicking outside
   useEffect(() => {
-    const handleClick = () => setShowUserMenu(false);
-    if (showUserMenu) {
-      document.addEventListener("click", handleClick);
-      return () => document.removeEventListener("click", handleClick);
-    }
+    if (!showUserMenu) return;
+    const close = () => setShowUserMenu(false);
+    document.addEventListener("click", close);
+    return () => document.removeEventListener("click", close);
   }, [showUserMenu]);
+
+  const scrollStrip = (direction: 1 | -1) => {
+    stripRef.current?.scrollBy({ left: direction * 480, behavior: "smooth" });
+  };
+
+  const userMenu = showUserMenu && (
+    <div className="absolute right-0 top-full z-50 mt-3 w-48 overflow-hidden rounded-lg bg-white py-1 text-rd-text shadow-xl ring-1 ring-black/5 animate-fade-in">
+      <Link href="/dashboard" className="flex items-center gap-2.5 px-4 py-2.5 text-sm hover:bg-rd-page">
+        <User className="h-4 w-4 text-rd-muted" />
+        My Account
+      </Link>
+      <Link href="/dashboard/orders" className="flex items-center gap-2.5 px-4 py-2.5 text-sm hover:bg-rd-page">
+        <Package className="h-4 w-4 text-rd-muted" />
+        Orders
+      </Link>
+      {isAdmin && (
+        <Link href="/admin" className="flex items-center gap-2.5 px-4 py-2.5 text-sm hover:bg-rd-page">
+          <Settings className="h-4 w-4 text-rd-muted" />
+          Admin
+        </Link>
+      )}
+      <hr className="my-1 border-border" />
+      <button
+        onClick={() => signOutWithNativeCleanup({ callbackUrl: "/" })}
+        className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm text-destructive hover:bg-rd-page"
+      >
+        <LogOut className="h-4 w-4" />
+        Sign Out
+      </button>
+    </div>
+  );
+
+  const countBadge = (count: number) =>
+    count > 0 && (
+      <span
+        className="absolute -right-2 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-white px-1 text-[10px] font-bold leading-none text-rd-red"
+        aria-hidden="true"
+      >
+        {count > 9 ? "9+" : count}
+      </span>
+    );
+
+  const mobileNavItems = [
+    { name: "Home", href: "/", icon: Home },
+    { name: "Shop", href: "/products", icon: Store },
+    { name: "Orders", href: "/dashboard/orders", icon: Package },
+    { name: "Cart", href: "/cart", icon: ShoppingCart },
+  ];
 
   return (
     <>
-      <header className={`sticky top-0 z-50 w-full bg-white ${pathname.startsWith("/dashboard") ? "hidden md:block" : ""}`}>
-        {/* Top utility bar - Desktop */}
-        <div className="hidden border-b border-border bg-muted/50 md:block">
-          <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-1.5">
-            <div className="flex items-center gap-4 text-[11px] text-foreground/70">
-              <span className="flex items-center gap-1">
-                <Phone className="h-3 w-3" />
-                +91 63636 77588
-              </span>
-              <span className="flex items-center gap-1">
-                <MapPin className="h-3 w-3" />
-                Bangalore
-              </span>
-            </div>
-            <div className="flex items-center gap-3 text-[11px]">
-              <span className="text-muted-foreground">|</span>
-              {status === "loading" ? (
-                <span className="text-muted-foreground">Loading...</span>
-              ) : session ? (
-                <div className="relative">
-                  <button
-                    onClick={(e) => { e.stopPropagation(); setShowUserMenu(!showUserMenu); }}
-                    className="flex items-center gap-1.5 font-medium text-foreground transition-colors hover:text-primary"
-                  >
-                    <div className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-white">
-                      {session.user?.name?.[0]?.toUpperCase()}
-                    </div>
-                    {session.user?.name?.split(" ")[0]}
-                    <ChevronDown className="h-3 w-3" />
-                  </button>
-                  {showUserMenu && (
-                    <div className="absolute right-0 top-full z-50 mt-2 w-44 rounded-lg bg-white py-1 shadow-lg ring-1 ring-border animate-fade-in">
-                      <Link
-                        href="/dashboard"
-                        className="flex items-center gap-2 px-3 py-2 text-xs text-foreground hover:bg-muted"
-                      >
-                        <User className="h-3.5 w-3.5 text-muted-foreground" />
-                        My Account
-                      </Link>
-                      <Link
-                        href="/dashboard/orders"
-                        className="flex items-center gap-2 px-3 py-2 text-xs text-foreground hover:bg-muted"
-                      >
-                        <Package className="h-3.5 w-3.5 text-muted-foreground" />
-                        Orders
-                      </Link>
-                      {isAdmin && (
-                        <Link
-                          href="/admin"
-                          className="flex items-center gap-2 px-3 py-2 text-xs text-foreground hover:bg-muted"
-                        >
-                          <Settings className="h-3.5 w-3.5 text-muted-foreground" />
-                          Admin
-                        </Link>
-                      )}
-                      <hr className="my-1 border-border" />
-                      <button
-                        onClick={() => signOutWithNativeCleanup({ callbackUrl: "/" })}
-                        className="flex w-full items-center gap-2 px-3 py-2 text-xs text-destructive hover:bg-muted"
-                      >
-                        <LogOut className="h-3.5 w-3.5" />
-                        Sign Out
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <Link href="/auth/login" className="text-foreground hover:text-primary transition-colors">
-                    Sign In
-                  </Link>
-                  <span className="text-border">|</span>
-                  <Link href="/auth/register" className="font-semibold text-stb-red-dark transition-colors hover:text-primary">
-                    Register
-                  </Link>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Main header */}
-        <div className="border-b border-border">
-          <div className="mx-auto flex max-w-7xl items-center gap-3 px-3 py-2 md:gap-6 md:px-4 md:py-3">
-            {/* Mobile menu */}
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" aria-label="Open navigation menu" className="h-11 w-11 shrink-0 rounded-xl md:hidden">
-                  <Menu className="h-5 w-5" aria-hidden="true" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-[280px] p-0">
-                <SheetHeader className="border-b border-border p-4">
-                  <SheetTitle className="flex items-center gap-2 text-left">
-                    <Image src="/logo.png" alt="Smart Tech Bazaar" width={80} height={32} className="h-8 w-auto object-contain" />
-                  </SheetTitle>
-                </SheetHeader>
-
-                {/* User info in drawer */}
-                {session ? (
-                  <div className="border-b border-border bg-muted/30 px-4 py-3">
-                    <div className="flex items-center gap-2.5">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-semibold text-white">
-                        {session.user?.name?.[0]?.toUpperCase()}
-                      </div>
-                      <div>
-                        <p className="text-xs font-medium text-foreground">{session.user?.name}</p>
-                        <p className="text-[10px] text-muted-foreground">{session.user?.email}</p>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="border-b border-border px-4 py-3">
-                    <div className="flex gap-2">
-                      <SheetClose asChild>
-                        <Link href="/auth/login" className="flex-1 rounded border border-border bg-white py-2 text-center text-xs font-medium text-foreground">
-                          Sign In
-                        </Link>
-                      </SheetClose>
-                      <SheetClose asChild>
-                        <Link href="/auth/register" className="flex-1 rounded bg-primary py-2 text-center text-xs font-medium text-white">
-                          Register
-                        </Link>
-                      </SheetClose>
-                    </div>
-                  </div>
-                )}
-
-                <nav className="flex flex-col overflow-y-auto flex-1 p-4">
-                  <p className="mb-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Shop by Category</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {navCategories.map((cat) => (
-                      <SheetClose asChild key={cat.slug}>
-                        <Link
-                          href={`/category/${cat.slug}`}
-                          className="flex items-center gap-2 rounded-xl border border-border bg-muted/40 px-3 py-2.5 text-xs font-medium text-foreground transition-colors hover:border-primary/30 hover:bg-stb-red-light hover:text-primary press-active"
-                        >
-                          {cat.name}
-                        </Link>
-                      </SheetClose>
-                    ))}
-                  </div>
-                  {session && (
-                    <>
-                      <p className="mb-3 mt-5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Account</p>
-                      <div className="flex flex-col gap-1">
-                        <SheetClose asChild>
-                          <Link href="/dashboard" className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-xs font-medium text-foreground hover:bg-muted press-active">
-                            <User className="h-3.5 w-3.5 text-muted-foreground" />
-                            My Account
-                          </Link>
-                        </SheetClose>
-                        <SheetClose asChild>
-                          <Link href="/dashboard/orders" className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-xs font-medium text-foreground hover:bg-muted press-active">
-                            <Package className="h-3.5 w-3.5 text-muted-foreground" />
-                            Orders
-                          </Link>
-                        </SheetClose>
-                        {isAdmin && (
-                          <SheetClose asChild>
-                            <Link href="/admin" className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-xs font-medium text-foreground hover:bg-muted press-active">
-                              <Settings className="h-3.5 w-3.5 text-muted-foreground" />
-                              Admin Panel
-                            </Link>
-                          </SheetClose>
-                        )}
-                        <button
-                          onClick={() => signOutWithNativeCleanup({ callbackUrl: "/" })}
-                          className="mt-1 flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-xs font-medium text-destructive hover:bg-red-50 press-active"
-                        >
-                          <LogOut className="h-3.5 w-3.5" />
-                          Sign Out
-                        </button>
-                      </div>
-                    </>
-                  )}
-                </nav>
-              </SheetContent>
-            </Sheet>
-
-            {/* Logo */}
-            <Link href="/" className="flex shrink-0 items-center">
-              <Image
-                src="/logo.png"
-                alt="Smart Tech Bazaar"
-                width={120}
-                height={40}
-                className="h-8 w-auto object-contain md:h-10"
-                priority
-              />
-            </Link>
-
-            {/* Desktop search */}
-            <form action="/search" method="GET" className="relative hidden flex-1 md:flex">
-              <div className={`relative w-full transition-all ${searchFocused ? "ring-2 ring-primary/20 rounded-lg" : ""}`}>
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <input
-                  type="text"
-                  name="q"
-                  placeholder="Search products, brands..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onFocus={() => setSearchFocused(true)}
-                  onBlur={() => setSearchFocused(false)}
-                  className="h-9 w-full rounded-lg border border-border bg-muted/50 pl-9 pr-4 text-xs placeholder:text-muted-foreground focus:border-primary focus:bg-white focus:outline-none transition-all"
-                />
-              </div>
-            </form>
-
-            {/* Mobile search toggle — minimum 44×44px touch target */}
-            <button
-              onClick={() => setMobileSearchOpen(!mobileSearchOpen)}
-              aria-label={mobileSearchOpen ? "Close search" : "Open search"}
-              aria-expanded={mobileSearchOpen}
-              className="flex h-11 w-11 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground md:hidden press-active"
+      <header
+        className={`sticky top-0 z-50 w-full ${pathname.startsWith("/dashboard") ? "hidden md:block" : ""}`}
+      >
+        {/* Red masthead */}
+        <div className="bg-rd-red text-white">
+          <div className="mx-auto max-w-[1440px] px-4 md:px-8">
+            {/* Utility links — desktop */}
+            <nav
+              aria-label="Utility"
+              className="hidden items-center justify-end gap-6 pt-2 text-xs font-medium md:flex"
             >
-              {mobileSearchOpen ? <X className="h-5 w-5" aria-hidden="true" /> : <Search className="h-5 w-5" aria-hidden="true" />}
-            </button>
-
-            {/* Actions */}
-            <div className="flex items-center gap-1">
-              {/* Wishlist - desktop */}
-              <Link 
-                href="/wishlist" 
-                aria-label={`Wishlist${wishlistCount > 0 ? ` (${wishlistCount} items)` : ""}`}
-                className="relative hidden md:flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-              >
-                <Heart className="h-4.5 w-4.5" aria-hidden="true" />
-                {wishlistCount > 0 && (
-                  <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-semibold text-white" aria-hidden="true">
-                    {wishlistCount > 9 ? "9+" : wishlistCount}
-                  </span>
-                )}
-              </Link>
-
-              {/* Cart */}
-              <Link 
-                href="/cart" 
-                aria-label={`Shopping cart${cartCount > 0 ? ` (${cartCount} items)` : ""}`}
-                className="relative flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground press-active md:h-9 md:w-9"
-              >
-                <ShoppingCart className="h-5 w-5 md:h-4.5 md:w-4.5" aria-hidden="true" />
-                {cartCount > 0 && (
-                  <span className="absolute -right-0.5 -top-0.5 flex h-[15px] min-w-[15px] items-center justify-center rounded-full bg-primary px-0.5 text-[8px] font-bold leading-none text-white ring-2 ring-white" aria-hidden="true">
-                    {cartCount > 9 ? "9+" : cartCount}
-                  </span>
-                )}
-              </Link>
-
-              {/* Desktop user */}
-              {session && (
-                <button
-                  onClick={(e) => { e.stopPropagation(); setShowUserMenu(!showUserMenu); }}
-                  className="hidden md:flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-semibold text-white transition-colors hover:bg-stb-red-dark"
-                >
-                  {session.user?.name?.[0]?.toUpperCase()}
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Mobile search bar */}
-        {mobileSearchOpen && (
-          <div className="border-b border-border bg-white px-3 py-2.5 md:hidden animate-slide-down">
-            <form action="/search" method="GET" className="relative">
-              <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <input
-                type="text"
-                name="q"
-                placeholder="Search products, brands..."
-                autoFocus
-                className="h-11 w-full rounded-xl border border-border bg-muted/50 pl-10 pr-4 text-sm placeholder:text-muted-foreground focus:border-primary focus:bg-white focus:outline-none transition-all"
-              />
-            </form>
-          </div>
-        )}
-
-        {/* Desktop category nav */}
-        <div className="hidden border-b border-border md:block">
-          <div className="mx-auto max-w-7xl px-4">
-            <nav className="flex items-center gap-0.5 overflow-x-auto scrollbar-hide">
-              <Link
-                href="/products"
-                className="shrink-0 px-3 py-2.5 text-[11px] font-semibold text-primary transition-colors hover:bg-stb-red-light"
-              >
-                All Products
-              </Link>
-              {navCategories.map((cat) => (
-                <Link
-                  key={cat.slug}
-                  href={`/category/${cat.slug}`}
-                  className="shrink-0 px-3 py-2.5 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                >
-                  {cat.name}
+              {utilityLinks.map((link) => (
+                <Link key={link.name} href={link.href} className="transition-opacity hover:opacity-80">
+                  {link.name}
                 </Link>
               ))}
             </nav>
+
+            <div className="flex items-center gap-4 py-3 md:gap-8 md:pb-3 md:pt-1">
+              {/* Logo */}
+              <Link href="/" className="flex shrink-0 items-center" aria-label="Smart Tech Bazaar home">
+                <Image
+                  src="/logo.png"
+                  alt="Smart Tech Bazaar"
+                  width={140}
+                  height={44}
+                  className="h-8 w-auto object-contain brightness-0 invert md:h-11"
+                  priority
+                />
+              </Link>
+
+              {/* Desktop search */}
+              <form action="/search" method="GET" role="search" className="hidden flex-1 md:block md:max-w-[730px]">
+                <label htmlFor="header-search" className="sr-only">
+                  Search products and brands
+                </label>
+                <div className="relative">
+                  <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-rd-muted" aria-hidden="true" />
+                  <input
+                    id="header-search"
+                    type="text"
+                    name="q"
+                    placeholder="Search Products & Brands"
+                    className="h-10 w-full rounded-full bg-white pl-11 pr-4 text-sm text-rd-text placeholder:text-rd-muted focus:outline-none focus:ring-2 focus:ring-white/60"
+                  />
+                </div>
+              </form>
+
+              {/* Right actions — desktop */}
+              <div className="ml-auto hidden items-center gap-7 text-sm font-semibold md:flex">
+                <Link href="/about" className="flex items-center gap-2 text-base font-bold transition-opacity hover:opacity-80">
+                  <MapPin className="h-4 w-4 fill-current" aria-hidden="true" />
+                  Bangalore
+                </Link>
+                <Link
+                  href="/cart"
+                  aria-label={`Cart${cartCount > 0 ? ` (${cartCount} items)` : ""}`}
+                  className="relative flex items-center gap-2 transition-opacity hover:opacity-80"
+                >
+                  <span className="relative">
+                    <ShoppingCart className="h-5 w-5 fill-current" aria-hidden="true" />
+                    {countBadge(cartCount)}
+                  </span>
+                  Cart
+                </Link>
+                <Link
+                  href="/wishlist"
+                  aria-label={`Wishlist${wishlistCount > 0 ? ` (${wishlistCount} items)` : ""}`}
+                  className="flex items-center gap-2 transition-opacity hover:opacity-80"
+                >
+                  <span className="relative">
+                    <Heart className="h-5 w-5 fill-current" aria-hidden="true" />
+                    {countBadge(wishlistCount)}
+                  </span>
+                  Wishlist
+                </Link>
+                {status === "loading" ? (
+                  <span className="w-16" aria-hidden="true" />
+                ) : session ? (
+                  <div className="relative">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowUserMenu((open) => !open);
+                      }}
+                      aria-expanded={showUserMenu}
+                      aria-haspopup="menu"
+                      className="flex items-center gap-2 transition-opacity hover:opacity-80"
+                    >
+                      <User className="h-5 w-5 fill-current" aria-hidden="true" />
+                      {firstName}
+                    </button>
+                    {userMenu}
+                  </div>
+                ) : (
+                  <Link href="/auth/login" className="flex items-center gap-2 transition-opacity hover:opacity-80">
+                    <User className="h-5 w-5 fill-current" aria-hidden="true" />
+                    Login
+                  </Link>
+                )}
+              </div>
+
+              {/* Right actions — mobile */}
+              <div className="ml-auto flex items-center gap-5 md:hidden">
+                <Link href="/cart" aria-label={`Cart${cartCount > 0 ? ` (${cartCount} items)` : ""}`} className="relative">
+                  <ShoppingCart className="h-6 w-6 fill-current" aria-hidden="true" />
+                  {countBadge(cartCount)}
+                </Link>
+                <Link href="/wishlist" aria-label={`Wishlist${wishlistCount > 0 ? ` (${wishlistCount} items)` : ""}`} className="relative">
+                  <Heart className="h-6 w-6 fill-current" aria-hidden="true" />
+                  {countBadge(wishlistCount)}
+                </Link>
+                <Link href={session ? "/dashboard" : "/auth/login"} aria-label={session ? "My account" : "Login"}>
+                  <User className="h-6 w-6 fill-current" aria-hidden="true" />
+                </Link>
+              </div>
+            </div>
+
+            {/* Mobile search */}
+            <form action="/search" method="GET" role="search" className="pb-3 md:hidden">
+              <label htmlFor="header-search-mobile" className="sr-only">
+                Search products and brands
+              </label>
+              <div className="relative">
+                <Search className="absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-rd-muted" aria-hidden="true" />
+                <input
+                  id="header-search-mobile"
+                  type="text"
+                  name="q"
+                  placeholder="Search Products & Brands"
+                  className="h-11 w-full rounded-full bg-white pl-11 pr-4 text-sm text-rd-text placeholder:text-rd-muted focus:outline-none"
+                />
+              </div>
+            </form>
+          </div>
+        </div>
+
+        {/* Category strip */}
+        <div className="border-b border-black/5 bg-white">
+          <div className="relative mx-auto max-w-[1440px] md:px-8">
+            <button
+              type="button"
+              onClick={() => scrollStrip(-1)}
+              aria-label="Scroll categories left"
+              className="absolute left-2 top-1/2 z-10 hidden h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-rd-text transition-colors hover:bg-rd-page md:flex"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+            <div
+              ref={stripRef}
+              className="scrollbar-hide flex gap-5 overflow-x-auto px-4 py-2.5 md:gap-8 md:px-12 md:py-3"
+            >
+              {NAV_CATEGORIES.map((cat) => (
+                <Link
+                  key={cat.slug}
+                  href={`/category/${cat.slug}`}
+                  className="group flex shrink-0 flex-col items-center gap-1.5 md:flex-row md:gap-3"
+                >
+                  <span className="relative h-12 w-12 overflow-hidden rounded-full bg-rd-page ring-1 ring-black/5 md:h-10 md:w-10">
+                    <Image
+                      src={cat.image}
+                      alt=""
+                      fill
+                      sizes="48px"
+                      className="object-cover"
+                      unoptimized
+                    />
+                  </span>
+                  <span className="max-w-[84px] text-center text-xs font-medium leading-tight text-rd-text transition-colors group-hover:text-rd-red md:max-w-none md:whitespace-nowrap md:text-left md:text-sm">
+                    {cat.name}
+                  </span>
+                </Link>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={() => scrollStrip(1)}
+              aria-label="Scroll categories right"
+              className="absolute right-2 top-1/2 z-10 hidden h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-rd-text transition-colors hover:bg-rd-page md:flex"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </button>
           </div>
         </div>
       </header>
 
-      {/* Mobile bottom navigation — hidden on /dashboard/** (dashboard has its own nav) */}
+      {/* Category drawer — opened from the bottom nav on mobile */}
+      <Sheet open={categorySheetOpen} onOpenChange={setCategorySheetOpen}>
+        <SheetContent side="left" className="w-[300px] p-0">
+          <SheetHeader className="bg-rd-red p-4">
+            <SheetTitle className="text-left">
+              <Image
+                src="/logo.png"
+                alt="Smart Tech Bazaar"
+                width={110}
+                height={36}
+                className="h-8 w-auto object-contain brightness-0 invert"
+              />
+            </SheetTitle>
+          </SheetHeader>
+
+          {session ? (
+            <div className="border-b border-border bg-rd-page px-4 py-3">
+              <p className="text-sm font-semibold text-rd-text">{session.user?.name}</p>
+              <p className="text-xs text-rd-muted">{session.user?.email}</p>
+            </div>
+          ) : (
+            <div className="flex gap-2 border-b border-border px-4 py-3">
+              <SheetClose asChild>
+                <Link href="/auth/login" className="flex-1 rounded-full border border-rd-red py-2 text-center text-sm font-semibold text-rd-red">
+                  Login
+                </Link>
+              </SheetClose>
+              <SheetClose asChild>
+                <Link href="/auth/register" className="flex-1 rounded-full bg-rd-red py-2 text-center text-sm font-semibold text-white">
+                  Register
+                </Link>
+              </SheetClose>
+            </div>
+          )}
+
+          <nav className="flex-1 overflow-y-auto p-2">
+            <p className="px-3 pb-1 pt-2 text-xs font-semibold uppercase tracking-wider text-rd-muted">
+              Shop by Category
+            </p>
+            {NAV_CATEGORIES.map((cat) => (
+              <SheetClose asChild key={cat.slug}>
+                <Link
+                  href={`/category/${cat.slug}`}
+                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-rd-text hover:bg-rd-page"
+                >
+                  <span className="relative h-8 w-8 shrink-0 overflow-hidden rounded-full bg-rd-page">
+                    <Image src={cat.image} alt="" fill sizes="32px" className="object-cover" unoptimized />
+                  </span>
+                  {cat.name}
+                </Link>
+              </SheetClose>
+            ))}
+            {session && (
+              <button
+                onClick={() => signOutWithNativeCleanup({ callbackUrl: "/" })}
+                className="mt-2 flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-destructive hover:bg-rd-page"
+              >
+                <LogOut className="h-4 w-4" />
+                Sign Out
+              </button>
+            )}
+          </nav>
+        </SheetContent>
+      </Sheet>
+
+      {/* Mobile bottom navigation */}
       <nav
-        className={`fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-white md:hidden ${pathname.startsWith("/dashboard") ? "hidden" : ""
-          }`}
+        aria-label="Primary"
+        className={`fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-white md:hidden ${
+          pathname.startsWith("/dashboard") ? "hidden" : ""
+        }`}
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
         <div className="grid h-16 grid-cols-5">
           {mobileNavItems.map((item) => {
             const isActive = pathname === item.href;
-            const isCart = item.href === "/cart";
-            const isWishlist = item.href === "/wishlist";
-            const count = isCart ? cartCount : isWishlist ? wishlistCount : 0;
-
+            const count = item.href === "/cart" ? cartCount : 0;
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 className="relative flex flex-col items-center justify-center gap-1 px-1 press-active"
               >
-                {/* Active indicator — animated pill behind icon */}
-                {isActive && (
-                  <span className="absolute top-2 h-8 w-12 rounded-full bg-stb-red-light" />
-                )}
-                <div className="relative z-10 flex h-6 w-6 items-center justify-center">
+                <span className="relative">
                   <item.icon
-                    className={`h-[22px] w-[22px] transition-all duration-200 ${isActive
-                        ? "text-primary stroke-[2.5]"
-                        : "text-[#9CA3AF] stroke-[1.5]"
-                      }`}
+                    className={`h-6 w-6 ${isActive ? "fill-rd-navy/15 text-rd-navy" : "text-rd-muted"}`}
+                    aria-hidden="true"
                   />
                   {count > 0 && (
-                    <span className="absolute -right-1.5 -top-1 flex h-[15px] min-w-[15px] items-center justify-center rounded-full bg-primary px-0.5 text-[8px] font-bold leading-none text-white ring-2 ring-white">
+                    <span className="absolute -right-2 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rd-red px-1 text-[10px] font-bold leading-none text-white">
                       {count > 9 ? "9+" : count}
                     </span>
                   )}
-                </div>
-                <span
-                  className={`relative z-10 text-[10px] font-semibold leading-none transition-colors ${isActive ? "text-primary" : "text-[#9CA3AF]"
-                    }`}
-                >
+                </span>
+                <span className={`text-[11px] font-semibold leading-none ${isActive ? "text-rd-navy" : "text-rd-muted"}`}>
                   {item.name}
                 </span>
               </Link>
             );
           })}
+          <button
+            type="button"
+            onClick={() => setCategorySheetOpen(true)}
+            className="relative flex flex-col items-center justify-center gap-1 px-1 press-active"
+          >
+            <LayoutGrid className="h-6 w-6 text-rd-muted" aria-hidden="true" />
+            <span className="text-[11px] font-semibold leading-none text-rd-muted">Category</span>
+          </button>
         </div>
       </nav>
     </>

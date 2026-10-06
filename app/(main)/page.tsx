@@ -1,20 +1,17 @@
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import HeroBanner from "@/components/sections/HeroBanner";
-import TopCategories from "@/components/sections/TopCategories";
-import ProductSection from "@/components/sections/ProductSection";
-import BrandsSection from "@/components/sections/BrandsSection";
+import SpecialDeals, { type DealTile } from "@/components/sections/SpecialDeals";
+import ProductRail from "@/components/sections/ProductRail";
+import CategoryTileGrid from "@/components/sections/CategoryTileGrid";
 import AdBannerSlider from "@/components/sections/AdBannerSlider";
-import BestSellersSection from "@/components/sections/BestSellersSection";
-import MostPopularSection from "@/components/sections/MostPopularSection";
-import NewArrivalsSection from "@/components/sections/NewArrivalsSection";
-import HotBrandsSection from "@/components/sections/HotBrandsSection";
+import BrandStrip from "@/components/sections/BrandStrip";
 import FeaturesSection from "@/components/sections/FeaturesSection";
 import JsonLd from "@/components/seo/JsonLd";
-import { 
-  generateOrganizationSchema, 
-  generateWebSiteSchema, 
-  generateLocalBusinessSchema 
+import {
+  generateOrganizationSchema,
+  generateWebSiteSchema,
+  generateLocalBusinessSchema,
 } from "@/lib/schema";
 import {
   getHomepageCategories,
@@ -30,41 +27,25 @@ import {
 
 // Render on demand instead of prerendering at build time.
 //
-// Next.js gives every statically generated page a hard 60s budget
-// (`staticPageGenerationTimeout`). Product images and brand logos are stored in
-// Mongo as inline base64 data URIs (~873KB per product), so the homepage rails
-// transfer megabytes and blow past that budget — `next build` failed with
-// "Failed to build /(main)/page: / after 3 attempts", and each retry piled more
-// concurrent queries onto the 5-socket pool, adding MongoWaitQueueTimeoutError.
-//
-// Rendering on demand makes the build independent of the database. Freshness and
-// speed still come from the per-query `unstable_cache` wrappers in lib/data.ts,
-// so this is not an uncached page.
+// Next.js gives every statically generated page a hard 60s budget. Product
+// images and brand logos are stored in Mongo as inline base64 data URIs, so the
+// homepage rails transfer megabytes and blow past that budget. Rendering on
+// demand makes the build independent of the database; freshness and speed still
+// come from the per-query `unstable_cache` wrappers in lib/data.ts.
 //
 // `revalidate` turns the on-demand render into an ISR render: the first visitor
-// after a deploy pays the database cost once, then every subsequent visitor is
-// served the cached HTML instantly until the window expires and the page is
-// rebuilt in the background (stale-while-revalidate). Nobody waits on Mongo.
+// after a deploy pays the database cost once, then everyone is served cached
+// HTML until the window expires (stale-while-revalidate).
 export const revalidate = 300;
 
-// Resolve a data fetch, falling back to an empty list if it fails.
-// A transient MongoDB error must not abort the whole production build (or blank
-// out the page) — the affected section simply renders empty and is refilled on
-// the next revalidation.
+// Resolve a data fetch, falling back to an empty list if it fails, so a
+// transient MongoDB error never aborts the build or blanks the page.
 async function safeList<T>(
   load: () => Promise<T[]>,
   label: string
 ): Promise<T[]> {
-  // Keep an unavailable database from blocking the first paint indefinitely, but
-  // stay well above the real cost of these queries.
-  //
-  // Product images and brand logos are stored in Mongo as inline base64 data
-  // URIs, so a single page of 10 products transfers ~1.15MB and a page of brands
-  // ~1.07MB. Measured: the same query projecting only `name` returns in 210ms,
-  // but including `images` takes ~13s — the time is pure document transfer, not
-  // query planning (the required indexes already exist). Fetches that issue two
-  // such queries (best sellers falls back to a second lookup) therefore need
-  // more than 26s, which is why the old 20s cap silently emptied those rails.
+  // Document transfer (inline base64 images) dominates query time, so the cap
+  // stays well above the real cost of these queries.
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
     const timeout = new Promise<never>((_, reject) => {
@@ -78,27 +59,18 @@ async function safeList<T>(
     console.error(`[v0] Homepage data fetch failed (${label}):`, error);
     return [];
   } finally {
-    // Always cancel the timer. Leaving it pending kept a 20s timer alive for
-    // every one of the parallel fetches below, which held the request open for
-    // the full timeout even when all the queries had already resolved in
-    // milliseconds (observed as a consistent "GET / 200 in ~20000ms").
+    // Always cancel the timer, otherwise it holds the request open for the full
+    // timeout even when every query has already resolved.
     clearTimeout(timer);
   }
 }
 
-// How many homepage fetches may be in flight at once.
-//
-// The Mongo pool is capped at `maxPoolSize: 5` and keeps only one socket warm,
-// so firing all nine fetches at once forced the driver to open four more sockets
-// simultaneously. Each new socket pays a 1.7s-7.9s TLS handshake, so the last
-// fetches to get a socket blew the 20s budget above and returned empty — which
-// is why the category rails and New Arrivals silently vanished from the page
-// while the first few sections rendered fine. Running them a few at a time
-// reuses warm sockets: measured queries take ~250ms each.
+// The Mongo pool is capped at `maxPoolSize: 5` and keeps one socket warm, so
+// firing every fetch at once forces several slow TLS handshakes in parallel and
+// the last fetches time out empty. Running a few at a time reuses warm sockets.
 const HOMEPAGE_FETCH_CONCURRENCY = 2;
 
-// Run the homepage fetches in small batches, preserving result order. The
-// per-fetch timeout starts when the fetch actually runs, not when the page began.
+// Run the homepage fetches in small batches, preserving result order.
 async function loadInBatches<T>(
   tasks: (() => Promise<T[]>)[]
 ): Promise<T[][]> {
@@ -120,8 +92,45 @@ async function loadInBatches<T>(
   return results;
 }
 
+const SECONDARY_BANNERS = [
+  {
+    id: "laptop-banner",
+    image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/laptop%20Banner.jpg-aZ74t8huDopt1RRCwikZSJznyGUZMl.jpeg",
+    imageMobile: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/laptop%20%20%20banner%20350x150_.jpg-QwzNwHKG7YQDTvQgMNUyfQLCw9HszO.jpeg",
+    alt: "High-performance portability tailored for creators, students, and professionals on the move",
+    href: "/category/laptops",
+  },
+  {
+    id: "storage-banner",
+    image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Storage%20%20Banner.jpg-Br2pDtXHqxUP0A7rMmWIwC6BKzMrRy.jpeg",
+    imageMobile: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/storage%20banner%20350x150_.jpg-MiKzFE7Di0afXQ8issISTZNHQzHSIn.jpeg",
+    alt: "Secure your digital life with high-speed SSDs, massive hard drives, and reliable cloud-ready solutions",
+    href: "/category/storage",
+  },
+  {
+    id: "networking-banner",
+    image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Networking%20Banner.jpg-8TJO7lyqPmcGBoBLNeboJBiU5xTj4p.jpeg",
+    imageMobile: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/networking%20%20%20banner%20350x150_.jpg-4tbfFBsFp1vevULnC5LZYs1nq9kc0T.jpeg",
+    alt: "Blazing fast internet starts here - Stay connected, stay ahead",
+    href: "/category/networking",
+  },
+  {
+    id: "mobility-banner",
+    image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Mobility%20Banner.jpg-fIVom9upVU5bdAYHsa9o5xGUeVS5U1.jpeg",
+    imageMobile: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/mobility%20%20%20banner%20350x150_.jpg-iA1gann5XrBSjK81afumysLvLYvfKh.jpeg",
+    alt: "Never run out of power - Smart, fast and portable charging solutions",
+    href: "/category/mobility",
+  },
+  {
+    id: "security-banner",
+    image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Security%20Banner.jpg-placeholder.jpeg",
+    imageMobile: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/security%20%20banner%20350x150_.jpg-qZz8kztQHrIl0siABkWDjIOduswvgK.jpeg",
+    alt: "Comprehensive protection for your data and hardware with advanced software and physical locks",
+    href: "/category/security",
+  },
+];
+
 export default async function HomePage() {
-  // Fetch all data in parallel using cached functions
   const [
     categories,
     brands,
@@ -155,124 +164,128 @@ export default async function HomePage() {
   ];
 
   // The homepage rails come solely from the category configuration in
-  // lib/section-matching.ts. The admin-configured `homepage_sections` collection
-  // is deliberately not rendered here: it held narrow, brand-level rows
-  // ("PixaPlay", "EZVIZ", "Audio Products") that replaced the main category
-  // sections the homepage is meant to show.
+  // lib/section-matching.ts; the admin `homepage_sections` collection is
+  // deliberately not rendered here.
   const [leadSections, restSections] = [
     curatedSections.slice(0, 2),
     curatedSections.slice(2),
   ];
 
-  // Schema markup for homepage
+  // Special Deals tiles: one per category rail (real image, lowest price and
+  // best discount from its products), topped up from the category list.
+  const dealsFromSections: DealTile[] = curatedSections
+    .filter((section) => section.products.length > 0)
+    .map((section) => {
+      const prices = section.products
+        .map((p) => Number(p.priceB2C) || 0)
+        .filter((price) => price > 0);
+      const discounts = section.products.map((p) => {
+        const price = Number(p.priceB2C) || 0;
+        const mrp = Number(p.mrp) || 0;
+        return mrp > price && price > 0 ? Math.round(((mrp - price) / mrp) * 100) : 0;
+      });
+      return {
+        id: section.slug,
+        title: section.title,
+        href: `/category/${section.slug}`,
+        image: section.products[0].image,
+        startingPrice: prices.length > 0 ? Math.min(...prices) : undefined,
+        maxDiscount: Math.max(0, ...discounts),
+      };
+    });
+
+  const usedSlugs = new Set(dealsFromSections.map((deal) => deal.id));
+  const dealsFromCategories: DealTile[] = categories
+    .filter((cat) => !usedSlugs.has(cat.slug))
+    .map((cat) => ({
+      id: cat.slug,
+      title: cat.name,
+      href: `/category/${cat.slug}`,
+      image: cat.image,
+    }));
+  const deals = [...dealsFromSections, ...dealsFromCategories].slice(0, 4);
+
+  const brandList = hotBrands.length > 0 ? hotBrands : brands;
+
   const schemas = [
     generateOrganizationSchema(),
     generateWebSiteSchema(),
     generateLocalBusinessSchema(),
   ];
 
+  const isEmpty =
+    curatedSections.length === 0 &&
+    newArrivals.length === 0 &&
+    bestSellers.length === 0 &&
+    mostPopular.length === 0;
+
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex min-h-screen flex-col bg-rd-page">
       <Header />
-      <main className="flex-1">
-        {/* Schema markup */}
+      <main className="flex-1 pb-4">
         <JsonLd data={schemas} />
 
-        {/* Hero Slider - 1500x450 banners */}
         <HeroBanner banners={heroSliderBanners.length > 0 ? heroSliderBanners : undefined} />
 
-        {/* Features Strip */}
-        <FeaturesSection />
+        <SpecialDeals deals={deals} />
 
-        {/* Top Categories */}
-        <TopCategories categories={categories} />
-
-        {/* Best Sellers Section */}
-        {bestSellers.length > 0 && (
-          <BestSellersSection products={bestSellers} />
-        )}
-
-        {/* New Arrivals */}
-        <NewArrivalsSection products={newArrivals} />
-
-        {/* Dynamic Ad Banner Slider - 1500x300 banners from database */}
-        {adBanners.length > 0 && (
-          <AdBannerSlider banners={adBanners} />
-        )}
-
-        {/* Category rails - Desktop / Laptops */}
-        {leadSections.map((section) => (
-          <ProductSection key={section.slug} section={section} />
-        ))}
-
-        {/* Hot Brands Section */}
-        {hotBrands.length > 0 && (
-          <HotBrandsSection brands={hotBrands} />
-        )}
-
-        {/* Most Popular Section */}
-        {mostPopular.length > 0 && (
-          <MostPopularSection products={mostPopular} />
-        )}
-
-        {/* Secondary Ad Banners - 4 promotional banners */}
-        <AdBannerSlider 
-          banners={[
-            {
-              id: "laptop-banner",
-              image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/laptop%20Banner.jpg-aZ74t8huDopt1RRCwikZSJznyGUZMl.jpeg",
-              imageMobile: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/laptop%20%20%20banner%20350x150_.jpg-QwzNwHKG7YQDTvQgMNUyfQLCw9HszO.jpeg",
-              alt: "High-performance portability tailored for creators, students, and professionals on the move",
-              href: "/category/laptops",
-            },
-            {
-              id: "storage-banner",
-              image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Storage%20%20Banner.jpg-Br2pDtXHqxUP0A7rMmWIwC6BKzMrRy.jpeg",
-              imageMobile: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/storage%20banner%20350x150_.jpg-MiKzFE7Di0afXQ8issISTZNHQzHSIn.jpeg",
-              alt: "Secure your digital life with high-speed SSDs, massive hard drives, and reliable cloud-ready solutions",
-              href: "/category/storage",
-            },
-            {
-              id: "networking-banner",
-              image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Networking%20Banner.jpg-8TJO7lyqPmcGBoBLNeboJBiU5xTj4p.jpeg",
-              imageMobile: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/networking%20%20%20banner%20350x150_.jpg-4tbfFBsFp1vevULnC5LZYs1nq9kc0T.jpeg",
-              alt: "Blazing fast internet starts here - Stay connected, stay ahead",
-              href: "/category/networking",
-            },
-            {
-              id: "mobility-banner",
-              image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Mobility%20Banner.jpg-fIVom9upVU5bdAYHsa9o5xGUeVS5U1.jpeg",
-              imageMobile: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/mobility%20%20%20banner%20350x150_.jpg-iA1gann5XrBSjK81afumysLvLYvfKh.jpeg",
-              alt: "Never run out of power - Smart, fast and portable charging solutions",
-              href: "/category/mobility",
-            },
-            {
-              id: "security-banner",
-              image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Security%20Banner.jpg-placeholder.jpeg",
-              imageMobile: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/security%20%20banner%20350x150_.jpg-qZz8kztQHrIl0siABkWDjIOduswvgK.jpeg",
-              alt: "Comprehensive protection for your data and hardware with advanced software and physical locks",
-              href: "/category/security",
-            },
-          ]} 
+        <ProductRail
+          title="Best Sellers"
+          subtitle="Top picks loved by our customers"
+          href="/products?sortBy=bestselling"
+          products={bestSellers}
+          tag="BEST_SELLER"
         />
 
-        {/* Category rails - Storage / Display / Peripherals / Printers &
-            Scanners / Security / Networking */}
-        {restSections.map((section) => (
-          <ProductSection key={section.slug} section={section} />
+        <ProductRail
+          title="New Arrivals"
+          subtitle="Fresh additions to the catalogue"
+          href="/products?sortBy=newest"
+          products={newArrivals}
+          tag="NEW"
+        />
+
+        <AdBannerSlider banners={adBanners} />
+
+        {leadSections.map((section) => (
+          <ProductRail
+            key={section.slug}
+            title={section.title}
+            subtitle={`Great deals on ${section.title}`}
+            href={`/category/${section.slug}`}
+            products={section.products}
+          />
         ))}
 
-        {/* Brands Carousel */}
-        <BrandsSection brands={brands} />
+        <CategoryTileGrid title="Great Deals on Technology" categories={categories} />
 
-        {/* Show message if no products */}
-        {curatedSections.length === 0 &&
-          newArrivals.length === 0 &&
-          bestSellers.length === 0 &&
-          mostPopular.length === 0 && (
+        <ProductRail
+          title="Most Popular"
+          subtitle="What everyone is shopping right now"
+          href="/products"
+          products={mostPopular}
+        />
+
+        <AdBannerSlider banners={SECONDARY_BANNERS} />
+
+        {restSections.map((section) => (
+          <ProductRail
+            key={section.slug}
+            title={section.title}
+            subtitle={`Great deals on ${section.title}`}
+            href={`/category/${section.slug}`}
+            products={section.products}
+          />
+        ))}
+
+        <BrandStrip brands={brandList} />
+
+        <FeaturesSection />
+
+        {isEmpty && (
           <div className="mx-auto max-w-7xl px-4 py-20 text-center">
-            <h2 className="heading-lg mb-4">No Products Available</h2>
-            <p className="body-md text-muted-foreground">
+            <h2 className="mb-2 text-2xl font-bold text-rd-text">No Products Available</h2>
+            <p className="text-sm text-rd-muted">
               Products will appear here once they are added to the database.
               Configure homepage sections in the admin panel.
             </p>

@@ -1,38 +1,30 @@
-"use client";
+import { BadgeCheck, ShieldCheck, Truck } from "lucide-react";
 
-import { Truck, Shield, Headphones, RefreshCcw, Package, BadgeCheck } from "lucide-react";
-
-const features = [
-  { icon: Shield,      title: "Secure Payment", desc: "100% protected",     color: "bg-green-50 text-green-600" },
-  { icon: Headphones,  title: "24/7 Support",   desc: "Always available",   color: "bg-purple-50 text-purple-600" },
-  { icon: Package,     title: "Fast Delivery",  desc: "Express shipping",   color: "bg-orange-50 text-orange-600" },
-  { icon: BadgeCheck,  title: "Authentic",      desc: "100% genuine",       color: "bg-stb-red-light text-primary" },
+const highlights = [
+  { icon: Truck, title: "Fastest Delivery", detail: "& Doorstep Service" },
+  { icon: ShieldCheck, title: "Secure Payments", detail: "& GST Invoicing" },
+  { icon: BadgeCheck, title: "100% Genuine", detail: "Products & Warranty" },
 ];
 
 export default function FeaturesSection() {
   return (
-    <section className="hidden bg-background md:block">
-      <div className="mx-auto max-w-7xl px-3 py-3 md:px-4 md:py-4">
-        {/* Desktop: Full width grid */}
-        <div className="hidden rounded-xl border border-border bg-white md:block">
-          <div className="grid grid-cols-5 divide-x divide-border">
-            {features.map((feature) => (
-              <div
-                key={feature.title}
-                className="flex items-center gap-3 px-4 py-3.5"
-              >
-                <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${feature.color}`}>
-                  <feature.icon className="h-4 w-4" />
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-foreground">{feature.title}</p>
-                  <p className="text-[10px] text-muted-foreground">{feature.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+    <section className="mx-auto mt-10 max-w-[1440px] px-4 md:mt-14 md:px-8" aria-label="Why shop with us">
+      <ul className="grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-6 md:px-10">
+        {highlights.map(({ icon: Icon, title, detail }) => (
+          <li
+            key={title}
+            className="relative flex items-center gap-4 bg-white px-6 py-5"
+          >
+            <span className="pointer-events-none absolute left-0 top-0 h-3/5 w-1/5 border-l border-t border-rd-red" aria-hidden="true" />
+            <span className="pointer-events-none absolute bottom-0 right-0 h-3/5 w-2/3 border-b border-r border-rd-navy" aria-hidden="true" />
+            <Icon className="h-10 w-10 shrink-0 text-rd-text" strokeWidth={1.5} aria-hidden="true" />
+            <p className="text-lg font-extrabold uppercase leading-tight tracking-tight text-rd-text md:text-xl">
+              {title}
+              <span className="block">{detail}</span>
+            </p>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }
