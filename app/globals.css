@@ -74,6 +74,20 @@
     --stb-tint-amber: #FEF5E9;
     --stb-tint-violet: #F3F0FD;
     --stb-tint-teal: #EAF7F3;
+
+    /* ── Storefront palette (red masthead, navy links, pale-cyan tiles) ── */
+    --rd-red: #E42529;
+    --rd-red-dark: #C81E22;
+    --rd-navy: #1B2A8F;
+    --rd-sky: #1DA1DC;
+    --rd-teal: #0B7DA5;
+    --rd-cyan: #DDF6FD;
+    --rd-cyan-deep: #C4EEFA;
+    --rd-page: #F4F4F4;
+    --rd-tile: #F7F7F7;
+    --rd-green: #11A15B;
+    --rd-text: #1A1A1A;
+    --rd-muted: #5F5F5F;
 }
 
 @theme inline {
@@ -133,6 +147,19 @@
     --color-stb-tint-amber: var(--stb-tint-amber);
     --color-stb-tint-violet: var(--stb-tint-violet);
     --color-stb-tint-teal: var(--stb-tint-teal);
+
+    --color-rd-red: var(--rd-red);
+    --color-rd-red-dark: var(--rd-red-dark);
+    --color-rd-navy: var(--rd-navy);
+    --color-rd-sky: var(--rd-sky);
+    --color-rd-teal: var(--rd-teal);
+    --color-rd-cyan: var(--rd-cyan);
+    --color-rd-cyan-deep: var(--rd-cyan-deep);
+    --color-rd-page: var(--rd-page);
+    --color-rd-tile: var(--rd-tile);
+    --color-rd-green: var(--rd-green);
+    --color-rd-text: var(--rd-text);
+    --color-rd-muted: var(--rd-muted);
 
     --radius-sm: calc(var(--radius) * 0.5);
     --radius-md: calc(var(--radius) * 0.75);
