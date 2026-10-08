@@ -22,7 +22,6 @@ import {
   ChevronDown,
   ChevronRight,
   ShoppingBag,
-  Recycle,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -121,16 +120,6 @@ export default function Header() {
     </Link>
   );
 
-  const refurbishedPill = (
-    <Link
-      href="/category/refurbished-laptops"
-      className="flex h-9 shrink-0 items-center gap-1.5 rounded-lg bg-[#F1F3F6] px-3 text-xs font-bold italic text-fk-ink md:h-11 md:px-4 md:text-sm"
-    >
-      <Recycle className="h-4 w-4 text-fk-blue" aria-hidden="true" />
-      Refurbished
-    </Link>
-  );
-
   const locationLink = (
     <Link href="/shipping" className="flex shrink-0 items-center gap-1 text-xs md:text-sm">
       <MapPin className="h-3.5 w-3.5 fill-fk-ink text-fk-ink md:h-4 md:w-4" aria-hidden="true" />
@@ -162,7 +151,6 @@ export default function Header() {
             <div className="flex items-center justify-between gap-2 pb-2 pt-2 md:pb-3 md:pt-3">
               <div className="flex items-center gap-2">
                 {logoPill}
-                {refurbishedPill}
               </div>
               {locationLink}
             </div>
