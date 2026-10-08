@@ -62,7 +62,7 @@ export default function BannerCarousel({
   const hasMultiple = banners.length > 1;
 
   return (
-    <section aria-label={label} className={`mx-auto w-full max-w-[1440px] px-4 md:px-8 ${className}`}>
+    <section aria-label={label} className={`mx-auto w-full max-w-[1200px] px-3 md:px-4 ${className}`}>
       <div className="group relative">
         <Carousel
           opts={{ loop: hasMultiple }}
@@ -137,7 +137,7 @@ export default function BannerCarousel({
               aria-label={`Go to slide ${i + 1}`}
               onClick={() => api?.scrollTo(i)}
               className={`h-2 rounded-full transition-all ${
-                i === selected ? "w-6 bg-white shadow-sm ring-1 ring-black/10" : "w-2 bg-[#C9C9E3]"
+                i === selected ? "w-5 bg-fk-ink" : "w-2 bg-[#C9C9C9]"
               }`}
             />
           ))}

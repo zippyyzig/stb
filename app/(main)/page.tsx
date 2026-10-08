@@ -1,12 +1,16 @@
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import FestiveHero from "@/components/sections/FestiveHero";
 import HeroBanner from "@/components/sections/HeroBanner";
-import SpecialDeals, { type DealTile } from "@/components/sections/SpecialDeals";
-import ProductRail from "@/components/sections/ProductRail";
-import CategoryTileGrid from "@/components/sections/CategoryTileGrid";
 import AdBannerSlider from "@/components/sections/AdBannerSlider";
-import BrandStrip from "@/components/sections/BrandStrip";
-import FeaturesSection from "@/components/sections/FeaturesSection";
+import DealStrip, { type DealStripItem } from "@/components/sections/DealStrip";
+import TileGridCard, { type TileItem } from "@/components/sections/TileGridCard";
+import PromoCta from "@/components/sections/PromoCta";
+import BrandSpotlight from "@/components/sections/BrandSpotlight";
+import ShortcutRow from "@/components/sections/ShortcutRow";
+import ProductFeed from "@/components/sections/ProductFeed";
+import type { RailProduct } from "@/components/sections/ProductRail";
+import { formatInr, type FkVariant } from "@/components/sections/fk-theme";
 import JsonLd from "@/components/seo/JsonLd";
 import {
   generateOrganizationSchema,
@@ -171,39 +175,98 @@ export default async function HomePage() {
     curatedSections.slice(2),
   ];
 
-  // Special Deals tiles: one per category rail (real image, lowest price and
-  // best discount from its products), topped up from the category list.
-  const dealsFromSections: DealTile[] = curatedSections
-    .filter((section) => section.products.length > 0)
+  const priceOf = (p: RailProduct) => Number(p.priceB2C) || 0;
+  const discountOf = (p: RailProduct) => {
+    const price = priceOf(p);
+    const mrp = Number(p.mrp) || 0;
+    return mrp > price && price > 0 ? Math.round(((mrp - price) / mrp) * 100) : 0;
+  };
+
+  // Each product is shown once above the fold so the page never repeats itself
+  // and the image payload (inline base64) stays small.
+  const used = new Set<string>();
+  const takeUnique = (list: RailProduct[], count: number): RailProduct[] => {
+    const out: RailProduct[] = [];
+    for (const product of list) {
+      if (out.length >= count) break;
+      if (!product.image || used.has(product.id)) continue;
+      used.add(product.id);
+      out.push(product);
+    }
+    return out;
+  };
+
+  const toStripItem = (p: RailProduct): DealStripItem => ({
+    id: p.id,
+    image: p.image,
+    title: p.name,
+    label: priceOf(p) > 0 ? formatInr(priceOf(p)) : "View",
+    href: `/product/${p.slug}`,
+  });
+
+  const toTile = (p: RailProduct): TileItem => {
+    const discount = discountOf(p);
+    return {
+      id: p.id,
+      image: p.image,
+      label: p.brand || p.name,
+      caption:
+        discount >= 5
+          ? `Min. ${discount}% Off`
+          : priceOf(p) > 0
+            ? `From ${formatInr(priceOf(p))}`
+            : "Shop now",
+      href: `/product/${p.slug}`,
+    };
+  };
+
+  const topTech = takeUnique(bestSellers, 8).map(toStripItem);
+
+  // "Deals you can't miss": one tile per category rail with its best discount.
+  const dealTiles: TileItem[] = curatedSections
     .map((section) => {
-      const prices = section.products
-        .map((p) => Number(p.priceB2C) || 0)
-        .filter((price) => price > 0);
-      const discounts = section.products.map((p) => {
-        const price = Number(p.priceB2C) || 0;
-        const mrp = Number(p.mrp) || 0;
-        return mrp > price && price > 0 ? Math.round(((mrp - price) / mrp) * 100) : 0;
-      });
+      const lead = section.products.find((p) => p.image && !used.has(p.id));
+      if (!lead) return null;
+      used.add(lead.id);
+      const prices = section.products.map(priceOf).filter((price) => price > 0);
+      const maxDiscount = Math.max(0, ...section.products.map(discountOf));
       return {
         id: section.slug,
-        title: section.title,
+        image: lead.image,
+        label: section.title,
+        caption:
+          maxDiscount >= 5
+            ? `Up to ${maxDiscount}% Off`
+            : prices.length > 0
+              ? `From ${formatInr(Math.min(...prices))}`
+              : "Explore",
         href: `/category/${section.slug}`,
-        image: section.products[0].image,
-        startingPrice: prices.length > 0 ? Math.min(...prices) : undefined,
-        maxDiscount: Math.max(0, ...discounts),
-      };
-    });
+      } satisfies TileItem;
+    })
+    .filter((tile): tile is TileItem => tile !== null)
+    .slice(0, 4);
 
-  const usedSlugs = new Set(dealsFromSections.map((deal) => deal.id));
-  const dealsFromCategories: DealTile[] = categories
-    .filter((cat) => !usedSlugs.has(cat.slug))
-    .map((cat) => ({
-      id: cat.slug,
-      title: cat.name,
-      href: `/category/${cat.slug}`,
-      image: cat.image,
-    }));
-  const deals = [...dealsFromSections, ...dealsFromCategories].slice(0, 4);
+  const festiveArrivals = takeUnique(newArrivals, 8).map(toStripItem);
+  const popularGadgets = takeUnique(mostPopular, 4).map(toTile);
+  const peopleAlsoViewed = takeUnique(mostPopular, 4).map(toTile);
+
+  const sectionVariants: FkVariant[] = ["blue", "purple"];
+  const categoryTiles = curatedSections.slice(0, 3).map((section, index) => ({
+    slug: section.slug,
+    title: section.title,
+    variant: sectionVariants[index % sectionVariants.length],
+    tiles: takeUnique(section.products, 4).map(toTile),
+  }));
+
+  const feedProducts = takeUnique(
+    [
+      ...mostPopular,
+      ...bestSellers,
+      ...newArrivals,
+      ...curatedSections.flatMap((section) => section.products),
+    ],
+    20
+  );
 
   const brandList = hotBrands.length > 0 ? hotBrands : brands;
 
@@ -220,72 +283,66 @@ export default async function HomePage() {
     mostPopular.length === 0;
 
   return (
-    <div className="flex min-h-screen flex-col bg-rd-page">
+    <div className="flex min-h-screen flex-col bg-[linear-gradient(180deg,#FFF3C4_0px,#FFFFFF_360px)]">
       <Header />
       <main className="flex-1 pb-4">
         <JsonLd data={schemas} />
 
+        <FestiveHero />
+
         <HeroBanner banners={heroSliderBanners.length > 0 ? heroSliderBanners : undefined} />
-
-        <SpecialDeals deals={deals} />
-
-        <ProductRail
-          title="Best Sellers"
-          subtitle="Top picks loved by our customers"
-          href="/products?sortBy=bestselling"
-          products={bestSellers}
-          tag="BEST_SELLER"
-        />
-
-        <ProductRail
-          title="New Arrivals"
-          subtitle="Fresh additions to the catalogue"
-          href="/products?sortBy=newest"
-          products={newArrivals}
-          tag="NEW"
-        />
 
         <AdBannerSlider banners={adBanners} />
 
-        {leadSections.map((section) => (
-          <ProductRail
+        <DealStrip
+          title="Top tech deals revealed"
+          href="/products?sortBy=bestselling"
+          items={topTech}
+          variant="blue"
+        />
+
+        <TileGridCard title="Deals you can't miss" href="/categories" items={dealTiles} variant="blue" />
+
+        <DealStrip
+          title="Festive arrivals"
+          href="/products?sortBy=newest"
+          items={festiveArrivals}
+          variant="festive"
+        />
+
+        <PromoCta eyebrow="Festive season" title="Gift guide revealed" href="/products?sortBy=bestselling" />
+
+        <BrandSpotlight brands={brandList} />
+
+        <ShortcutRow />
+
+        <TileGridCard
+          title="Best gadgets & more"
+          href="/products"
+          items={popularGadgets}
+          variant="purple"
+        />
+
+        {categoryTiles.map((section) => (
+          <TileGridCard
             key={section.slug}
             title={section.title}
-            subtitle={`Great deals on ${section.title}`}
             href={`/category/${section.slug}`}
-            products={section.products}
+            items={section.tiles}
+            variant={section.variant}
           />
         ))}
-
-        <CategoryTileGrid title="Great Deals on Technology" categories={categories} />
-
-        <ProductRail
-          title="Most Popular"
-          subtitle="What everyone is shopping right now"
-          href="/products"
-          products={mostPopular}
-        />
 
         <AdBannerSlider banners={SECONDARY_BANNERS} />
 
-        {restSections.map((section) => (
-          <ProductRail
-            key={section.slug}
-            title={section.title}
-            subtitle={`Great deals on ${section.title}`}
-            href={`/category/${section.slug}`}
-            products={section.products}
-          />
-        ))}
+        <TileGridCard title="People also viewed" href="/products" items={peopleAlsoViewed} variant="blue" />
 
-        <BrandStrip brands={brandList} />
-
-        <FeaturesSection />
+        <ProductFeed products={feedProducts} />
 
         {isEmpty && (
           <div className="mx-auto max-w-7xl px-4 py-20 text-center">
-            <h2 className="mb-2 text-2xl font-bold text-rd-text">No Products Available</h2>
-            <p className="text-sm text-rd-muted">
+            <h2 className="mb-2 text-2xl font-bold text-fk-ink">No Products Available</h2>
+            <p className="text-sm text-fk-grey">
               Products will appear here once they are added to the database.
               Configure homepage sections in the admin panel.
             </p>
