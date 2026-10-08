@@ -72,16 +72,16 @@ const socialLinks = [
 
 export default function Footer() {
   return (
-    <footer className="mt-10 bg-white pb-20 text-rd-text md:mt-14 md:pb-0">
-      <div className="mx-auto max-w-[1440px] px-4 pt-8 md:px-8 md:pt-10">
+    <footer className="mt-10 bg-[#172337] pb-20 text-white md:mt-14 md:pb-0">
+      <div className="mx-auto max-w-[1200px] px-4 pt-8 md:pt-10">
         <div className="grid grid-cols-2 gap-x-6 gap-y-8 md:grid-cols-4">
           {columns.map((column) => (
             <nav key={column.title} aria-label={column.title}>
-              <h3 className="text-base font-semibold">{column.title}</h3>
-              <ul className="mt-3 flex flex-col gap-2.5 md:mt-4">
+              <h3 className="text-xs font-medium uppercase tracking-wide text-[#878787]">{column.title}</h3>
+              <ul className="mt-3 flex flex-col gap-2.5">
                 {column.links.map((link) => (
                   <li key={link.name}>
-                    <Link href={link.href} className="text-sm text-rd-muted transition-colors hover:text-rd-red">
+                    <Link href={link.href} className="text-[13px] font-medium text-white transition-colors hover:underline">
                       {link.name}
                     </Link>
                   </li>
@@ -91,42 +91,41 @@ export default function Footer() {
           ))}
         </div>
 
-        {/* Contact + social bar */}
-        <div className="mt-8 flex flex-col gap-5 rounded-xl bg-rd-page px-5 py-4 md:flex-row md:items-center md:justify-between md:px-8">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-8">
+        <div className="mt-8 grid gap-6 border-t border-white/15 pt-6 md:grid-cols-2">
+          <div className="flex flex-col gap-4">
             <div className="flex items-center gap-3">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-rd-red text-white">
-                <Phone className="h-5 w-5" aria-hidden="true" />
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-fk-blue text-white">
+                <Phone className="h-4 w-4" aria-hidden="true" />
               </span>
               <div>
-                <p className="text-sm font-semibold">Need help? Call us</p>
-                <a href="tel:6363677588" className="text-sm text-rd-muted hover:text-rd-red">
+                <p className="text-xs uppercase tracking-wide text-[#878787]">Need help? Call us</p>
+                <a href="tel:6363677588" className="text-sm font-medium hover:underline">
                   6363677588
                 </a>
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-rd-navy text-white">
-                <Mail className="h-5 w-5" aria-hidden="true" />
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-fk-blue text-white">
+                <Mail className="h-4 w-4" aria-hidden="true" />
               </span>
               <div>
-                <p className="text-sm font-semibold">Sales &amp; Billing</p>
-                <Link href="/support" className="text-sm text-rd-muted hover:text-rd-red">
+                <p className="text-xs uppercase tracking-wide text-[#878787]">Sales &amp; Billing</p>
+                <Link href="/support" className="text-sm font-medium hover:underline">
                   Contact support
                 </Link>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
-            <span className="text-sm font-semibold">Follow us</span>
+          <div className="flex flex-col gap-3 md:items-end">
+            <span className="text-xs uppercase tracking-wide text-[#878787]">Follow us</span>
             <div className="flex items-center gap-3">
               {socialLinks.map(({ name, href, Icon }) => (
                 <a
                   key={name}
                   href={href}
                   aria-label={name}
-                  className="flex h-9 w-9 items-center justify-center rounded-full bg-rd-navy text-white transition-opacity hover:opacity-85"
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-fk-blue"
                 >
                   <Icon className="h-4 w-4" />
                 </a>
@@ -135,9 +134,9 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="mt-6">
-          <h3 className="text-sm font-semibold">Disclaimer</h3>
-          <p className="mt-2 text-xs leading-relaxed text-rd-muted md:text-[13px]">
+        <div className="mt-6 border-t border-white/15 pt-5">
+          <h3 className="text-xs font-medium uppercase tracking-wide text-[#878787]">Disclaimer</h3>
+          <p className="mt-2 text-xs leading-relaxed text-white/70">
             Product prices, offers and availability are subject to change from time to time. All prices are inclusive
             of applicable taxes. Product colours and images are only for illustration and may not exactly match the
             actual product. Product specifications are subject to change and may vary from the actual product. While
@@ -146,10 +145,8 @@ export default function Footer() {
         </div>
       </div>
 
-      <div className="mt-6 border-t border-border">
-        <p className="mx-auto max-w-[1440px] px-4 py-4 text-xs text-rd-muted md:px-8 md:text-[13px]">
-          Copyright &copy; {new Date().getFullYear()} Smart Tech Bazaar. All rights reserved.
-        </p>
+      <div className="mt-6 border-t border-white/15 py-5 text-center text-xs text-white/70">
+        &copy; {new Date().getFullYear()} Smart Tech Bazaar. All rights reserved.
       </div>
     </footer>
   );

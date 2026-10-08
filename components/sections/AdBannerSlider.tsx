@@ -15,7 +15,7 @@ export default function AdBannerSlider({ banners }: AdBannerSliderProps) {
       label="Promotional banners"
       desktopRatio="5 / 1"
       mobileRatio="16 / 5"
-      className="mt-8 md:mt-10"
+      className="mt-4 md:mt-6"
     />
   );
 }
