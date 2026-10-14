@@ -32,6 +32,7 @@ import {
   SheetClose,
 } from "@/components/ui/sheet";
 import { NAV_CATEGORIES } from "@/lib/nav-categories";
+import { getCategoryIcon } from "@/lib/nav-category-icons";
 import FestiveLights from "@/components/sections/FestiveLights";
 
 const moreLinks = [
@@ -277,7 +278,7 @@ export default function Header() {
         {/* Category strip */}
         <nav aria-label="Categories" className="border-t border-black/5 bg-white">
           <ul className="scrollbar-hide mx-auto flex max-w-[1200px] overflow-x-auto px-1 md:px-2">
-            {[{ slug: "", name: "For You", icon: ShoppingBag }, ...NAV_CATEGORIES.map((cat) => ({ slug: cat.slug, name: cat.name, icon: null as LucideIcon | null, image: cat.image }))].map((item) => {
+            {[{ slug: "", name: "For You", icon: ShoppingBag }, ...NAV_CATEGORIES.map((cat) => ({ slug: cat.slug, name: cat.name, icon: getCategoryIcon(cat.slug) }))].map((item) => {
               const href = item.slug ? `/category/${item.slug}` : "/";
               const isActive = item.slug ? pathname.startsWith(href) : pathname === "/";
               const Icon = item.icon;
@@ -286,25 +287,16 @@ export default function Header() {
                   <Link
                     href={href}
                     aria-current={isActive ? "page" : undefined}
-                    className="flex w-[78px] flex-col items-center gap-1 pt-2 md:w-[88px]"
+                    className="group flex w-[78px] flex-col items-center gap-1 pt-2 md:w-[88px]"
                   >
                     <span
-                      className={`relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl md:h-11 md:w-11 ${
-                        isActive ? "bg-[#DCE8FF]" : "bg-[#F6F7F9]"
+                      className={`flex h-11 w-11 items-center justify-center rounded-full ring-1 transition-colors md:h-12 md:w-12 ${
+                        isActive
+                          ? "bg-fk-blue text-white ring-fk-blue"
+                          : "bg-[#EAF1FF] text-fk-blue ring-[#D3E2FF] group-hover:bg-fk-blue group-hover:text-white group-hover:ring-fk-blue"
                       }`}
                     >
-                      {Icon ? (
-                        <Icon className="h-5 w-5 text-fk-blue" aria-hidden="true" />
-                      ) : (
-                        <Image
-                          src={"image" in item ? item.image : ""}
-                          alt=""
-                          fill
-                          sizes="44px"
-                          className="object-cover"
-                          unoptimized
-                        />
-                      )}
+                      <Icon className="h-[22px] w-[22px] md:h-6 md:w-6" strokeWidth={1.75} aria-hidden="true" />
                     </span>
                     <span
                       className={`w-full truncate px-0.5 text-center text-xs md:text-[13px] ${
@@ -358,19 +350,22 @@ export default function Header() {
             <p className="px-3 pb-1 pt-2 text-xs font-semibold uppercase tracking-wider text-fk-grey">
               Shop by Category
             </p>
-            {NAV_CATEGORIES.map((cat) => (
-              <SheetClose asChild key={cat.slug}>
-                <Link
-                  href={`/category/${cat.slug}`}
-                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-fk-ink hover:bg-[#F1F3F6]"
-                >
-                  <span className="relative h-8 w-8 shrink-0 overflow-hidden rounded-lg bg-[#F1F3F6]">
-                    <Image src={cat.image} alt="" fill sizes="32px" className="object-cover" unoptimized />
-                  </span>
-                  {cat.name}
-                </Link>
-              </SheetClose>
-            ))}
+            {NAV_CATEGORIES.map((cat) => {
+              const CatIcon = getCategoryIcon(cat.slug);
+              return (
+                <SheetClose asChild key={cat.slug}>
+                  <Link
+                    href={`/category/${cat.slug}`}
+                    className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-fk-ink hover:bg-[#F1F3F6]"
+                  >
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#EAF1FF] text-fk-blue ring-1 ring-[#D3E2FF]">
+                      <CatIcon className="h-5 w-5" strokeWidth={1.75} aria-hidden="true" />
+                    </span>
+                    {cat.name}
+                  </Link>
+                </SheetClose>
+              );
+            })}
             {session && (
               <button
                 onClick={() => signOutWithNativeCleanup({ callbackUrl: "/" })}
