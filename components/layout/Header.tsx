@@ -287,14 +287,11 @@ export default function Header() {
                   <Link
                     href={href}
                     aria-current={isActive ? "page" : undefined}
-                    className="group flex w-[78px] flex-col items-center gap-1 pt-2 md:w-[88px]"
+                    className="cat-link flex w-[78px] flex-col items-center gap-1 pt-2 md:w-[88px]"
                   >
                     <span
-                      className={`flex h-11 w-11 items-center justify-center rounded-full ring-1 transition-colors md:h-12 md:w-12 ${
-                        isActive
-                          ? "bg-fk-blue text-white ring-fk-blue"
-                          : "bg-[#EAF1FF] text-fk-blue ring-[#D3E2FF] group-hover:bg-fk-blue group-hover:text-white group-hover:ring-fk-blue"
-                      }`}
+                      data-active={isActive}
+                      className="cat-chip flex h-11 w-11 items-center justify-center rounded-full md:h-12 md:w-12"
                     >
                       <Icon className="h-[22px] w-[22px] md:h-6 md:w-6" strokeWidth={1.75} aria-hidden="true" />
                     </span>
@@ -356,9 +353,9 @@ export default function Header() {
                 <SheetClose asChild key={cat.slug}>
                   <Link
                     href={`/category/${cat.slug}`}
-                    className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-fk-ink hover:bg-[#F1F3F6]"
+                    className="cat-link flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-fk-ink hover:bg-[#F1F3F6]"
                   >
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#EAF1FF] text-fk-blue ring-1 ring-[#D3E2FF]">
+                    <span className="cat-chip flex h-9 w-9 shrink-0 items-center justify-center rounded-full">
                       <CatIcon className="h-5 w-5" strokeWidth={1.75} aria-hidden="true" />
                     </span>
                     {cat.name}
